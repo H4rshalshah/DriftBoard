@@ -1,0 +1,36 @@
+{
+  "name": "driftboard",
+  "version": "1.0.0",
+  "private": true,
+  "description": "DriftBoard - Live API Contract Drift Detection Platform",
+  "workspaces": [
+    "backend",
+    "frontend",
+    "sdk"
+  ],
+  "scripts": {
+    "dev": "concurrently -n backend,frontend -c blue,green \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "dev:backend": "npm run dev --workspace=backend",
+    "dev:frontend": "npm run dev --workspace=frontend",
+    "build": "npm run build --workspace=backend && npm run build --workspace=frontend && npm run build --workspace=@driftboard/sdk",
+    "test": "npm run test --workspaces",
+    "lint": "npm run lint --workspaces"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "keywords": [
+    "api",
+    "drift",
+    "monitoring",
+    "schema",
+    "typescript",
+    "react",
+    "express"
+  ],
+  "author": "DriftBoard Team",
+  "license": "MIT"
+}

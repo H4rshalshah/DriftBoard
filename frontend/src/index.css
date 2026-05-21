@@ -1,0 +1,707 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-gradient-dark text-gray-100 font-sans;
+    @apply min-h-screen;
+  }
+
+  html {
+    @apply scroll-smooth;
+    scrollbar-color: rgba(129, 140, 248, 0.42) rgba(10, 12, 28, 0.88);
+    scrollbar-width: thin;
+  }
+
+  ::selection {
+    @apply bg-primary-500/30 text-white;
+  }
+
+  * {
+    scrollbar-color: rgba(129, 140, 248, 0.42) rgba(10, 12, 28, 0.72);
+    scrollbar-width: thin;
+  }
+
+  *::-webkit-scrollbar {
+    width: 12px;
+    height: 12px;
+  }
+
+  *::-webkit-scrollbar-track {
+    background: rgba(10, 12, 28, 0.72);
+    border-left: 1px solid rgba(255, 255, 255, 0.06);
+  }
+
+  *::-webkit-scrollbar-thumb {
+    min-height: 48px;
+    background: linear-gradient(180deg, rgba(129, 140, 248, 0.6), rgba(168, 85, 247, 0.48));
+    border: 3px solid rgba(10, 12, 28, 0.72);
+    border-radius: 999px;
+  }
+
+  *::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(180deg, rgba(165, 180, 252, 0.76), rgba(192, 132, 252, 0.68));
+  }
+
+  *::-webkit-scrollbar-corner,
+  *::-webkit-scrollbar-button {
+    background: rgba(10, 12, 28, 0.72);
+  }
+}
+
+@layer base {
+  html.light body {
+    background: linear-gradient(180deg, #eef3f7 0%, #eaf1f6 54%, #edf1f7 100%);
+    color: #172033;
+  }
+
+  html.light,
+  html.light * {
+    scrollbar-color: rgba(99, 102, 241, 0.42) rgba(239, 244, 248, 0.94);
+  }
+
+  html.light *::-webkit-scrollbar-track {
+    background: rgba(239, 244, 248, 0.94);
+    border-left-color: rgba(15, 23, 42, 0.08);
+  }
+
+  html.light *::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, rgba(99, 102, 241, 0.48), rgba(14, 165, 233, 0.38));
+    border-color: rgba(239, 244, 248, 0.94);
+  }
+
+  html.light *::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(180deg, rgba(99, 102, 241, 0.62), rgba(14, 165, 233, 0.5));
+  }
+
+  html.light *::-webkit-scrollbar-corner,
+  html.light *::-webkit-scrollbar-button {
+    background: rgba(239, 244, 248, 0.94);
+  }
+
+  html.dark body {
+    background: linear-gradient(180deg, #0b1020 0%, #101528 100%);
+  }
+
+  html.light .text-white {
+    color: #0f172a;
+  }
+
+  html.light .text-white\/75,
+  html.light .text-white\/80,
+  html.light .text-white\/85,
+  html.light .text-white\/90 {
+    color: rgba(15, 23, 42, 0.9);
+  }
+
+  html.light .text-white\/65,
+  html.light .text-white\/70 {
+    color: rgba(15, 23, 42, 0.9);
+  }
+
+  html.light .text-white\/60,
+  html.light .text-white\/55,
+  html.light .text-gray-300 {
+    color: rgba(15, 23, 42, 0.82);
+  }
+
+  html.light .text-white\/50,
+  html.light .text-gray-400 {
+    color: rgba(15, 23, 42, 0.76);
+  }
+
+  html.light .text-white\/45,
+  html.light .text-white\/40,
+  html.light .text-white\/35,
+  html.light .text-white\/30,
+  html.light .text-gray-500 {
+    color: rgba(15, 23, 42, 0.7);
+  }
+
+  html.light .text-indigo-100,
+  html.light .text-indigo-100\/70,
+  html.light .text-indigo-100\/65,
+  html.light .text-indigo-100\/75 {
+    color: rgba(49, 46, 129, 0.84);
+  }
+
+  html.light .text-indigo-200,
+  html.light .text-indigo-200\/70,
+  html.light .text-indigo-300 {
+    color: rgba(55, 48, 163, 0.88);
+  }
+
+  html.light .text-sky-100,
+  html.light .text-sky-200,
+  html.light .text-sky-300,
+  html.light .text-cyan-200,
+  html.light .text-cyan-300,
+  html.light .text-blue-300,
+  html.light .text-blue-400 {
+    color: #0369a1;
+  }
+
+  html.light .text-emerald-100,
+  html.light .text-emerald-200,
+  html.light .text-emerald-300,
+  html.light .text-green-200,
+  html.light .text-green-300,
+  html.light .text-green-400 {
+    color: #065f46;
+  }
+
+  html.light .text-yellow-300,
+  html.light .text-yellow-400,
+  html.light .text-amber-100,
+  html.light .text-amber-100\/80,
+  html.light .text-amber-300,
+  html.light .text-amber-400 {
+    color: #92400e;
+  }
+
+  html.light .text-orange-400 {
+    color: #c2410c;
+  }
+
+  html.light .text-red-200,
+  html.light .text-red-300,
+  html.light .text-red-400 {
+    color: #b91c1c;
+  }
+
+  html.light .text-purple-300,
+  html.light .text-purple-400 {
+    color: #6d28d9;
+  }
+
+  html.light .bg-gradient-dark {
+    background-image: linear-gradient(180deg, #eef3f7 0%, #eaf1f6 54%, #edf1f7 100%);
+  }
+
+  html.dark .bg-gradient-dark {
+    background-image: linear-gradient(180deg, #0b1020 0%, #101528 100%);
+  }
+
+  .app-shell {
+    background:
+      radial-gradient(circle at 62% 10%, rgba(99, 102, 241, 0.08), transparent 34%),
+      linear-gradient(180deg, #0b1020 0%, #101528 100%);
+  }
+
+  html.light .app-shell {
+    background:
+      radial-gradient(circle at 62% 10%, rgba(129, 140, 248, 0.12), transparent 36%),
+      linear-gradient(180deg, #eef3f7 0%, #eaf1f6 54%, #edf1f7 100%);
+  }
+
+  .app-sidebar-surface {
+    background: rgba(11, 16, 32, 0.72);
+    box-shadow: inset -1px 0 rgba(255, 255, 255, 0.035);
+  }
+
+  .app-header-surface {
+    background: rgba(11, 16, 32, 0.64);
+    box-shadow: inset 0 -1px rgba(255, 255, 255, 0.035);
+  }
+
+  html.light .app-sidebar-surface {
+    background: rgba(238, 243, 247, 0.82);
+    box-shadow: inset -1px 0 rgba(71, 85, 105, 0.045);
+  }
+
+  html.light .app-header-surface {
+    background: rgba(238, 243, 247, 0.76);
+    box-shadow: inset 0 -1px rgba(71, 85, 105, 0.045);
+  }
+
+  html.dark .bg-glass-dark,
+  html.dark .bg-glass-dark\/80,
+  html.dark .bg-gray-900\/95,
+  html.dark .bg-gray-950,
+  html.dark .bg-black\/20,
+  html.dark .bg-black\/30,
+  html.dark .bg-slate-950,
+  html.dark .bg-slate-950\/70,
+  html.dark .bg-slate-950\/75 {
+    background-color: rgba(13, 18, 34, 0.84);
+  }
+
+  html.light .bg-glass-dark,
+  html.light .bg-glass-dark\/80,
+  html.light .bg-gray-900\/95,
+  html.light .bg-gray-950,
+  html.light .bg-black\/20,
+  html.light .bg-black\/30,
+  html.light .bg-slate-950,
+  html.light .bg-slate-950\/70,
+  html.light .bg-slate-950\/75 {
+    background-color: rgba(238, 243, 247, 0.78);
+  }
+
+  html.light .bg-white\/5,
+  html.light .bg-white\/10 {
+    background-color: rgba(15, 23, 42, 0.065);
+  }
+
+  html.light .bg-white\/\[0\.03\] {
+    background-color: rgba(15, 23, 42, 0.055);
+  }
+
+  html.light input,
+  html.light textarea {
+    color: #0f172a;
+  }
+
+  html.light input::placeholder,
+  html.light textarea::placeholder {
+    color: rgba(15, 23, 42, 0.55);
+  }
+
+  html.light .border-white\/10,
+  html.light .border-white\/15,
+  html.light .border-white\/20 {
+    border-color: rgba(15, 23, 42, 0.16);
+  }
+
+  html.light .border-indigo-400\/20,
+  html.light .border-indigo-400\/25,
+  html.light .border-orange-400\/25 {
+    border-color: rgba(79, 70, 229, 0.22);
+  }
+
+  html.light .shadow-white\/5,
+  html.light .shadow-indigo-500\/15,
+  html.light .shadow-indigo-500\/25 {
+    --tw-shadow-color: rgba(79, 70, 229, 0.14);
+  }
+
+  .drift-logo-mark {
+    background: #070715;
+  }
+
+  .drift-logo-core {
+    background: #070715;
+  }
+
+  html.light .drift-logo-mark,
+  html.light .drift-logo-core {
+    background: #ffffff;
+  }
+
+  html.light .drift-logo-mark {
+    border-color: rgba(49, 46, 129, 0.3);
+    box-shadow: 0 16px 36px rgba(49, 46, 129, 0.18);
+  }
+
+  html.light .drift-logo-mark svg {
+    color: #3730a3;
+  }
+
+  html.light .drift-logo-gradient {
+    opacity: 0.5;
+  }
+
+  html.light .bg-gradient-primary {
+    background-image: linear-gradient(135deg, #818cf8 0%, #a78bfa 52%, #c084fc 100%);
+  }
+
+  .sidebar-menu-surface {
+    background: rgba(7, 7, 21, 0.96);
+    backdrop-filter: blur(18px);
+  }
+
+  html.light .sidebar-menu-surface {
+    background: rgba(255, 255, 255, 0.97);
+  }
+
+  .theme-toggle {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.12);
+  }
+
+  html.light .theme-toggle {
+    background: rgba(15, 23, 42, 0.06);
+    border-color: rgba(15, 23, 42, 0.12);
+    color: #0f172a;
+  }
+
+  .modal-surface {
+    background: rgba(16, 22, 40, 0.96);
+    color: #f8fafc;
+  }
+
+  html.light .modal-surface {
+    background: rgba(255, 255, 255, 0.98);
+    color: #0f172a;
+    border-color: rgba(15, 23, 42, 0.12);
+  }
+
+  html.light .modal-backdrop {
+    background: rgba(15, 23, 42, 0.28);
+  }
+
+  .notification-popover {
+    background: #111827;
+    border-color: rgba(255, 255, 255, 0.12);
+    box-shadow: 0 24px 56px rgba(0, 0, 0, 0.42);
+  }
+
+  .notification-popover-header,
+  .notification-popover-footer {
+    border-color: rgba(255, 255, 255, 0.1);
+    background: #111827;
+  }
+
+  .notification-popover-row {
+    background: #111827;
+  }
+
+  .notification-popover-row:hover {
+    background: #1f2937;
+  }
+
+  .notification-popover-row-unread {
+    background: #171f35;
+  }
+
+  html.light .notification-popover {
+    background: #ffffff;
+    border-color: rgba(15, 23, 42, 0.14);
+    box-shadow: 0 24px 56px rgba(15, 23, 42, 0.18);
+  }
+
+  html.light .notification-popover-header,
+  html.light .notification-popover-footer {
+    background: #ffffff;
+    border-color: rgba(15, 23, 42, 0.1);
+  }
+
+  html.light .notification-popover-row {
+    background: #ffffff;
+  }
+
+  html.light .notification-popover-row:hover {
+    background: #f1f5f9;
+  }
+
+  html.light .notification-popover-row-unread {
+    background: #eef2ff;
+  }
+
+  .version-dot-selected {
+    background: #6366f1;
+    color: #ffffff;
+  }
+
+  .version-dot-idle {
+    background: rgba(15, 23, 42, 0.9);
+    color: #ffffff;
+  }
+
+  html.light .version-dot-idle {
+    background: rgba(255, 255, 255, 0.92);
+    border-color: rgba(99, 102, 241, 0.28);
+    color: #3730a3;
+  }
+
+  html.light .version-dot-selected {
+    background: #7c83ff;
+    border-color: #7c83ff;
+    color: #ffffff;
+  }
+
+  .schema-code-block {
+    background: rgba(2, 6, 23, 0.32);
+    color: rgba(248, 250, 252, 0.78);
+    scrollbar-color: rgba(129, 140, 248, 0.45) rgba(2, 6, 23, 0.42);
+  }
+
+  html.light .schema-code-block {
+    background: rgba(255, 255, 255, 0.62);
+    color: #0f172a;
+    border: 1px solid rgba(15, 23, 42, 0.08);
+  }
+
+  .primary-action-link {
+    background: linear-gradient(90deg, #6366f1, #a855f7);
+    color: #ffffff;
+    box-shadow: 0 16px 32px rgba(99, 102, 241, 0.22);
+  }
+
+  .primary-action-link:hover {
+    filter: brightness(1.06);
+  }
+
+  html.light .primary-action-link,
+  html.light .btn-primary-surface {
+    background-image: linear-gradient(90deg, #818cf8, #c084fc);
+    color: #0f172a;
+    box-shadow: 0 14px 28px rgba(129, 140, 248, 0.2);
+  }
+
+  html.light .btn-secondary-surface,
+  html.light .btn-ghost-surface {
+    color: #1f2937;
+  }
+
+  html.light .btn-secondary-surface:hover,
+  html.light .btn-ghost-surface:hover {
+    background-color: rgba(129, 140, 248, 0.09);
+    color: #1f2937;
+  }
+
+  html.light .hover\:text-red-400:hover {
+    color: #ef4444;
+  }
+
+  html.light .badge-severity-breaking {
+    background-color: rgba(220, 38, 38, 0.13);
+    border-color: rgba(185, 28, 28, 0.42);
+    color: #991b1b;
+  }
+
+  html.light .badge-severity-medium {
+    background-color: rgba(202, 138, 4, 0.16);
+    border-color: rgba(161, 98, 7, 0.42);
+    color: #854d0e;
+  }
+
+  html.light .badge-severity-low {
+    background-color: rgba(37, 99, 235, 0.13);
+    border-color: rgba(29, 78, 216, 0.38);
+    color: #1e3a8a;
+  }
+
+  html.light .badge-status-active {
+    background-color: rgba(5, 150, 105, 0.13);
+    border-color: rgba(4, 120, 87, 0.38);
+    color: #065f46;
+  }
+
+  html.light .badge-status-deprecated {
+    background-color: rgba(234, 88, 12, 0.14);
+    border-color: rgba(194, 65, 12, 0.4);
+    color: #9a3412;
+  }
+
+  html.light .badge-status-inactive {
+    background-color: rgba(71, 85, 105, 0.14);
+    border-color: rgba(51, 65, 85, 0.32);
+    color: #334155;
+  }
+
+  .dashboard-alert-danger {
+    background: rgba(239, 68, 68, 0.1);
+    border-color: rgba(248, 113, 113, 0.28);
+    color: #fecaca;
+  }
+
+  .dashboard-alert-danger p:first-child {
+    color: #fecaca;
+  }
+
+  .dashboard-alert-danger p:last-child {
+    color: rgba(254, 226, 226, 0.86);
+  }
+
+  html.light .dashboard-alert-danger {
+    background: rgba(220, 38, 38, 0.08);
+    border-color: rgba(185, 28, 28, 0.34);
+    color: #7f1d1d;
+  }
+
+  html.light .dashboard-alert-danger p:first-child {
+    color: #991b1b;
+  }
+
+  html.light .dashboard-alert-danger p:last-child {
+    color: #7f1d1d;
+  }
+
+  html.light .dashboard-monitoring-controls {
+    background-color: rgba(79, 70, 229, 0.07);
+    border-color: rgba(67, 56, 202, 0.2);
+  }
+}
+
+@layer components {
+  .glass {
+    @apply bg-glass-light backdrop-blur-md border border-white/10;
+    @apply shadow-glass;
+  }
+
+  .glass-dark {
+    @apply bg-glass-dark backdrop-blur-lg border border-white/5;
+    @apply shadow-glass-dark;
+  }
+
+  .glass-card {
+    @apply glass rounded-xl;
+    @apply transition-all duration-300;
+  }
+
+  .glass-card:hover {
+    @apply bg-white/10;
+  }
+
+  .btn-primary {
+    @apply bg-gradient-primary text-white font-medium px-4 py-2 rounded-lg;
+    @apply hover:shadow-glow-primary transition-all duration-300;
+    @apply active:scale-95;
+  }
+
+  .btn-secondary {
+    @apply bg-white/10 text-white font-medium px-4 py-2 rounded-lg;
+    @apply border border-white/20 hover:bg-white/20 transition-all duration-300;
+    @apply active:scale-95;
+  }
+
+  .input-field {
+    @apply bg-white/5 border border-white/10 rounded-lg px-4 py-2;
+    @apply text-white placeholder-gray-400;
+    @apply focus:outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500;
+    @apply transition-all duration-200;
+  }
+
+  .skeleton-shimmer {
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      rgba(255, 255, 255, 0.1) 50%,
+      transparent 100%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+  }
+
+  @keyframes shimmer {
+    0% {
+      background-position: 200% 0;
+    }
+    100% {
+      background-position: -200% 0;
+    }
+  }
+
+  .scrollbar-thin {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(129, 140, 248, 0.45) rgba(10, 12, 28, 0.18);
+  }
+
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: rgba(10, 12, 28, 0.18);
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background: rgba(129, 140, 248, 0.45);
+    border-radius: 3px;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+    background: rgba(168, 85, 247, 0.58);
+  }
+
+  html.light .scrollbar-thin {
+    scrollbar-color: rgba(99, 102, 241, 0.42) rgba(15, 23, 42, 0.04);
+  }
+
+  html.light .scrollbar-thin::-webkit-scrollbar-track {
+    background: rgba(15, 23, 42, 0.04);
+  }
+
+  html.light .scrollbar-thin::-webkit-scrollbar-thumb {
+    background: rgba(99, 102, 241, 0.42);
+  }
+
+  html.light .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+    background: rgba(14, 165, 233, 0.5);
+  }
+}
+
+@layer utilities {
+  .animated-grid {
+    background: none;
+    animation: none;
+  }
+
+  html.light .animated-grid {
+    background: none;
+  }
+
+  .drift-orb-primary-hero {
+    background: rgba(99, 102, 241, 0.1);
+  }
+
+  .drift-orb-primary {
+    background: rgba(99, 102, 241, 0.065);
+  }
+
+  .drift-orb-secondary-hero {
+    background: rgba(56, 189, 248, 0.07);
+  }
+
+  .drift-orb-secondary {
+    background: rgba(56, 189, 248, 0.045);
+  }
+
+  .drift-orb-accent {
+    background: rgba(168, 85, 247, 0.045);
+  }
+
+  html.light .drift-orb-primary-hero,
+  html.light .drift-orb-primary {
+    background: rgba(129, 140, 248, 0.09);
+  }
+
+  html.light .drift-orb-secondary-hero,
+  html.light .drift-orb-secondary {
+    background: rgba(56, 189, 248, 0.055);
+  }
+
+  html.light .drift-orb-accent {
+    background: rgba(168, 85, 247, 0.045);
+  }
+
+  @keyframes drift-grid {
+    from {
+      background-position: 0 0, 0 0, center;
+    }
+    to {
+      background-position: 88px 88px, 88px 88px, center;
+    }
+  }
+
+  .text-gradient {
+    @apply bg-clip-text text-transparent bg-gradient-primary;
+  }
+
+  .animate-delay-100 {
+    animation-delay: 100ms;
+  }
+
+  .animate-delay-200 {
+    animation-delay: 200ms;
+  }
+
+  .animate-delay-300 {
+    animation-delay: 300ms;
+  }
+
+  .animate-delay-500 {
+    animation-delay: 500ms;
+  }
+
+  .backdrop-blur-xs {
+    backdrop-filter: blur(2px);
+  }
+}

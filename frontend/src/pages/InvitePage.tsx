@@ -1,0 +1,117 @@
+import { useEffect, useState } from 'react';
+import { Link, useNavigate, useParams } from 'react-router-dom';
+import { motion } from 'framer-motion';
+import toast from 'react-hot-toast';
+import { KeyRound, Link2 } from 'lucide-react';
+import { api } from '@/services/api';
+import { useAuthStore } from '@/store/authStore';
+import { Button } from '@/components/common/Button';
+import { Input } from '@/components/common/Input';
+import { DriftBoardLogo } from '@/components/common/DriftBoardLogo';
+
+interface InviteDetails {
+  projectName: string;
+  email: string;
+  role: 'admin' | 'member' | 'viewer';
+  expiresAt: string;
+}
+
+function getErrorMessage(error: unknown, fallback: string) {
+  if (error instanceof Error) return error.message;
+  if (typeof error === 'object' && error !== null && 'message' in error) {
+    return String((error as { message?: unknown }).message || fallback);
+  }
+  return fallback;
+}
+
+export default function InvitePage() {
+  const { token = '' } = useParams();
+  const navigate = useNavigate();
+  const { acceptInvite, isLoading } = useAuthStore();
+  const [invite, setInvite] = useState<InviteDetails | null>(null);
+  const [password, setPassword] = useState('');
+  const [isLoadingInvite, setIsLoadingInvite] = useState(true);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    if (!token) return;
+    setIsLoadingInvite(true);
+    api.get<InviteDetails>(`/team/invite/${token}`)
+      .then(setInvite)
+      .catch((requestError) => setError(getErrorMessage(requestError, 'Invite not found.')))
+      .finally(() => setIsLoadingInvite(false));
+  }, [token]);
+
+  const submitInvite = async (event: React.FormEvent) => {
+    event.preventDefault();
+    setError('');
+
+    if (!password.trim()) {
+      setError('Enter the invite password.');
+      return;
+    }
+
+    try {
+      await acceptInvite(token, password.trim());
+      toast.success('Project access granted.');
+      navigate('/app/dashboard', { replace: true });
+    } catch (requestError) {
+      setError(getErrorMessage(requestError, 'Could not accept invite.'));
+    }
+  };
+
+  return (
+    <div className="relative flex min-h-screen items-center justify-center overflow-hidden p-4">
+      <div className="absolute inset-0 bg-gradient-dark" />
+      <motion.div
+        initial={{ opacity: 0, y: 18 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="relative z-10 w-full max-w-md rounded-2xl border border-white/10 bg-glass-dark/80 p-8 shadow-2xl backdrop-blur-xl"
+      >
+        <Link to="/" className="mb-8 inline-flex">
+          <DriftBoardLogo />
+        </Link>
+
+        <div className="mb-6">
+          <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-primary-500/20 text-primary-300">
+            <Link2 className="h-6 w-6" />
+          </div>
+          <h1 className="text-2xl font-bold text-white">Join project</h1>
+          {invite && (
+            <p className="mt-2 text-sm leading-6 text-white/60">
+              You were invited as <span className="font-semibold capitalize text-white">{invite.role}</span> to{' '}
+              <span className="font-semibold text-white">{invite.projectName}</span>.
+            </p>
+          )}
+          {isLoadingInvite && <p className="mt-2 text-sm text-white/50">Checking invite...</p>}
+        </div>
+
+        {error && (
+          <div className="mb-4 rounded-lg border border-red-500/25 bg-red-500/10 px-3 py-2 text-sm text-red-300">
+            {error}
+          </div>
+        )}
+
+        {invite && (
+          <form onSubmit={submitInvite} className="space-y-5">
+            <div className="rounded-lg border border-white/10 bg-white/5 px-3 py-2">
+              <p className="text-xs text-white/45">Invited account</p>
+              <p className="mt-1 text-sm font-medium text-white">{invite.email}</p>
+            </div>
+            <Input
+              label="Invite password"
+              type="password"
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+              placeholder="Enter shared password"
+              leftIcon={<KeyRound className="h-4 w-4" />}
+            />
+            <Button type="submit" fullWidth loading={isLoading}>
+              Get Access
+            </Button>
+          </form>
+        )}
+      </motion.div>
+    </div>
+  );
+}
