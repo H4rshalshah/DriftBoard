@@ -36,6 +36,7 @@ yarn-error.log*
 
 # Local runtime data
 backend/data/
+.deploy-pages/
 
 # Testing
 coverage/
