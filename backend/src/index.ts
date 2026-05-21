@@ -11,12 +11,16 @@ import { v4 as uuidv4 } from 'uuid';
 import crypto from 'crypto';
 import bcrypt from 'bcryptjs';
 import axios from 'axios';
+import { Resend } from 'resend';
 
 const PORT = Number(process.env.PORT || 5000);
 const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:3000';
-const PUBLIC_APP_URL = process.env.PUBLIC_APP_URL || FRONTEND_URL;
+const PUBLIC_APP_URL = process.env.NEXT_PUBLIC_APP_URL || process.env.PUBLIC_APP_URL || FRONTEND_URL;
 const BACKEND_URL = process.env.BACKEND_URL || `http://localhost:${PORT}`;
 const JWT_SECRET = process.env.JWT_SECRET || 'driftboard-local-demo-secret';
+const EMAIL_MOCK_MODE = process.env.EMAIL_MOCK_MODE === 'true';
+const TEST_EMAIL_WINDOW_MS = Number(process.env.TEST_EMAIL_WINDOW_MS || 10 * 60 * 1000);
+const TEST_EMAIL_MAX_REQUESTS = Number(process.env.TEST_EMAIL_MAX_REQUESTS || 3);
 
 type User = {
   id: string;
@@ -736,6 +740,265 @@ function htmlEscape(value: unknown) {
     .replace(/"/g, '&quot;');
 }
 
+function isValidEmailAddress(value: string) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
+}
+
+function emailConfigStatus() {
+  const missing = [
+    ['RESEND_API_KEY', process.env.RESEND_API_KEY],
+    ['ALERT_FROM_EMAIL', process.env.ALERT_FROM_EMAIL],
+  ]
+    .filter(([, value]) => !value)
+    .map(([key]) => key);
+
+  return {
+    configured: missing.length === 0,
+    mockMode: EMAIL_MOCK_MODE,
+    missing,
+    message: missing.length === 0
+      ? 'Email notifications active'
+      : `Email notifications are not configured. Missing ${missing.join(', ')}.`,
+  };
+}
+
+type SendEmailInput = {
+  to: string;
+  subject: string;
+  html: string;
+  text: string;
+  tag: 'drift_alert' | 'team_invitation' | 'test_alert';
+};
+
+async function sendEmailWithResend(input: SendEmailInput): Promise<AlertDelivery> {
+  const to = input.to.trim().toLowerCase();
+  if (!isValidEmailAddress(to)) {
+    console.warn('Invalid email recipient', { to, tag: input.tag });
+    throw new Error('Invalid recipient email address.');
+  }
+
+  const status = emailConfigStatus();
+  if (!status.configured) {
+    console.warn('Missing email configuration', { missing: status.missing, tag: input.tag });
+    if (EMAIL_MOCK_MODE) {
+      console.info('Email mock mode enabled', { to, subject: input.subject, tag: input.tag });
+      return {
+        channel: 'email',
+        target: to,
+        status: 'mock_sent',
+        provider: 'mock',
+        message: 'Email mock mode is enabled. No real email was sent.',
+      };
+    }
+    throw new Error(status.message);
+  }
+
+  const resend = new Resend(process.env.RESEND_API_KEY);
+  const payload = {
+    from: process.env.ALERT_FROM_EMAIL!,
+    to,
+    replyTo: process.env.ALERT_REPLY_TO || undefined,
+    subject: input.subject,
+    html: input.html,
+    text: input.text,
+  };
+
+  let lastError: unknown;
+  for (let attempt = 1; attempt <= 2; attempt += 1) {
+    try {
+      const result = await resend.emails.send(payload);
+      const errorMessage = result.error?.message;
+      if (errorMessage) {
+        throw new Error(errorMessage);
+      }
+      emailOutbox.unshift({
+        id: uuidv4(),
+        to,
+        subject: input.subject,
+        text: input.text,
+        html: input.html,
+        status: 'sent',
+        provider: 'resend',
+        createdAt: now(),
+      });
+      saveAppState();
+      console.info('Email sent successfully', { to, tag: input.tag, provider: 'resend', emailId: result.data?.id });
+      return { channel: 'email', target: to, status: 'sent', provider: 'resend' };
+    } catch (error) {
+      lastError = error;
+      console.error('Email failed', {
+        to,
+        tag: input.tag,
+        attempt,
+        error: error instanceof Error ? error.message : error,
+      });
+    }
+  }
+
+  emailOutbox.unshift({
+    id: uuidv4(),
+    to,
+    subject: input.subject,
+    text: input.text,
+    html: input.html,
+    status: 'failed',
+    provider: 'resend',
+    createdAt: now(),
+    errorMessage: lastError instanceof Error ? lastError.message : 'Email delivery failed',
+  });
+  saveAppState();
+  throw new Error(lastError instanceof Error ? lastError.message : 'Email delivery failed');
+}
+
+function emailShell(title: string, eyebrow: string, body: string, buttonUrl: string, buttonText: string) {
+  return `
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>${htmlEscape(title)}</title>
+  </head>
+  <body style="margin:0;background:#080b12;color:#e5edf8;font-family:Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;">
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#080b12;padding:28px 12px;">
+      <tr>
+        <td align="center">
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:640px;border:1px solid #253044;border-radius:18px;overflow:hidden;background:#101522;">
+            <tr>
+              <td style="padding:28px 28px 18px;background:#121a2a;border-bottom:1px solid #253044;">
+                <div style="font-size:13px;letter-spacing:.12em;text-transform:uppercase;color:#7dd3fc;font-weight:800;">DriftBoard</div>
+                <h1 style="margin:10px 0 0;font-size:26px;line-height:1.2;color:#ffffff;">${htmlEscape(title)}</h1>
+                <p style="margin:10px 0 0;color:#94a3b8;font-size:14px;">${htmlEscape(eyebrow)}</p>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:28px;">
+                ${body}
+                <div style="margin-top:28px;">
+                  <a href="${htmlEscape(buttonUrl)}" style="display:inline-block;background:#38bdf8;color:#06111f;text-decoration:none;font-weight:800;border-radius:10px;padding:13px 18px;">${htmlEscape(buttonText)}</a>
+                </div>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:18px 28px;border-top:1px solid #253044;color:#64748b;font-size:12px;background:#0d1320;">
+                Sent by DriftBoard. Manage notification preferences in Settings.
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>`;
+}
+
+function detailRows(rows: Array<[string, unknown]>) {
+  return `
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse:collapse;background:#0b1020;border:1px solid #253044;border-radius:12px;overflow:hidden;">
+      ${rows.map(([label, value]) => `
+        <tr>
+          <td style="padding:12px 14px;color:#94a3b8;font-size:13px;border-bottom:1px solid #1f2937;width:38%;">${htmlEscape(label)}</td>
+          <td style="padding:12px 14px;color:#f8fafc;font-size:14px;border-bottom:1px solid #1f2937;font-weight:700;">${htmlEscape(value)}</td>
+        </tr>
+      `).join('')}
+    </table>`;
+}
+
+async function sendDriftAlertEmail(to: string, summary: ReturnType<typeof alertSummary>) {
+  const endpointLabel = summary.endpoint ? `${summary.endpoint.method} ${summary.endpoint.name || summary.endpoint.url}` : summary.driftEvent?.endpointName || 'Project event';
+  const html = emailShell(
+    'API drift detected',
+    'A monitored contract changed and may need review.',
+    `
+      ${detailRows([
+        ['Project', summary.project?.name || 'Unknown project'],
+        ['Endpoint', endpointLabel],
+        ['HTTP method', summary.endpoint?.method || 'N/A'],
+        ['Drift type', summary.driftKind],
+        ['Severity', String(summary.severity || 'drift').toUpperCase()],
+        ['Timestamp', new Date(summary.detectedAt).toLocaleString()],
+      ])}
+      <div style="margin-top:18px;padding:14px;border-radius:12px;background:#111827;border:1px solid #253044;">
+        <div style="color:#94a3b8;font-size:13px;font-weight:700;margin-bottom:8px;">Changed fields</div>
+        <pre style="white-space:pre-wrap;margin:0;color:#dbeafe;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:13px;line-height:1.6;">${htmlEscape(summary.changedFields)}</pre>
+      </div>
+    `,
+    summary.url,
+    'View Drift'
+  );
+  const text = [
+    summary.subject,
+    summary.message,
+    '',
+    `Project: ${summary.project?.name || 'Unknown project'}`,
+    `Endpoint: ${endpointLabel}`,
+    `HTTP method: ${summary.endpoint?.method || 'N/A'}`,
+    `Drift type: ${summary.driftKind}`,
+    `Severity: ${String(summary.severity || 'drift').toUpperCase()}`,
+    `Timestamp: ${new Date(summary.detectedAt).toLocaleString()}`,
+    '',
+    summary.changedFields,
+    '',
+    `View Drift: ${summary.url}`,
+  ].join('\n');
+
+  return sendEmailWithResend({ to, subject: summary.subject, html, text, tag: 'drift_alert' });
+}
+
+async function sendInvitationEmail(to: string, invite: TeamInvite, projectName: string) {
+  const html = emailShell(
+    `Join ${projectName} on DriftBoard`,
+    `${invite.invitedByName} invited you as ${invite.role}.`,
+    `
+      ${detailRows([
+        ['Inviter', `${invite.invitedByName} <${invite.invitedByEmail}>`],
+        ['Workspace', projectName],
+        ['Assigned role', invite.role],
+        ['Login code', invite.invitePassword],
+        ['Expires', new Date(invite.expiresAt).toLocaleString()],
+      ])}
+      <p style="margin:18px 0 0;color:#cbd5e1;font-size:14px;line-height:1.7;">Open the invite, then enter the login code shown above to activate project access.</p>
+    `,
+    invite.inviteLink,
+    'Accept invitation'
+  );
+  const text = [
+    `${invite.invitedByName} invited you to ${projectName} on DriftBoard.`,
+    `Role: ${invite.role}`,
+    `Login code: ${invite.invitePassword}`,
+    `Accept invitation: ${invite.inviteLink}`,
+  ].join('\n');
+
+  return sendEmailWithResend({
+    to,
+    subject: `DriftBoard invitation to ${projectName}`,
+    html,
+    text,
+    tag: 'team_invitation',
+  });
+}
+
+async function sendTestAlertEmail(to: string, summary: ReturnType<typeof alertSummary>) {
+  return sendEmailWithResend({
+    to,
+    subject: '[DriftBoard] Test alert',
+    html: emailShell(
+      'Test alert delivered',
+      'Your DriftBoard email notification channel is working.',
+      detailRows([
+        ['Project', summary.project?.name || 'Demo Project'],
+        ['Endpoint', summary.endpoint ? `${summary.endpoint.method} ${summary.endpoint.name || summary.endpoint.url}` : 'Checkout API'],
+        ['Severity', 'TEST'],
+        ['Timestamp', new Date().toLocaleString()],
+      ]),
+      summary.url,
+      'Open DriftBoard'
+    ),
+    text: `Your DriftBoard test alert was delivered.\n\nOpen DriftBoard: ${summary.url}`,
+    tag: 'test_alert',
+  });
+}
+
 async function sendDiscordAlert(title: string, message: string, projectId: string, type: AppNotification['type'], context: AlertContext): Promise<AlertDelivery> {
   const summary = alertSummary(title, message, projectId, type, context);
   await axios.post(notificationChannels.discord.webhookUrl, {
@@ -766,71 +1029,7 @@ async function sendDiscordAlert(title: string, message: string, projectId: strin
 async function sendEmailAlert(title: string, message: string, projectId: string, type: AppNotification['type'], context: AlertContext): Promise<AlertDelivery> {
   const summary = alertSummary(title, message, projectId, type, context);
   const to = notificationChannels.email.address;
-  const text = [
-    summary.subject,
-    '',
-    summary.message,
-    '',
-    `Project: ${summary.project?.name || 'Unknown project'}`,
-    `Endpoint: ${summary.endpoint ? `${summary.endpoint.method} ${summary.endpoint.url}` : summary.driftEvent?.endpointName || 'Project event'}`,
-    `Severity: ${String(summary.severity || type).toUpperCase()}`,
-    `Drift type: ${summary.driftKind}`,
-    '',
-    'Changed fields:',
-    summary.changedFields,
-    '',
-    `Open in DriftBoard: ${summary.url}`,
-  ].join('\n');
-  const html = `
-    <div style="font-family:Inter,Arial,sans-serif;background:#0f1221;color:#f8fafc;padding:24px">
-      <div style="max-width:680px;margin:0 auto;background:#171a2d;border:1px solid #2c3148;border-radius:14px;padding:24px">
-        <p style="margin:0 0 8px;color:#8b9cff;font-weight:700;letter-spacing:.08em;text-transform:uppercase">DriftBoard Contract Radar</p>
-        <h1 style="margin:0 0 12px;font-size:24px">${htmlEscape(summary.title)}</h1>
-        <p style="margin:0 0 20px;color:#cbd5e1">${htmlEscape(summary.message)}</p>
-        <div style="display:grid;gap:10px;margin:20px 0">
-          <p><strong>Project:</strong> ${htmlEscape(summary.project?.name || 'Unknown project')}</p>
-          <p><strong>Endpoint:</strong> ${htmlEscape(summary.endpoint ? `${summary.endpoint.method} ${summary.endpoint.url}` : summary.driftEvent?.endpointName || 'Project event')}</p>
-          <p><strong>Severity:</strong> ${htmlEscape(String(summary.severity || type).toUpperCase())}</p>
-          <p><strong>Drift type:</strong> ${htmlEscape(summary.driftKind)}</p>
-        </div>
-        <pre style="white-space:pre-wrap;background:#0b0e1a;border:1px solid #2c3148;border-radius:10px;padding:14px;color:#dbeafe">${htmlEscape(summary.changedFields)}</pre>
-        <a href="${htmlEscape(summary.url)}" style="display:inline-block;margin-top:20px;background:#7c3aed;color:white;text-decoration:none;border-radius:10px;padding:12px 16px;font-weight:700">Open in DriftBoard</a>
-      </div>
-    </div>`;
-
-  const resendApiKey = process.env.RESEND_API_KEY;
-  if (resendApiKey) {
-    const response = await fetch('https://api.resend.com/emails', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${resendApiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        from: process.env.ALERT_FROM_EMAIL || 'DriftBoard <alerts@driftboard.dev>',
-        to,
-        subject: summary.subject,
-        text,
-        html,
-      }),
-    });
-    if (!response.ok) {
-      throw new Error(`Email provider returned ${response.status}`);
-    }
-    emailOutbox.unshift({ id: uuidv4(), to, subject: summary.subject, text, html, status: 'sent', provider: 'resend', createdAt: now() });
-    saveAppState();
-    return { channel: 'email', target: to, status: 'sent', provider: 'resend' };
-  }
-
-  emailOutbox.unshift({ id: uuidv4(), to, subject: summary.subject, text, html, status: 'saved_to_outbox', provider: 'local', createdAt: now() });
-  saveAppState();
-  return {
-    channel: 'email',
-    target: to,
-    status: 'saved_to_outbox',
-    provider: 'local',
-    message: 'Set RESEND_API_KEY and ALERT_FROM_EMAIL to send real emails. Saved to local outbox for now.',
-  };
+  return sendDriftAlertEmail(to, summary);
 }
 
 async function deliverConfiguredAlert(title: string, message: string, projectId: string, type: AppNotification['type'], alertContext?: AlertContext) {
@@ -886,6 +1085,13 @@ app.use(
     legacyHeaders: false,
   })
 );
+const testEmailLimiter = rateLimit({
+  windowMs: TEST_EMAIL_WINDOW_MS,
+  max: TEST_EMAIL_MAX_REQUESTS,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { message: 'Too many test alerts. Please wait before sending another one.' },
+});
 app.use('/api', (req, res, next) => {
   res.on('finish', () => {
     if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method) && res.statusCode < 500) {
@@ -3298,7 +3504,7 @@ app.get('/api/team/:projectId', (req, res) => {
   res.json(projectMembers);
 });
 
-app.post('/api/team/:projectId/invite', (req, res) => {
+app.post('/api/team/:projectId/invite', async (req, res) => {
   const project = projects.find((item) => item.id === req.params.projectId);
   if (!project) {
     res.status(404).json({ message: 'Project not found' });
@@ -3363,7 +3569,17 @@ app.post('/api/team/:projectId/invite', (req, res) => {
   }
   project.memberCount = teamMembers.filter((item) => item.projectId === project.id && item.status !== 'removed').length;
   createNotification(project.id, 'team', 'Team member invited', `${invite.userEmail} was invited as ${invite.role}.`);
-  res.status(201).json(invite);
+  let emailDelivery: AlertDelivery | undefined;
+  try {
+    emailDelivery = await sendInvitationEmail(invite.userEmail, invite, project.name);
+  } catch (error) {
+    console.error('Invitation email failed', {
+      to: invite.userEmail,
+      projectId: project.id,
+      error: error instanceof Error ? error.message : error,
+    });
+  }
+  res.status(201).json({ ...invite, emailDelivery });
 });
 
 app.get('/api/team/invite/:token', (req, res) => {
@@ -3537,7 +3753,7 @@ app.post('/api/team/invite-link', (req, res) => {
 app.get('/api/settings/notification-channels', (req, res) => {
   const user = requireRequestUser(req, res);
   if (!user) return;
-  res.json(notificationChannels);
+  res.json({ ...notificationChannels, emailConfig: emailConfigStatus() });
 });
 
 app.put('/api/settings/notification-channels', (req, res) => {
@@ -3555,18 +3771,24 @@ app.put('/api/settings/notification-channels', (req, res) => {
   }
   const discord = req.body?.discord || {};
   const email = req.body?.email || {};
+  const nextEmailAddress = typeof email.address === 'string' && email.address.trim() ? email.address.trim().toLowerCase() : demoUser.email;
+  if (Boolean(email.enabled) && !isValidEmailAddress(nextEmailAddress)) {
+    console.warn('Invalid recipient', { email: nextEmailAddress });
+    res.status(400).json({ message: 'Enter a valid alert email address.' });
+    return;
+  }
   notificationChannels.discord = {
     enabled: Boolean(discord.enabled),
     webhookUrl: typeof discord.webhookUrl === 'string' ? discord.webhookUrl.trim() : notificationChannels.discord.webhookUrl,
   };
   notificationChannels.email = {
     enabled: Boolean(email.enabled),
-    address: typeof email.address === 'string' && email.address.trim() ? email.address.trim() : demoUser.email,
+    address: nextEmailAddress,
   };
-  res.json(notificationChannels);
+  res.json({ ...notificationChannels, emailConfig: emailConfigStatus() });
 });
 
-app.post('/api/settings/test-alert', async (req, res) => {
+async function sendTestAlertHandler(req: Request, res: Response) {
   const project = projects.find((item) => item.id === req.body?.projectId);
   if (project) {
     const user = requireProjectPermission(req, res, project.id, 'scan:run');
@@ -3610,8 +3832,9 @@ app.post('/api/settings/test-alert', async (req, res) => {
         res.status(400).json({ message: 'Email address is required' });
         return;
       }
-      delivered.push(await sendEmailAlert(title, message, driftEvent.projectId, 'drift', context));
-      createNotification(req.body?.projectId || 'project_demo', 'system', 'Email alert prepared', `Email alert prepared for ${notificationChannels.email.address}.`, false);
+      const summary = alertSummary(title, message, driftEvent.projectId, 'drift', context);
+      delivered.push(await sendTestAlertEmail(notificationChannels.email.address, summary));
+      createNotification(req.body?.projectId || 'project_demo', 'system', 'Test email sent', `Test email sent to ${notificationChannels.email.address}.`, false);
     }
 
     if (delivered.length === 0) {
@@ -3623,7 +3846,10 @@ app.post('/api/settings/test-alert', async (req, res) => {
   } catch (error) {
     res.status(502).json({ message: error instanceof Error ? error.message : 'Could not send alert' });
   }
-});
+}
+
+app.post('/api/settings/test-alert', testEmailLimiter, sendTestAlertHandler);
+app.post('/api/test-email', testEmailLimiter, sendTestAlertHandler);
 
 app.get('/api/projects/:projectId/api-keys', (req, res) => {
   const user = requireProjectPermission(req, res, req.params.projectId, 'api_key:view');

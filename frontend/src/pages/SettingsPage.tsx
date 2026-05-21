@@ -79,6 +79,12 @@ const roleColors = {
 type NotificationChannels = {
   discord: { enabled: boolean; webhookUrl: string };
   email: { enabled: boolean; address: string };
+  emailConfig?: {
+    configured: boolean;
+    mockMode: boolean;
+    missing: string[];
+    message: string;
+  };
 };
 
 type AlertDelivery = {
@@ -87,6 +93,10 @@ type AlertDelivery = {
   provider?: string;
   message?: string;
 };
+
+function isValidEmailAddress(value: string) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
+}
 
 function DiscordLogo({ className = '' }: { className?: string }) {
   return (
@@ -195,6 +205,10 @@ export default function SettingsPage() {
       toast.error('You do not have permission to perform this action.');
       return;
     }
+    if (notificationChannels.email.enabled && !isValidEmailAddress(notificationChannels.email.address)) {
+      toast.error('Enter a valid alert email address.');
+      return;
+    }
     setIsSavingChannels(true);
     try {
       const saved = await api.put<NotificationChannels>('/settings/notification-channels', {
@@ -234,8 +248,8 @@ export default function SettingsPage() {
         projectId: currentProject?.id,
       });
       const emailDelivery = result.delivered.find((delivery) => delivery.channel === 'email');
-      if (emailDelivery?.status === 'saved_to_outbox') {
-        toast.success(emailDelivery.message || 'Email saved to local outbox. Add RESEND_API_KEY to send real email.');
+      if (emailDelivery?.status === 'mock_sent') {
+        toast.success(emailDelivery.message || 'Mock test alert completed.');
       } else {
         toast.success('Test alert sent.');
       }
@@ -257,6 +271,10 @@ export default function SettingsPage() {
     }
     if (!inviteEmail.trim()) {
       toast.error('Email is required.');
+      return;
+    }
+    if (!isValidEmailAddress(inviteEmail)) {
+      toast.error('Enter a valid invite email address.');
       return;
     }
 
@@ -759,8 +777,12 @@ export default function SettingsPage() {
                         <div className="min-w-0">
                           <div className="flex flex-wrap items-center gap-2">
                             <p className="text-base font-semibold text-white">Email</p>
-                            <Badge className="border-emerald-400/30 bg-emerald-500/15 text-emerald-200">
-                              Incident inbox
+                            <Badge className={
+                              notificationChannels.emailConfig?.configured
+                                ? 'border-emerald-400/30 bg-emerald-500/15 text-emerald-200'
+                                : 'border-amber-400/30 bg-amber-500/15 text-amber-200'
+                            }>
+                              {notificationChannels.emailConfig?.configured ? 'Email notifications active' : 'Email not configured'}
                             </Badge>
                           </div>
                           <p className="mt-1 text-sm leading-6 text-white/55">
@@ -802,6 +824,11 @@ export default function SettingsPage() {
                         />
                       </div>
                     )}
+                    {!notificationChannels.emailConfig?.configured && (
+                      <div className="mt-4 rounded-lg border border-amber-400/25 bg-amber-400/10 px-3 py-2 text-sm leading-6 text-amber-100">
+                        Email notifications are not configured.
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -814,7 +841,7 @@ export default function SettingsPage() {
                   </Button>
                 </div>
                 <p className="text-sm text-white/50">
-                  Discord sends immediately through your webhook. Email sends through `RESEND_API_KEY` when configured; otherwise DriftBoard saves the full email to the local alert outbox for development.
+                  Discord sends immediately through your webhook. Email sends server-side through Resend when `RESEND_API_KEY` and `ALERT_FROM_EMAIL` are configured.
                 </p>
               </CardContent>
             </Card>
