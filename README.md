@@ -470,12 +470,16 @@ npm test
 
 ---
 
+## License
 
+This project is licensed under the MIT License. See [LICENSE](LICENSE) for details.
+
+---
 
 ## Support
 
 - Documentation: See the setup, API, SDK, and deployment sections in this README.
-- Issues: [GitHub Issues](https://github.com/H4rshalshah/DriftBoard/issues)
+- Issues: [GitHub Issues](https://github.com/H4rshalshah/Driftboard/issues)
 - Email: h4rshal.workspace@gmail.com
 
 ---
