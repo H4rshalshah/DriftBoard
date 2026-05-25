@@ -53,29 +53,22 @@ const socialLinks = [
     label: 'GitHub',
     href: 'https://github.com/H4rshalshah',
     icon: Github,
-    className: 'border-slate-300/25 text-slate-100 hover:border-slate-200/50 hover:bg-slate-200/10',
-    iconClassName: 'text-white',
+    className: 'border-slate-400/30 text-slate-700 hover:border-slate-500/45 hover:bg-slate-500/10 dark:border-slate-300/25 dark:text-slate-100 dark:hover:border-slate-200/50 dark:hover:bg-slate-200/10',
+    iconClassName: 'text-slate-800 dark:text-white',
   },
   {
     label: 'LinkedIn',
     href: 'https://www.linkedin.com/in/h4rshal/',
     icon: Linkedin,
-    className: 'border-sky-400/25 text-sky-100 hover:border-sky-300/50 hover:bg-sky-500/10',
-    iconClassName: 'text-sky-300',
+    className: 'border-sky-500/30 text-sky-700 hover:border-sky-600/45 hover:bg-sky-500/10 dark:border-sky-400/25 dark:text-sky-100 dark:hover:border-sky-300/50',
+    iconClassName: 'text-sky-700 dark:text-sky-300',
   },
   {
-    label: 'X',
+    label: 'X / Twitter',
     href: 'https://x.com/H4rshalshah',
     icon: Twitter,
-    className: 'border-zinc-300/25 text-zinc-100 hover:border-zinc-200/50 hover:bg-zinc-200/10',
-    iconClassName: 'text-zinc-100',
-  },
-  {
-    label: 'Email',
-    href: 'mailto:h4rshal.workspace@gmail.com',
-    icon: Mail,
-    className: 'border-rose-400/25 text-rose-100 hover:border-rose-300/50 hover:bg-rose-500/10',
-    iconClassName: 'text-rose-300',
+    className: 'border-zinc-400/30 text-zinc-700 hover:border-zinc-500/45 hover:bg-zinc-500/10 dark:border-zinc-300/25 dark:text-zinc-100 dark:hover:border-zinc-200/50 dark:hover:bg-zinc-200/10',
+    iconClassName: 'text-zinc-700 dark:text-zinc-100',
   },
 ];
 
@@ -116,6 +109,7 @@ export default function ContactPage() {
   }, [user]);
 
   const supportEmail = 'h4rshal.workspace@gmail.com';
+  const supportEmailComposeUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(supportEmail)}`;
 
   const validate = () => {
     const nextErrors: Partial<Record<keyof ContactForm, string>> = {};
@@ -175,7 +169,7 @@ export default function ContactPage() {
 
   const page = (
     <div className="mx-auto w-full max-w-7xl">
-      <div className="mb-6 flex flex-col gap-3 sm:mb-8 sm:flex-row sm:items-end sm:justify-between">
+      <div className="mb-6 sm:mb-8">
         <div>
           {!isAppRoute && (
             <Link to="/" className="mb-8 inline-flex">
@@ -188,13 +182,6 @@ export default function ContactPage() {
             Get help with API monitoring, team setup, billing, security reviews, or a DriftBoard rollout.
           </p>
         </div>
-        <a
-          href={`mailto:${supportEmail}`}
-          className="inline-flex min-h-[44px] items-center gap-2 rounded-lg border border-red-300/25 bg-cyan-400/10 px-4 py-2 text-sm font-medium text-black-800 transition-all hover:-translate-y-0.5 hover:border-cyan-300/45 hover:bg-cyan-400/15"
-        >
-          <Mail className="h-4 w-4" />
-          {supportEmail}
-        </a>
       </div>
 
       <div className="grid gap-5 lg:grid-cols-[minmax(0,1.35fr)_minmax(320px,0.65fr)]">
@@ -306,9 +293,15 @@ export default function ContactPage() {
             </CardHeader>
             <CardContent className="space-y-3 text-sm text-white/55">
               <p>For active incidents or onboarding questions, email us directly and include your project name.</p>
-              <a href={`mailto:${supportEmail}`} className="inline-flex items-center gap-2 font-medium text-cyan-200 transition-colors hover:text-cyan-100">
-                {supportEmail}
-                <ArrowRight className="h-4 w-4" />
+              <a
+                href={supportEmailComposeUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="flex min-h-[48px] w-full min-w-0 items-center gap-3 rounded-lg border border-cyan-500/30 bg-cyan-500/10 px-3 py-2.5 font-medium text-cyan-700 transition-all hover:-translate-y-0.5 hover:border-cyan-600/45 hover:bg-cyan-500/15 dark:border-cyan-300/25 dark:bg-cyan-400/10 dark:text-cyan-100 dark:hover:border-cyan-300/45 dark:hover:bg-cyan-400/15"
+              >
+                <Mail className="h-5 w-5 flex-shrink-0 text-cyan-700 dark:text-cyan-300" />
+                <span className="min-w-0 flex-1 break-all">{supportEmail}</span>
+                <ArrowRight className="h-4 w-4 flex-shrink-0" />
               </a>
             </CardContent>
           </Card>
@@ -323,7 +316,7 @@ export default function ContactPage() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-4">
+              <div className="grid grid-cols-1 gap-2">
                 {socialLinks.map((link) => {
                   const Icon = link.icon;
                   return (
@@ -333,12 +326,12 @@ export default function ContactPage() {
                       target="_blank"
                       rel="noreferrer"
                       className={cn(
-                        'inline-flex min-h-[40px] min-w-0 items-center justify-center gap-1.5 rounded-lg border bg-white/5 px-2.5 py-2 text-sm font-medium transition-all hover:-translate-y-0.5',
+                        'inline-flex min-h-[44px] min-w-0 items-center justify-start gap-2.5 rounded-lg border bg-white/5 px-3 py-2 text-sm font-medium transition-all hover:-translate-y-0.5',
                         link.className
                       )}
                     >
                       <Icon className={cn('h-4 w-4 flex-shrink-0', link.iconClassName)} />
-                      <span className="truncate">{link.label}</span>
+                      <span>{link.label}</span>
                     </a>
                   );
                 })}

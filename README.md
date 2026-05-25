@@ -138,7 +138,7 @@ driftboard/
 
 ### 1. Clone the Repository
 ```bash
-git clone https://github.com/your-org/driftboard.git
+git clone https://github.com/H4rshalshah/DriftBoard.git
 cd driftboard
 ```
 
@@ -470,20 +470,16 @@ npm test
 
 ---
 
-## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
----
 
 ## Support
 
-- Documentation: [docs.driftboard.io](https://docs.driftboard.io)
-- Issues: [GitHub Issues](https://github.com/your-org/driftboard/issues)
-- Email: support@driftboard.io
+- Documentation: See the setup, API, SDK, and deployment sections in this README.
+- Issues: [GitHub Issues](https://github.com/H4rshalshah/DriftBoard/issues)
+- Email: h4rshal.workspace@gmail.com
 
 ---
 
 <p align="center">
-  Built with ❤️ by developers, for developers.
+  Built with ❤️ by H4rshal, for developers.
 </p>

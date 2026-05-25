@@ -286,8 +286,8 @@ export default function Sidebar() {
         <button
           onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
           className={cn(
-            'z-50 place-items-center rounded-full border border-white/20 bg-glass-dark text-gray-300',
-            'hidden shadow-lg transition-all duration-200 hover:scale-105 hover:bg-white/10 hover:text-white lg:inline-grid',
+            'z-50 place-items-center rounded-md text-gray-300',
+            'hidden transition-colors duration-200 hover:text-white lg:inline-grid',
             effectiveCollapsed
               ? 'relative right-auto top-auto h-10 w-10 translate-y-0 p-0'
               : 'absolute right-5 top-1/2 h-10 w-10 -translate-y-1/2 p-0'
@@ -326,7 +326,7 @@ export default function Sidebar() {
                   {isActive && (
                     <motion.div
                       layoutId="activeNav"
-                      className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-primary-500 rounded-r-full"
+                      className="absolute bottom-2 left-0 top-2 w-1 bg-primary-500 rounded-r-full"
                       transition={{ type: 'spring', stiffness: 300, damping: 30 }}
                     />
                   )}

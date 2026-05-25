@@ -38,6 +38,37 @@ const scrollItemVariants = {
   },
 };
 
+function Workflow3DSignal() {
+  return (
+    <div className="relative mb-8 mt-8 h-[240px] max-w-[520px] overflow-hidden [perspective:900px]" aria-hidden="true">
+      <svg
+        className="absolute inset-0 z-[2] h-full w-full overflow-visible"
+        viewBox="0 0 520 240"
+        preserveAspectRatio="none"
+      >
+        <line className="tech-signal-line" x1="132" y1="80" x2="226" y2="102" />
+        <line className="tech-signal-line" x1="386" y1="88" x2="304" y2="104" />
+        <line className="tech-signal-line tech-signal-line-alert" x1="182" y1="198" x2="244" y2="156" />
+      </svg>
+
+      <div className="absolute left-1/2 top-[66%] z-[1] h-40 w-40 rounded-[26px] border border-indigo-500/24 bg-indigo-500/5 shadow-[0_34px_70px_rgba(67,56,202,0.12)] [transform:translate(-50%,-50%)_rotateX(64deg)_rotateZ(-38deg)] dark:border-indigo-300/24 dark:bg-indigo-300/7 dark:shadow-[0_34px_78px_rgba(79,70,229,0.18)]" />
+
+      <div className="tech-contract-cube absolute left-1/2 top-[38%] z-[4] h-20 w-20">
+        <span className="tech-contract-face tech-contract-face-front" />
+        <span className="tech-contract-face tech-contract-face-back" />
+        <span className="tech-contract-face tech-contract-face-right" />
+        <span className="tech-contract-face tech-contract-face-left" />
+        <span className="tech-contract-face tech-contract-face-top" />
+        <span className="tech-contract-face tech-contract-face-bottom" />
+      </div>
+
+      <div className="tech-data-chip left-4 top-12 z-[5]">schema:v4</div>
+      <div className="tech-data-chip right-5 top-16 z-[5] animation-delay-200">drift:live</div>
+      <div className="tech-data-chip left-16 top-[178px] z-[5] animation-delay-500">alert:sent</div>
+    </div>
+  );
+}
+
 export function DemoVideo() {
   return (
     <section id="demo" className="relative px-6 py-24">
@@ -55,6 +86,7 @@ export function DemoVideo() {
           <h2 className="text-3xl font-bold text-white md:text-4xl">
             Connect people and notify the team as your project changes
           </h2>
+          <Workflow3DSignal />
           <p className="mt-4 max-w-xl text-white/60">
             DriftBoard turns every project update into a visible workflow: connect the source,
             invite collaborators, watch contracts, and send alerts when schema drift appears.
