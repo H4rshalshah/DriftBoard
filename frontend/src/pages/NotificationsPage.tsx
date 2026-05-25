@@ -89,7 +89,7 @@ export default function NotificationsPage() {
   const [cleanupOpen, setCleanupOpen] = useState(false);
   const cleanupRef = useRef<HTMLDivElement>(null);
   const notificationsPerPage = 10;
-  const canManageNotifications = hasProjectPermission(currentProject?.currentUserRole, 'notification:update');
+  const canCleanHistory = hasProjectPermission(currentProject?.currentUserRole, 'notification:update');
 
   useEffect(() => {
     void fetchNotifications();
@@ -155,21 +155,28 @@ export default function NotificationsPage() {
   };
 
   const handleDeleteSelected = async () => {
-    if (!canManageNotifications) return;
     if (selectedIds.length === 0) return;
     if (!window.confirm(`Delete ${selectedIds.length} selected notification${selectedIds.length === 1 ? '' : 's'}?`)) return;
-    const deleted = await deleteNotifications(selectedIds);
-    setSelectedIds([]);
-    toast.success(`${deleted} notification${deleted === 1 ? '' : 's'} deleted.`);
+    try {
+      const deleted = await deleteNotifications(selectedIds);
+      setSelectedIds([]);
+      toast.success(`${deleted} notification${deleted === 1 ? '' : 's'} deleted.`);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Could not delete selected notifications.');
+    }
   };
 
   const handleDeleteHistory = async (hours: 24 | 168 | 720, label: string) => {
-    if (!canManageNotifications) return;
+    if (!canCleanHistory) return;
     if (!window.confirm(`Delete notification history older than ${label}?`)) return;
-    const deleted = await deleteHistory(hours);
-    setSelectedIds([]);
-    setCleanupOpen(false);
-    toast.success(`${deleted} old notification${deleted === 1 ? '' : 's'} deleted.`);
+    try {
+      const deleted = await deleteHistory(hours);
+      setSelectedIds([]);
+      setCleanupOpen(false);
+      toast.success(`${deleted} old notification${deleted === 1 ? '' : 's'} deleted.`);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Could not clean notification history.');
+    }
   };
 
   return (
@@ -187,7 +194,7 @@ export default function NotificationsPage() {
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
-        {selectedIds.length > 0 && canManageNotifications && (
+        {selectedIds.length > 0 && (
           <Button
             variant="danger"
             leftIcon={<Trash2 className="w-4 h-4" />}
@@ -196,7 +203,7 @@ export default function NotificationsPage() {
             Delete selected ({selectedIds.length})
           </Button>
         )}
-        {canManageNotifications && (
+        {canCleanHistory && (
         <div className="relative" ref={cleanupRef}>
           <Button
             variant="secondary"
@@ -302,18 +309,16 @@ export default function NotificationsPage() {
                 >
                   <CardContent className="p-4">
                     <div className="flex items-start gap-4">
-                      {canManageNotifications && (
-                        <button
-                          onClick={(event) => {
-                            event.stopPropagation();
-                            toggleSelected(notification.id);
-                          }}
-                          className="mt-2 rounded-md p-1 text-white/45 transition-colors hover:bg-white/10 hover:text-white"
-                          aria-label={selectedIds.includes(notification.id) ? 'Deselect notification' : 'Select notification'}
-                        >
-                          {selectedIds.includes(notification.id) ? <CheckSquare className="h-5 w-5 text-indigo-300" /> : <Square className="h-5 w-5" />}
-                        </button>
-                      )}
+                      <button
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          toggleSelected(notification.id);
+                        }}
+                        className="mt-2 rounded-md p-1 text-white/45 transition-colors hover:bg-white/10 hover:text-white"
+                        aria-label={selectedIds.includes(notification.id) ? 'Deselect notification' : 'Select notification'}
+                      >
+                        {selectedIds.includes(notification.id) ? <CheckSquare className="h-5 w-5 text-indigo-300" /> : <Square className="h-5 w-5" />}
+                      </button>
                       <div className={`w-10 h-10 rounded-lg flex items-center justify-center border ${typeColors[notification.type]}`}>
                         <IconComponent className="w-5 h-5" />
                       </div>
@@ -323,9 +328,29 @@ export default function NotificationsPage() {
                             <p className="text-white font-medium">{notification.title}</p>
                             <p className="text-sm text-white/70 mt-0.5">{notification.message}</p>
                           </div>
-                          {!notification.read && (
-                            <div className="w-2 h-2 rounded-full bg-indigo-500 flex-shrink-0 mt-2" />
-                          )}
+                          <div className="flex items-center gap-2">
+                            {!notification.read && (
+                              <div className="w-2 h-2 rounded-full bg-indigo-500 flex-shrink-0" />
+                            )}
+                            <button
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                void (async () => {
+                                  try {
+                                    const deleted = await deleteNotifications([notification.id]);
+                                    setSelectedIds((current) => current.filter((id) => id !== notification.id));
+                                    toast.success(`${deleted || 1} notification deleted.`);
+                                  } catch (error) {
+                                    toast.error(error instanceof Error ? error.message : 'Could not delete notification.');
+                                  }
+                                })();
+                              }}
+                              className="rounded-md p-1.5 text-white/40 transition-colors hover:bg-red-500/10 hover:text-red-300"
+                              aria-label="Delete notification"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          </div>
                         </div>
                         <div className="flex items-center gap-3 mt-2">
                           <span className="text-xs text-white/40 flex items-center gap-1">

@@ -4270,10 +4270,6 @@ app.delete('/api/notifications', (req, res) => {
     const selectedMatch = ids.includes(notification.id);
     const ageMatch = beforeTime !== null && new Date(notification.createdAt).getTime() <= beforeTime;
     if (selectedMatch || ageMatch) {
-      if (!userHasProjectPermission(notification.projectId, user, 'notification:update')) {
-        deny(res);
-        return;
-      }
       notifications.splice(index, 1);
       deleted += 1;
     }
@@ -4292,10 +4288,6 @@ app.delete('/api/notifications/:id', (req, res) => {
     return;
   }
   const index = notifications.findIndex((notification) => notification.id === req.params.id);
-  if (index >= 0 && !userHasProjectPermission(notifications[index].projectId, user, 'notification:update')) {
-    deny(res);
-    return;
-  }
   if (index >= 0) notifications.splice(index, 1);
   saveAppState();
   res.status(204).send();

@@ -134,11 +134,11 @@ export default function LandingPage() {
     <div className="relative min-h-screen overflow-hidden bg-slate-950 text-white">
       <AnimatedBackground intensity="hero" />
 
-      <nav className="relative z-10 mx-auto flex max-w-7xl items-center justify-between px-5 py-5">
+      <nav className="relative z-10 mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-4 sm:px-5 sm:py-5">
         <Link to="/" aria-label="DriftBoard home">
           <DriftBoardLogo />
         </Link>
-        <div className="ml-auto flex items-center gap-3">
+        <div className="ml-auto flex min-w-0 items-center gap-2 sm:gap-3">
           <div className="hidden items-center gap-2 md:flex">
             {[
               ['Features', 'features'],
@@ -163,25 +163,25 @@ export default function LandingPage() {
         </div>
       </nav>
 
-      <section className="relative z-10 mx-auto max-w-7xl px-5 pb-24 pt-14 md:pt-24">
+      <section className="relative z-10 mx-auto max-w-7xl px-4 pb-16 pt-10 sm:px-5 md:pb-24 md:pt-24">
         <motion.div variants={containerVariants} initial="hidden" animate="visible" className="mx-auto max-w-5xl text-center">
-          <motion.div variants={itemVariants} className="mb-8 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/10 px-5 py-2 text-sm text-indigo-100 shadow-inner">
+          <motion.div variants={itemVariants} className="mb-6 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/10 px-4 py-2 text-xs text-indigo-100 shadow-inner sm:mb-8 sm:px-5 sm:text-sm">
             <ShieldCheck className="h-4 w-4 text-indigo-300" />
             Live contract drift detection
           </motion.div>
 
-          <motion.h1 variants={itemVariants} className="text-balance text-5xl font-bold leading-[1.03] tracking-normal text-white md:text-7xl lg:text-8xl">
+          <motion.h1 variants={itemVariants} className="text-balance text-4xl font-bold leading-[1.08] tracking-normal text-white sm:text-5xl md:text-7xl lg:text-8xl">
             API Drift Intelligence to Keep Frontend and Backend in Sync
           </motion.h1>
 
-          <motion.p variants={itemVariants} className="mx-auto mt-8 max-w-3xl text-lg leading-8 text-indigo-100/70 md:text-xl">
+          <motion.p variants={itemVariants} className="mx-auto mt-6 max-w-3xl text-base leading-7 text-indigo-100/70 sm:mt-8 md:text-xl md:leading-8">
             DriftBoard monitors Express APIs, stores schema snapshots, and streams beautiful live diffs before renamed fields break production.
           </motion.p>
 
           <motion.form
             variants={itemVariants}
             onSubmit={requestDemo}
-            className="mx-auto mt-12 flex max-w-2xl flex-col gap-3 rounded-2xl border border-white/10 bg-white/10 p-2 shadow-2xl shadow-indigo-500/10 backdrop-blur-xl sm:flex-row"
+            className="mx-auto mt-8 flex max-w-2xl flex-col gap-3 rounded-xl border border-white/10 bg-white/10 p-2 shadow-2xl shadow-indigo-500/10 backdrop-blur-xl sm:mt-12 sm:flex-row sm:rounded-2xl"
           >
             <input
               type="email"
@@ -202,9 +202,9 @@ export default function LandingPage() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: false, amount: 0.35 }}
           transition={{ duration: 0.64, ease: 'easeOut' }}
-          className="relative mx-auto mt-20 max-w-6xl overflow-hidden rounded-3xl border border-indigo-300/25 bg-slate-950/70 p-5 shadow-2xl shadow-indigo-500/15 backdrop-blur-xl"
+          className="relative mx-auto mt-12 max-w-6xl overflow-hidden rounded-2xl border border-indigo-300/25 bg-slate-950/70 p-4 shadow-2xl shadow-indigo-500/15 backdrop-blur-xl md:mt-20 md:rounded-3xl md:p-5"
         >
-          <div className="mb-5 flex items-center justify-between border-b border-white/10 pb-4">
+          <div className="mb-5 flex flex-col gap-3 border-b border-white/10 pb-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-3">
               <span className="h-3 w-3 rounded-full bg-red-400" />
               <span className="h-3 w-3 rounded-full bg-emerald-300" />
@@ -214,7 +214,7 @@ export default function LandingPage() {
           </div>
 
           <div className="grid gap-4 md:grid-cols-[220px_1fr]">
-            <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+            <div className="rounded-xl border border-white/10 bg-white/5 p-3 md:rounded-2xl md:p-4">
               <div className="space-y-2">
               {consoleTabs.map((item) => (
                 <motion.button
@@ -233,18 +233,26 @@ export default function LandingPage() {
                 {activeConsolePanel.note}
               </p>
             </div>
+            <div className="grid gap-3 md:hidden">
+              {activeConsolePanel.metrics.slice(0, 2).map(([label, value]) => (
+                <div key={label} className="flex items-center justify-between gap-3 border-b border-white/10 py-3 last:border-b-0">
+                  <span className="text-sm text-indigo-100/65">{label}</span>
+                  <span className="text-lg font-bold text-white">{value}</span>
+                </div>
+              ))}
+            </div>
             <motion.div
               key={activeConsoleTab}
               variants={scrollContainerVariants}
               initial={false}
               animate="visible"
-              className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4"
+              className="hidden gap-4 sm:grid-cols-2 md:grid lg:grid-cols-4"
             >
               {activeConsolePanel.metrics.map(([label, value], index) => (
                 <motion.div
                   key={label}
                   variants={scrollItemVariants}
-                  className="flex min-h-[260px] rounded-2xl border border-white/10 bg-white/5 transition-all hover:-translate-y-1 hover:border-indigo-400/30 hover:bg-white/10"
+                  className="flex min-h-[220px] rounded-2xl border border-white/10 bg-white/5 transition-all hover:-translate-y-1 hover:border-indigo-400/30 hover:bg-white/10 lg:min-h-[260px]"
                 >
                   <motion.div
                     className="flex min-h-[180px] w-full flex-1 flex-col items-center justify-center p-5 text-center"
@@ -261,7 +269,7 @@ export default function LandingPage() {
         </motion.div>
       </section>
 
-      <section id="features" className="relative z-10 px-5 py-20">
+      <section id="features" className="relative z-10 px-4 py-14 sm:px-5 md:py-20">
         <motion.div
           variants={scrollContainerVariants}
           initial="hidden"
@@ -273,13 +281,13 @@ export default function LandingPage() {
             <p className="mb-3 text-sm font-semibold uppercase tracking-[0.18em] text-indigo-300">Platform</p>
             <h2 className="text-3xl font-bold text-white md:text-4xl">Key Features of DriftBoard</h2>
           </motion.div>
-          <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-4">
+          <div className="grid gap-3 md:grid-cols-2 md:gap-5 lg:grid-cols-4">
             {features.map((feature, index) => (
               <motion.div
                 key={feature.title}
                 variants={scrollItemVariants}
                 transition={{ delay: index * 0.08, duration: 0.52, ease: 'easeOut' }}
-                className="rounded-2xl border border-white/10 bg-white/5 p-6 backdrop-blur-xl transition-all hover:-translate-y-1 hover:border-indigo-400/30 hover:bg-white/10 hover:shadow-lg hover:shadow-indigo-500/10"
+                className="rounded-xl border border-white/10 bg-white/5 p-4 backdrop-blur-xl transition-all hover:-translate-y-1 hover:border-indigo-400/30 hover:bg-white/10 hover:shadow-lg hover:shadow-indigo-500/10 md:rounded-2xl md:p-6"
               >
                 <div className="mb-5 grid h-12 w-12 place-items-center rounded-xl bg-indigo-500/15 text-indigo-200">
                   <feature.icon className="h-6 w-6" />

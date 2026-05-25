@@ -40,7 +40,7 @@ const scrollItemVariants = {
 
 function Workflow3DSignal() {
   return (
-    <div className="relative mb-8 mt-8 h-[240px] max-w-[520px] overflow-hidden [perspective:900px]" aria-hidden="true">
+    <div className="relative mb-8 mt-8 hidden h-[240px] max-w-[520px] overflow-hidden [perspective:900px] sm:block" aria-hidden="true">
       <svg
         className="absolute inset-0 z-[2] h-full w-full overflow-visible"
         viewBox="0 0 520 240"
@@ -71,23 +71,23 @@ function Workflow3DSignal() {
 
 export function DemoVideo() {
   return (
-    <section id="demo" className="relative px-6 py-24">
+    <section id="demo" className="relative px-4 py-14 sm:px-6 md:py-24">
       <motion.div
         variants={scrollContainerVariants}
         initial="hidden"
         whileInView="visible"
         viewport={{ once: false, amount: 0.24 }}
-        className="mx-auto grid max-w-7xl gap-10 lg:grid-cols-[0.9fr_1.1fr] lg:items-center"
+        className="mx-auto grid max-w-7xl gap-8 lg:grid-cols-[0.9fr_1.1fr] lg:items-center lg:gap-10"
       >
         <motion.div variants={scrollItemVariants}>
           <p className="mb-3 text-sm font-semibold uppercase tracking-[0.18em] text-indigo-300">
             Live workflow
           </p>
-          <h2 className="text-3xl font-bold text-white md:text-4xl">
+          <h2 className="text-2xl font-bold text-white sm:text-3xl md:text-4xl">
             Connect people and notify the team as your project changes
           </h2>
           <Workflow3DSignal />
-          <p className="mt-4 max-w-xl text-white/60">
+          <p className="mt-4 max-w-xl text-sm leading-6 text-white/60 sm:text-base">
             DriftBoard turns every project update into a visible workflow: connect the source,
             invite collaborators, watch contracts, and send alerts when schema drift appears.
           </p>
@@ -95,52 +95,52 @@ export function DemoVideo() {
 
         <motion.div
           variants={scrollItemVariants}
-          className="relative overflow-hidden rounded-2xl border border-white/10 bg-slate-950/75 shadow-2xl shadow-indigo-500/15 backdrop-blur-xl"
+          className="relative overflow-hidden rounded-xl border border-white/10 bg-slate-950/75 shadow-xl shadow-indigo-500/10 backdrop-blur-xl md:rounded-2xl md:shadow-2xl md:shadow-indigo-500/15"
         >
-          <div className="flex items-center justify-between border-b border-white/10 px-5 py-3">
+          <div className="flex items-center justify-between border-b border-white/10 px-4 py-3 md:px-5">
             <div className="flex items-center gap-2">
               <span className="h-3 w-3 rounded-full bg-red-400" />
               <span className="h-3 w-3 rounded-full bg-orange-400" />
               <span className="h-3 w-3 rounded-full bg-emerald-300" />
             </div>
-            <span className="text-sm text-white/50">driftboard-demo.web</span>
+            <span className="hidden text-sm text-white/50 sm:inline">driftboard-demo.web</span>
           </div>
 
-          <div className="relative min-h-[360px] p-5">
+          <div className="relative min-h-[300px] p-4 md:min-h-[360px] md:p-5">
             <motion.div
-              className="absolute inset-x-5 top-5 rounded-xl border border-indigo-400/20 bg-indigo-500/10 p-4"
+              className="absolute inset-x-4 top-4 rounded-lg border border-indigo-400/20 bg-indigo-500/10 p-3 md:inset-x-5 md:top-5 md:rounded-xl md:p-4"
               animate={{ y: [0, 8, 0] }}
               transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
             >
               <div className="flex items-center gap-3">
                 <DriftBoardLogo compact />
                 <div>
-                  <p className="font-semibold text-white">Contract snapshot captured</p>
-                  <p className="text-sm text-white/50">Express middleware extracted response schema v4</p>
+                  <p className="text-sm font-semibold text-white sm:text-base">Contract snapshot captured</p>
+                  <p className="text-xs text-white/50 sm:text-sm">Express middleware extracted response schema v4</p>
                 </div>
               </div>
             </motion.div>
 
-            <div className="mt-28 grid gap-3">
+            <div className="mt-24 grid gap-3 md:mt-28">
               {demoRows.map((row, index) => (
                 <motion.div
                   key={row.path}
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: [0.55, 1, 0.55], x: 0 }}
                   transition={{ delay: index * 0.45, duration: 3, repeat: Infinity, repeatDelay: 1.2 }}
-                  className="grid grid-cols-[72px_1fr_auto] items-center gap-3 rounded-xl border border-white/10 bg-white/5 px-4 py-3"
+                  className="grid grid-cols-[58px_1fr] items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-3 py-3 sm:grid-cols-[72px_1fr_auto] sm:gap-3 sm:rounded-xl sm:px-4"
                 >
                   <span className="rounded-md border border-white/10 px-2 py-1 text-xs font-bold text-white">
                     {row.method}
                   </span>
                   <span className="font-mono text-sm text-white/70">{row.path}</span>
-                  <span className={row.color}>{row.status}</span>
+                  <span className={`${row.color} col-span-2 text-sm sm:col-span-1 sm:text-base`}>{row.status}</span>
                 </motion.div>
               ))}
             </div>
 
             <motion.div
-              className="mt-5 grid gap-3 rounded-xl border border-orange-400/25 bg-orange-500/10 p-4"
+              className="mt-5 grid gap-3 rounded-lg border border-orange-400/25 bg-orange-500/10 p-3 md:rounded-xl md:p-4"
               animate={{ boxShadow: ['0 0 0 rgba(249,115,22,0)', '0 0 40px rgba(249,115,22,0.2)', '0 0 0 rgba(249,115,22,0)'] }}
               transition={{ duration: 3.2, repeat: Infinity }}
             >
@@ -159,10 +159,10 @@ export function DemoVideo() {
             </motion.div>
           </div>
 
-          <div className="border-t border-white/10 px-6 py-6">
-            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+          <div className="border-t border-white/10 px-4 py-4 md:px-6 md:py-6">
+            <div className="grid gap-3 md:grid-cols-2 md:gap-4 xl:grid-cols-4">
               <motion.div
-                className="flex min-h-[168px] flex-col items-center justify-center rounded-xl border border-indigo-300/20 bg-indigo-500/10 px-5 py-6 text-center shadow-lg shadow-indigo-500/10"
+                className="flex min-h-[132px] flex-col items-center justify-center rounded-lg border border-indigo-300/20 bg-indigo-500/10 px-4 py-4 text-center shadow-lg shadow-indigo-500/10 md:min-h-[168px] md:rounded-xl md:px-5 md:py-6"
                 animate={{ y: [0, -4, 0], boxShadow: ['0 0 0 rgba(99,102,241,0)', '0 0 34px rgba(99,102,241,0.14)', '0 0 0 rgba(99,102,241,0)'] }}
                 transition={{ duration: 3.6, repeat: Infinity, ease: 'easeInOut' }}
               >
@@ -173,9 +173,9 @@ export function DemoVideo() {
                 >
                   <UserPlus className="h-6 w-6" />
                 </motion.div>
-                <p className="mt-4 text-base font-semibold leading-6 text-white">People connected</p>
+                <p className="mt-3 text-base font-semibold leading-6 text-white md:mt-4">People connected</p>
                 <p className="mt-2 max-w-[210px] text-sm leading-6 text-white/55">Project updates route to the right owners</p>
-                <div className="mt-5 flex justify-center -space-x-2.5">
+                <div className="mt-4 flex justify-center -space-x-2.5 md:mt-5">
                   {teamMembers.map((member, index) => (
                     <motion.div
                       key={member.initials}
@@ -193,15 +193,15 @@ export function DemoVideo() {
               {updateEvents.map((event, index) => (
                 <motion.div
                   key={event.text}
-                  className="flex min-h-[168px] flex-col items-center justify-center rounded-xl border border-white/10 bg-white/5 px-5 py-6 text-center"
+                  className="flex min-h-[116px] flex-col items-center justify-center rounded-lg border border-white/10 bg-white/5 px-4 py-4 text-center md:min-h-[168px] md:rounded-xl md:px-5 md:py-6"
                   animate={{ opacity: [0.76, 1, 0.76], y: [0, -3, 0] }}
                   transition={{ delay: index * 0.35, duration: 3.2, repeat: Infinity, ease: 'easeInOut' }}
                 >
-                  <span className="mb-4 grid h-12 w-12 place-items-center rounded-full bg-emerald-400/10 text-emerald-300 ring-1 ring-emerald-300/10">
+                  <span className="mb-3 grid h-10 w-10 place-items-center rounded-full bg-emerald-400/10 text-emerald-300 ring-1 ring-emerald-300/10 md:mb-4 md:h-12 md:w-12">
                     <event.icon className="h-5 w-5" />
                   </span>
-                  <p className="max-w-[130px] text-base font-semibold leading-6 text-white">{event.text}</p>
-                  <p className="mt-3 max-w-[150px] text-sm leading-6 text-white/55">{event.detail}</p>
+                  <p className="max-w-[150px] text-sm font-semibold leading-5 text-white md:max-w-[130px] md:text-base md:leading-6">{event.text}</p>
+                  <p className="mt-2 max-w-[180px] text-xs leading-5 text-white/55 md:mt-3 md:max-w-[150px] md:text-sm md:leading-6">{event.detail}</p>
                 </motion.div>
               ))}
             </div>
