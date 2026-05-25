@@ -29,7 +29,7 @@ import { Resend } from 'resend';
 const PORT = Number(process.env.PORT || 5000);
 const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:3000';
 const PUBLIC_APP_URL = process.env.NEXT_PUBLIC_APP_URL || process.env.PUBLIC_APP_URL || FRONTEND_URL;
-const BACKEND_URL = process.env.BACKEND_URL || `http://localhost:${PORT}`;
+const BACKEND_URL = process.env.BACKEND_URL || process.env.RENDER_EXTERNAL_URL || `http://localhost:${PORT}`;
 const JWT_SECRET = process.env.JWT_SECRET || 'driftboard-local-demo-secret';
 const EMAIL_MOCK_MODE = process.env.EMAIL_MOCK_MODE === 'true';
 const TEST_EMAIL_WINDOW_MS = Number(process.env.TEST_EMAIL_WINDOW_MS || 10 * 60 * 1000);
@@ -290,9 +290,10 @@ const projectPermissionRoles: Record<ProjectPermission, ProjectRole[]> = {
   'report:view': ['owner', 'admin', 'member', 'viewer'],
 };
 
-const userDataPath = path.resolve(__dirname, '..', 'data', 'users.json');
-const appDataPath = path.resolve(__dirname, '..', 'data', 'app-state.json');
-const uploadsRoot = path.resolve(__dirname, '..', 'data', 'uploads');
+const dataRoot = process.env.DATA_DIR ? path.resolve(process.env.DATA_DIR) : path.resolve(__dirname, '..', 'data');
+const userDataPath = path.join(dataRoot, 'users.json');
+const appDataPath = path.join(dataRoot, 'app-state.json');
+const uploadsRoot = path.join(dataRoot, 'uploads');
 
 let demoUser: User = {
   id: 'user_demo',

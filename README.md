@@ -434,6 +434,19 @@ npm run build
 - **Database**: MongoDB Atlas
 - **Cache**: Redis Cloud
 
+### Vercel + Render
+
+This repo includes a root `render.yaml` for deploying the Express backend as a Render web service named `driftboard-api`. The service stores uploaded project files under `DATA_DIR=/var/data`, backed by a Render persistent disk.
+
+After the Render backend is live, connect the Vercel frontend to it with:
+
+```env
+VITE_API_BASE_URL=https://driftboard-api.onrender.com/api
+VITE_SOCKET_URL=https://driftboard-api.onrender.com
+```
+
+If Render gives your service a different URL, use that URL instead.
+
 ---
 
 ## Testing

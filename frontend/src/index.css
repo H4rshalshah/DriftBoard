@@ -628,6 +628,7 @@
   }
 
   .tech-contract-cube {
+    --cube-depth: 40px;
     transform-style: preserve-3d;
     animation: tech-contract-spin 9s linear infinite;
   }
@@ -639,8 +640,8 @@
     border: 1px solid rgba(67, 56, 202, 0.28);
     background:
       linear-gradient(135deg, rgba(99, 102, 241, 0.28), rgba(6, 182, 212, 0.12)),
-      linear-gradient(90deg, rgba(15, 23, 42, 0.08) 1px, transparent 1px),
-      linear-gradient(0deg, rgba(15, 23, 42, 0.08) 1px, transparent 1px);
+      linear-gradient(90deg, rgba(15, 23, 42, 0.14) 1px, transparent 1px),
+      linear-gradient(0deg, rgba(15, 23, 42, 0.14) 1px, transparent 1px);
     background-size: auto, 16px 16px, 16px 16px;
     box-shadow: inset 0 0 24px rgba(79, 70, 229, 0.16);
     backface-visibility: visible;
@@ -650,33 +651,33 @@
     border-color: rgba(129, 140, 248, 0.32);
     background:
       linear-gradient(135deg, rgba(129, 140, 248, 0.34), rgba(34, 211, 238, 0.14)),
-      linear-gradient(90deg, rgba(224, 242, 254, 0.18) 1px, transparent 1px),
-      linear-gradient(0deg, rgba(224, 242, 254, 0.18) 1px, transparent 1px);
+      linear-gradient(90deg, rgba(224, 242, 254, 0.26) 1px, transparent 1px),
+      linear-gradient(0deg, rgba(224, 242, 254, 0.26) 1px, transparent 1px);
     box-shadow: inset 0 0 28px rgba(129, 140, 248, 0.18);
   }
 
   .tech-contract-face-front {
-    transform: translateZ(40px);
+    transform: translateZ(var(--cube-depth));
   }
 
   .tech-contract-face-back {
-    transform: rotateY(180deg) translateZ(40px);
+    transform: rotateY(180deg) translateZ(var(--cube-depth));
   }
 
   .tech-contract-face-right {
-    transform: rotateY(90deg) translateZ(40px);
+    transform: rotateY(90deg) translateZ(var(--cube-depth));
   }
 
   .tech-contract-face-left {
-    transform: rotateY(-90deg) translateZ(40px);
+    transform: rotateY(-90deg) translateZ(var(--cube-depth));
   }
 
   .tech-contract-face-top {
-    transform: rotateX(90deg) translateZ(40px);
+    transform: rotateX(90deg) translateZ(var(--cube-depth));
   }
 
   .tech-contract-face-bottom {
-    transform: rotateX(-90deg) translateZ(40px);
+    transform: rotateX(-90deg) translateZ(var(--cube-depth));
   }
 
   .tech-data-chip {

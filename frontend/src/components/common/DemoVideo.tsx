@@ -40,9 +40,9 @@ const scrollItemVariants = {
 
 function Workflow3DSignal() {
   return (
-    <div className="relative mb-8 mt-8 hidden h-[240px] max-w-[520px] overflow-hidden [perspective:900px] sm:block" aria-hidden="true">
+    <div className="relative my-6 h-[150px] max-w-[320px] overflow-hidden [perspective:700px] sm:mb-8 sm:mt-8 sm:h-[240px] sm:max-w-[520px] sm:[perspective:900px]" aria-hidden="true">
       <svg
-        className="absolute inset-0 z-[2] h-full w-full overflow-visible"
+        className="absolute inset-0 z-[2] hidden h-full w-full overflow-visible sm:block"
         viewBox="0 0 520 240"
         preserveAspectRatio="none"
       >
@@ -51,9 +51,9 @@ function Workflow3DSignal() {
         <line className="tech-signal-line tech-signal-line-alert" x1="182" y1="198" x2="244" y2="156" />
       </svg>
 
-      <div className="absolute left-1/2 top-[66%] z-[1] h-40 w-40 rounded-[26px] border border-indigo-500/24 bg-indigo-500/5 shadow-[0_34px_70px_rgba(67,56,202,0.12)] [transform:translate(-50%,-50%)_rotateX(64deg)_rotateZ(-38deg)] dark:border-indigo-300/24 dark:bg-indigo-300/7 dark:shadow-[0_34px_78px_rgba(79,70,229,0.18)]" />
+      <div className="absolute left-1/2 top-[66%] z-[1] h-24 w-24 rounded-[18px] border border-indigo-500/24 bg-indigo-500/5 shadow-[0_22px_42px_rgba(67,56,202,0.12)] [transform:translate(-50%,-50%)_rotateX(64deg)_rotateZ(-38deg)] dark:border-indigo-300/28 dark:bg-indigo-300/10 dark:shadow-[0_22px_48px_rgba(79,70,229,0.2)] sm:h-40 sm:w-40 sm:rounded-[26px] sm:shadow-[0_34px_70px_rgba(67,56,202,0.12)] sm:dark:shadow-[0_34px_78px_rgba(79,70,229,0.18)]" />
 
-      <div className="tech-contract-cube absolute left-1/2 top-[38%] z-[4] h-20 w-20">
+      <div className="tech-contract-cube absolute left-1/2 top-[38%] z-[4] h-14 w-14 [--cube-depth:28px] sm:h-20 sm:w-20 sm:[--cube-depth:40px]">
         <span className="tech-contract-face tech-contract-face-front" />
         <span className="tech-contract-face tech-contract-face-back" />
         <span className="tech-contract-face tech-contract-face-right" />
@@ -62,9 +62,9 @@ function Workflow3DSignal() {
         <span className="tech-contract-face tech-contract-face-bottom" />
       </div>
 
-      <div className="tech-data-chip left-4 top-12 z-[5]">schema:v4</div>
-      <div className="tech-data-chip right-5 top-16 z-[5] animation-delay-200">drift:live</div>
-      <div className="tech-data-chip left-16 top-[178px] z-[5] animation-delay-500">alert:sent</div>
+      <div className="tech-data-chip left-4 top-12 z-[5] hidden sm:block">schema:v4</div>
+      <div className="tech-data-chip right-5 top-16 z-[5] hidden sm:block animation-delay-200">drift:live</div>
+      <div className="tech-data-chip left-16 top-[178px] z-[5] hidden sm:block animation-delay-500">alert:sent</div>
     </div>
   );
 }

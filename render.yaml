@@ -1,0 +1,50 @@
+services:
+  - type: web
+    runtime: node
+    name: driftboard-api
+    rootDir: backend
+    plan: starter
+    region: oregon
+    buildCommand: npm install --include=dev && npm run build
+    startCommand: npm start
+    healthCheckPath: /api/health
+    autoDeployTrigger: commit
+    disk:
+      name: driftboard-data
+      mountPath: /var/data
+      sizeGB: 1
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATA_DIR
+        value: /var/data
+      - key: FRONTEND_URL
+        value: https://driftboard-three.vercel.app
+      - key: PUBLIC_APP_URL
+        value: https://driftboard-three.vercel.app
+      - key: NEXT_PUBLIC_APP_URL
+        value: https://driftboard-three.vercel.app
+      - key: EMAIL_MOCK_MODE
+        value: false
+      - key: CONTACT_ADMIN_EMAIL
+        value: h4rshal.workspace@gmail.com
+      - key: ALERT_REPLY_TO
+        value: h4rshal.workspace@gmail.com
+      - key: SMTP_HOST
+        value: smtp.gmail.com
+      - key: SMTP_PORT
+        value: 587
+      - key: SMTP_SECURE
+        value: false
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_REFRESH_SECRET
+        generateValue: true
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASS
+        sync: false
+      - key: EMAIL_FROM
+        sync: false
+      - key: ALERT_FROM_EMAIL
+        sync: false
