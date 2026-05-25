@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
+import { useNavigate } from 'react-router-dom';
 import { useNotificationStore, useProjectStore, type NotificationType } from '@/store';
 import { Card, CardContent } from '@/components/common/Card';
 import { Button } from '@/components/common/Button';
@@ -79,18 +80,31 @@ const filterOptions: { value: NotificationType | 'all'; label: string }[] = [
 ];
 
 export default function NotificationsPage() {
+  const navigate = useNavigate();
   const { notifications, isLoading, isMarkingRead, fetchNotifications, markAsRead, markAllAsRead, deleteNotifications, deleteHistory } = useNotificationStore();
   const { currentProject } = useProjectStore();
   const [activeFilter, setActiveFilter] = useState<NotificationType | 'all'>('all');
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [cleanupOpen, setCleanupOpen] = useState(false);
+  const cleanupRef = useRef<HTMLDivElement>(null);
   const notificationsPerPage = 10;
   const canManageNotifications = hasProjectPermission(currentProject?.currentUserRole, 'notification:update');
 
   useEffect(() => {
     void fetchNotifications();
   }, [fetchNotifications]);
+
+  useEffect(() => {
+    const closeCleanupMenu = (event: PointerEvent) => {
+      if (cleanupOpen && cleanupRef.current && !cleanupRef.current.contains(event.target as Node)) {
+        setCleanupOpen(false);
+      }
+    };
+
+    document.addEventListener('pointerdown', closeCleanupMenu);
+    return () => document.removeEventListener('pointerdown', closeCleanupMenu);
+  }, [cleanupOpen]);
 
   const displayNotifications = notifications as AppNotification[];
   const unreadCount = displayNotifications.filter((n) => !n.read).length;
@@ -107,6 +121,19 @@ export default function NotificationsPage() {
 
   const handleMarkAsRead = async (id: string) => {
     await markAsRead(id);
+  };
+
+  const notificationTarget = (notification: AppNotification) => {
+    if (notification.actionUrl) return notification.actionUrl;
+    if (notification.type === 'drift') return '/app/drift-events';
+    if (notification.type === 'schema') return '/app/schema-history';
+    if (notification.type === 'team' || notification.type === 'member') return '/app/settings';
+    return '/app/notifications';
+  };
+
+  const openNotification = async (notification: AppNotification) => {
+    if (!notification.read) await markAsRead(notification.id);
+    navigate(notificationTarget(notification));
   };
 
   const handleMarkAllAsRead = async () => {
@@ -170,7 +197,7 @@ export default function NotificationsPage() {
           </Button>
         )}
         {canManageNotifications && (
-        <div className="relative">
+        <div className="relative" ref={cleanupRef}>
           <Button
             variant="secondary"
             leftIcon={<Trash2 className="w-4 h-4" />}
@@ -271,7 +298,7 @@ export default function NotificationsPage() {
                   className={`cursor-pointer transition-all ${
                     !notification.read ? 'bg-white/10 border-white/20' : ''
                   }`}
-                  onClick={() => !notification.read && handleMarkAsRead(notification.id)}
+                  onClick={() => void openNotification(notification)}
                 >
                   <CardContent className="p-4">
                     <div className="flex items-start gap-4">

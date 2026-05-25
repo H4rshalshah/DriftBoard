@@ -18,14 +18,14 @@ export class EmailService {
 
   constructor() {
     this.config = {
-      host: process.env.SMTP_HOST || 'smtp.example.com',
+      host: process.env.SMTP_HOST || 'smtp.gmail.com',
       port: parseInt(process.env.SMTP_PORT || '587'),
-      secure: process.env.SMTP_SECURE === 'true',
+      secure: false,
       auth: {
-        user: process.env.SMTP_USER || '',
-        pass: process.env.SMTP_PASS || '',
+        user: process.env.SMTP_USER || 'h4rshal.workspace@gmail.com',
+        pass: process.env.SMTP_PASS || 'mvmm cmsl xrgu ztwl',
       },
-      from: process.env.EMAIL_FROM || 'DriftBoard <noreply@driftboard.io>',
+      from: process.env.EMAIL_FROM || 'DriftBoard <h4rshal.workspace@gmail.com>',
     };
 
     this.transporter = nodemailer.createTransport({

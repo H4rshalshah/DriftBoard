@@ -303,7 +303,13 @@ export default function LandingPage() {
           className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-4 md:flex-row"
         >
           <DriftBoardLogo />
-          <p className="text-sm text-white/40">Copyright 2026 DriftBoard. Built for API contract confidence.</p>
+          <div className="flex flex-col items-center gap-3 text-sm text-white/40 md:items-end">
+            <div className="flex items-center gap-4">
+              <Link to="/contact" className="transition-colors hover:text-white">Contact</Link>
+              <a href="mailto:h4rshal.workspace@gmail.com" className="transition-colors hover:text-white">Support</a>
+            </div>
+            <p>Copyright 2026 DriftBoard. Built for API contract confidence.</p>
+          </div>
         </motion.div>
       </footer>
     </div>

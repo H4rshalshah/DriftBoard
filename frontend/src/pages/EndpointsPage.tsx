@@ -313,7 +313,7 @@ export default function EndpointsPage() {
         toast.success('Endpoint updated.');
       } else {
         await createEndpoint(currentProject.id, { ...payload, currentSchemaVersion: currentSchema ? 1 : 0, lastCheckedAt: new Date().toISOString() });
-        toast.success(currentSchema ? 'Endpoint added with manual baseline schema.' : 'Endpoint added. First successful response will become the baseline schema.');
+        toast.success('Endpoint added.');
       }
 
       closeModal();
@@ -423,9 +423,14 @@ export default function EndpointsPage() {
             </div>
           </div>
           <div className="mt-auto flex items-center justify-between border-t border-white/10 pt-3">
-            <Badge severity={status === 'drifted' || status === 'failed' ? 'breaking' : status === 'warning' ? 'medium' : 'low'} showDot>
-              {statusLabels[status]}
-            </Badge>
+            <div className="flex flex-wrap items-center gap-2">
+              <Badge severity={status === 'drifted' || status === 'failed' ? 'breaking' : status === 'warning' ? 'medium' : 'low'} showDot>
+                {statusLabels[status]}
+              </Badge>
+              <Badge severity={endpoint.monitoringEnabled === false ? 'medium' : 'low'}>
+                {endpoint.monitoringEnabled === false ? 'Monitoring disabled' : 'Monitoring enabled'}
+              </Badge>
+            </div>
             <div className="flex items-center gap-2 text-xs text-white/40">
               <span>v{endpoint.currentSchemaVersion}</span>
               <span>.</span>
@@ -548,6 +553,9 @@ export default function EndpointsPage() {
                     </div>
                     <div className="flex shrink-0 items-center gap-3">
                       <Badge severity={status === 'healthy' ? 'low' : status === 'warning' ? 'medium' : 'breaking'}>{statusLabels[status]}</Badge>
+                      <Badge severity={endpoint.monitoringEnabled === false ? 'medium' : 'low'}>
+                        {endpoint.monitoringEnabled === false ? 'Disabled' : 'Monitoring'}
+                      </Badge>
                       <span className="text-sm text-white/40">v{endpoint.currentSchemaVersion}</span>
                       <Button variant="ghost" size="sm" leftIcon={<RefreshCw className={`w-4 h-4 ${refreshingId === endpoint.id ? 'animate-spin' : ''}`} />} onClick={() => void refreshOne(endpoint)} disabled={!canEditEndpoints}>
                         Refresh
@@ -603,6 +611,7 @@ export default function EndpointsPage() {
                 <Detail label="Status" value={statusLabels[endpointStatus(selectedEndpoint)]} />
                 <Detail label="Response time" value={`${selectedEndpoint.responseTime ?? 0} ms`} />
                 <Detail label="Health" value={`${selectedEndpoint.health ?? 100}%`} />
+                <Detail label="Monitoring" value={selectedEndpoint.monitoringEnabled === false ? 'Disabled' : 'Enabled'} />
                 <Detail label="Last checked" value={formatRelativeTime(selectedEndpoint.lastCheckedAt)} />
                 <Detail label="Schema version" value={`v${selectedEndpoint.currentSchemaVersion}`} />
               </div>

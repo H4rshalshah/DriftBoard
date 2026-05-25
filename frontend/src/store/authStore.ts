@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { createJSONStorage, persist } from 'zustand/middleware';
 import { api } from '../services/api';
 import { useProjectStore, type Project } from './projectStore';
 
@@ -25,7 +25,14 @@ interface AuthState {
   socialLogin: (provider: 'google' | 'github', email?: string, name?: string) => Promise<void>;
   startOAuthLogin: (provider: 'google' | 'github') => void;
   completeOAuthLogin: (token: string, user: User) => void;
-  acceptInvite: (token: string, password: string) => Promise<Project>;
+  acceptInvite: (token: string, data: {
+    password: string;
+    accountMode: 'existing' | 'new';
+    accountPassword?: string;
+    name?: string;
+    username?: string;
+    newPassword?: string;
+  }) => Promise<Project>;
   logout: () => void;
   setUser: (user: User) => void;
   clearError: () => void;
@@ -52,9 +59,11 @@ function applyAuthResponse(response: AuthResponse) {
     throw new Error('Authentication token was not returned');
   }
 
-  localStorage.setItem('auth_token', token);
+  sessionStorage.setItem('auth_token', token);
+  localStorage.removeItem('auth_token');
   if (refreshToken) {
-    localStorage.setItem('refresh_token', refreshToken);
+    sessionStorage.setItem('refresh_token', refreshToken);
+    localStorage.removeItem('refresh_token');
   }
 
   return {
@@ -206,7 +215,8 @@ export const useAuthStore = create<AuthState>()(
       },
 
       completeOAuthLogin: (token: string, user: User) => {
-        localStorage.setItem('auth_token', token);
+        sessionStorage.setItem('auth_token', token);
+        localStorage.removeItem('auth_token');
         set({
           token,
           user,
@@ -217,12 +227,10 @@ export const useAuthStore = create<AuthState>()(
         void useProjectStore.getState().fetchCurrentProject();
       },
 
-      acceptInvite: async (token: string, password: string) => {
+      acceptInvite: async (token, data) => {
         set({ isLoading: true, error: null });
         try {
-          const response = await api.post<InviteAcceptResponse>(`/team/invite/${token}/accept`, {
-            password,
-          });
+          const response = await api.post<InviteAcceptResponse>(`/team/invite/${token}/accept`, data);
           set(applyAuthResponse(response));
           useProjectStore.setState((state) => ({
             projects: [response.project, ...state.projects.filter((project) => project.id !== response.project.id)],
@@ -247,6 +255,8 @@ export const useAuthStore = create<AuthState>()(
 
       logout: () => {
         void api.post('/auth/logout').catch(() => undefined);
+        sessionStorage.removeItem('auth_token');
+        sessionStorage.removeItem('refresh_token');
         localStorage.removeItem('auth_token');
         localStorage.removeItem('refresh_token');
         set({
@@ -267,6 +277,8 @@ export const useAuthStore = create<AuthState>()(
     }),
     {
       name: 'auth-storage',
+      storage: createJSONStorage(() => sessionStorage),
+      version: 2,
       partialize: (state) => ({
         token: state.token,
         user: state.user,

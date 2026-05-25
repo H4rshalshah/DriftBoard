@@ -159,16 +159,16 @@ export default function ApiKeysPage() {
   };
 
   return (
-    <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
+    <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="space-y-5 sm:space-y-6">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-        <div>
+        <div className="min-w-0">
           <p className="mb-2 text-sm font-semibold uppercase tracking-[0.18em] text-indigo-300">Security</p>
-          <h1 className="text-2xl font-bold text-white">API Keys</h1>
-          <p className="mt-1 text-white/60">
+          <h1 className="text-2xl font-bold text-white sm:text-3xl">API Keys</h1>
+          <p className="mt-1 max-w-2xl text-sm leading-6 text-white/60 sm:text-base">
             {currentProject ? `Create and manage keys for ${currentProject.name}.` : 'Connect a project before creating live API keys.'}
           </p>
         </div>
-        <div className="grid gap-3 sm:grid-cols-2">
+        <div className="grid gap-3 sm:grid-cols-2 lg:min-w-[320px]">
           <Card className="px-5 py-4">
             <p className="text-sm text-white/50">Active keys</p>
             <p className="mt-1 text-2xl font-bold text-white">{activeCount}</p>
@@ -188,7 +188,7 @@ export default function ApiKeysPage() {
           {!canViewApiKeys && (
             <p className="mb-3 text-sm text-white/50">You do not have permission to view or manage API keys for this project.</p>
           )}
-          <div className="flex flex-col gap-3 md:flex-row md:items-end">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
             <Input
               label="Key name"
               placeholder="Production SDK"
@@ -196,7 +196,7 @@ export default function ApiKeysPage() {
               onChange={(event) => setName(event.target.value)}
               leftIcon={<Key className="h-4 w-4" />}
             />
-            <Button className="md:min-w-[150px]" leftIcon={<Plus className="h-4 w-4" />} onClick={createKey} loading={isSaving} disabled={!currentProject?.id || !canManageApiKeys}>
+            <Button className="w-full sm:min-w-[150px] sm:w-auto" leftIcon={<Plus className="h-4 w-4" />} onClick={createKey} loading={isSaving} disabled={!currentProject?.id || !canManageApiKeys}>
               Generate
             </Button>
           </div>
@@ -232,7 +232,7 @@ export default function ApiKeysPage() {
                     )}
                     <Badge variant="status" status={apiKey.status === 'revoked' ? 'inactive' : apiKey.status}>{apiKey.status}</Badge>
                   </div>
-                  <p className="mt-1 font-mono text-sm text-white/50">{apiKey.fullKey || apiKey.keyPrefix}</p>
+                  <p className="mt-1 break-all font-mono text-sm text-white/50">{apiKey.fullKey || apiKey.keyPrefix}</p>
                   <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-white/40">
                     <span>{apiKey.scopes.join(', ')}</span>
                     <span>Created {new Date(apiKey.createdAt).toLocaleString()}</span>
@@ -241,33 +241,33 @@ export default function ApiKeysPage() {
                 </div>
               </div>
 
-              <div className="flex flex-wrap items-center gap-2 lg:flex-nowrap">
+              <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center lg:flex-nowrap">
                 {editingId === apiKey.id ? (
                   <>
-                    <Button variant="secondary" size="sm" leftIcon={<Check className="h-4 w-4" />} loading={isSaving} onClick={() => saveEdit(apiKey)}>
+                    <Button className="w-full sm:w-auto" variant="secondary" size="sm" leftIcon={<Check className="h-4 w-4" />} loading={isSaving} onClick={() => saveEdit(apiKey)}>
                       Save
                     </Button>
-                    <Button variant="ghost" size="sm" leftIcon={<X className="h-4 w-4" />} onClick={() => setEditingId(null)}>
+                    <Button className="w-full sm:w-auto" variant="ghost" size="sm" leftIcon={<X className="h-4 w-4" />} onClick={() => setEditingId(null)}>
                       Cancel
                     </Button>
                   </>
                 ) : canManageApiKeys ? (
-                  <Button variant="secondary" size="sm" leftIcon={<Edit className="h-4 w-4" />} onClick={() => startEdit(apiKey)} disabled={apiKey.status === 'revoked'}>
+                  <Button className="w-full sm:w-auto" variant="secondary" size="sm" leftIcon={<Edit className="h-4 w-4" />} onClick={() => startEdit(apiKey)} disabled={apiKey.status === 'revoked'}>
                     Edit
                   </Button>
                 ) : null}
-                <Button variant="secondary" size="sm" leftIcon={copiedId === apiKey.id ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />} onClick={() => copyKey(apiKey)}>
+                <Button className="w-full sm:w-auto" variant="secondary" size="sm" leftIcon={copiedId === apiKey.id ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />} onClick={() => copyKey(apiKey)}>
                   {copiedId === apiKey.id ? 'Copied' : 'Copy'}
                 </Button>
                 {canManageApiKeys && (
                   <>
-                    <Button variant="secondary" size="sm" leftIcon={<RotateCcw className="h-4 w-4" />} onClick={() => rotateKey(apiKey.id)} disabled={apiKey.status === 'revoked'}>
+                    <Button className="w-full sm:w-auto" variant="secondary" size="sm" leftIcon={<RotateCcw className="h-4 w-4" />} onClick={() => rotateKey(apiKey.id)} disabled={apiKey.status === 'revoked'}>
                       Rotate
                     </Button>
-                    <Button variant="secondary" size="sm" onClick={() => revokeKey(apiKey.id)} disabled={apiKey.status === 'revoked'}>
+                    <Button className="w-full sm:w-auto" variant="secondary" size="sm" onClick={() => revokeKey(apiKey.id)} disabled={apiKey.status === 'revoked'}>
                       Revoke
                     </Button>
-                    <Button variant="danger" size="sm" leftIcon={<Trash2 className="h-4 w-4" />} onClick={() => deleteKey(apiKey.id)}>
+                    <Button className="w-full sm:w-auto" variant="danger" size="sm" leftIcon={<Trash2 className="h-4 w-4" />} onClick={() => deleteKey(apiKey.id)}>
                       Delete
                     </Button>
                   </>

@@ -13,6 +13,7 @@ interface InviteDetails {
   projectName: string;
   email: string;
   role: 'admin' | 'member' | 'viewer';
+  accountStatus: 'existing' | 'new';
   expiresAt: string;
 }
 
@@ -30,6 +31,12 @@ export default function InvitePage() {
   const { acceptInvite, isLoading } = useAuthStore();
   const [invite, setInvite] = useState<InviteDetails | null>(null);
   const [password, setPassword] = useState('');
+  const [accountMode, setAccountMode] = useState<'existing' | 'new'>('new');
+  const [accountPassword, setAccountPassword] = useState('');
+  const [name, setName] = useState('');
+  const [username, setUsername] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [isLoadingInvite, setIsLoadingInvite] = useState(true);
   const [error, setError] = useState('');
 
@@ -37,7 +44,11 @@ export default function InvitePage() {
     if (!token) return;
     setIsLoadingInvite(true);
     api.get<InviteDetails>(`/team/invite/${token}`)
-      .then(setInvite)
+      .then((details) => {
+        setInvite(details);
+        setAccountMode(details.accountStatus);
+        setUsername(details.email.split('@')[0] || '');
+      })
       .catch((requestError) => setError(getErrorMessage(requestError, 'Invite not found.')))
       .finally(() => setIsLoadingInvite(false));
   }, [token]);
@@ -51,8 +62,35 @@ export default function InvitePage() {
       return;
     }
 
+    if (accountMode === 'existing' && !accountPassword) {
+      setError('Enter the invited account password.');
+      return;
+    }
+
+    if (accountMode === 'new') {
+      if (!name.trim()) {
+        setError('Enter your full name.');
+        return;
+      }
+      if (!newPassword || newPassword.length < 8) {
+        setError('Create a password of at least 8 characters.');
+        return;
+      }
+      if (newPassword !== confirmPassword) {
+        setError('Passwords do not match.');
+        return;
+      }
+    }
+
     try {
-      await acceptInvite(token, password.trim());
+      await acceptInvite(token, {
+        password: password.trim(),
+        accountMode,
+        accountPassword,
+        name: name.trim(),
+        username: username.trim(),
+        newPassword,
+      });
       toast.success('Project access granted.');
       navigate('/app/dashboard', { replace: true });
     } catch (requestError) {
@@ -98,6 +136,26 @@ export default function InvitePage() {
               <p className="text-xs text-white/45">Invited account</p>
               <p className="mt-1 text-sm font-medium text-white">{invite.email}</p>
             </div>
+            <div className="grid grid-cols-2 gap-2 rounded-lg border border-white/10 bg-white/5 p-1">
+              <button
+                type="button"
+                onClick={() => setAccountMode('existing')}
+                className={`min-h-[40px] rounded-md px-3 text-sm font-medium transition-colors ${
+                  accountMode === 'existing' ? 'bg-primary-500 text-white' : 'text-white/60 hover:bg-white/10 hover:text-white'
+                }`}
+              >
+                I have an account
+              </button>
+              <button
+                type="button"
+                onClick={() => setAccountMode('new')}
+                className={`min-h-[40px] rounded-md px-3 text-sm font-medium transition-colors ${
+                  accountMode === 'new' ? 'bg-primary-500 text-white' : 'text-white/60 hover:bg-white/10 hover:text-white'
+                }`}
+              >
+                Create account
+              </button>
+            </div>
             <Input
               label="Invite password"
               type="password"
@@ -106,6 +164,52 @@ export default function InvitePage() {
               placeholder="Enter shared password"
               leftIcon={<KeyRound className="h-4 w-4" />}
             />
+            {accountMode === 'existing' ? (
+              <Input
+                label="Account password"
+                type="password"
+                value={accountPassword}
+                onChange={(event) => setAccountPassword(event.target.value)}
+                placeholder="Password for the invited account"
+                leftIcon={<KeyRound className="h-4 w-4" />}
+              />
+            ) : (
+              <div className="space-y-4">
+                <Input
+                  label="Full name"
+                  value={name}
+                  onChange={(event) => setName(event.target.value)}
+                  placeholder="Your name"
+                  autoComplete="name"
+                />
+                <Input
+                  label="Username"
+                  value={username}
+                  onChange={(event) => setUsername(event.target.value)}
+                  placeholder="username"
+                  autoComplete="username"
+                />
+                <Input
+                  label="Create password"
+                  type="password"
+                  value={newPassword}
+                  onChange={(event) => setNewPassword(event.target.value)}
+                  placeholder="At least 8 characters"
+                  autoComplete="new-password"
+                  leftIcon={<KeyRound className="h-4 w-4" />}
+                />
+                <Input
+                  label="Confirm password"
+                  type="password"
+                  value={confirmPassword}
+                  onChange={(event) => setConfirmPassword(event.target.value)}
+                  error={confirmPassword && newPassword !== confirmPassword ? 'Passwords do not match' : undefined}
+                  placeholder="Repeat password"
+                  autoComplete="new-password"
+                  leftIcon={<KeyRound className="h-4 w-4" />}
+                />
+              </div>
+            )}
             <Button type="submit" fullWidth loading={isLoading}>
               Get Access
             </Button>

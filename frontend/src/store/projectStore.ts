@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { createJSONStorage, persist } from 'zustand/middleware';
 import { api } from '../services/api';
 import { useDriftStore, type DriftEvent } from './driftStore';
 import { useEndpointStore, type Endpoint, type SchemaVersion } from './endpointStore';
@@ -294,30 +294,128 @@ export const useProjectStore = create<ProjectState>()(
       },
 
       startMonitoring: async (id, duration) => {
-        const project = await api.post<Project>(`/projects/${id}/monitoring/start`, { duration });
+        const previousProjects = get().projects;
+        const previousCurrentProject = get().currentProject;
+        const optimisticStartedAt = new Date().toISOString();
+
         set((state) => ({
-          projects: state.projects.map((item) => (item.id === id ? project : item)),
-          currentProject: state.currentProject?.id === id ? project : state.currentProject,
+          projects: state.projects.map((item) => (
+            item.id === id
+              ? {
+                  ...item,
+                  monitoringStatus: 'monitoring',
+                  monitoringStartedAt: optimisticStartedAt,
+                  monitoringEndsAt: null,
+                  monitoringDuration: duration,
+                  updatedAt: optimisticStartedAt,
+                }
+              : item
+          )),
+          currentProject: state.currentProject?.id === id
+            ? {
+                ...state.currentProject,
+                monitoringStatus: 'monitoring',
+                monitoringStartedAt: optimisticStartedAt,
+                monitoringEndsAt: null,
+                monitoringDuration: duration,
+                updatedAt: optimisticStartedAt,
+              }
+            : state.currentProject,
         }));
-        return project;
+
+        try {
+          const project = await api.post<Project>(`/projects/${id}/monitoring/start`, { duration });
+          set((state) => ({
+            projects: state.projects.map((item) => (item.id === id ? project : item)),
+            currentProject: state.currentProject?.id === id ? project : state.currentProject,
+          }));
+          return project;
+        } catch (error) {
+          set({ projects: previousProjects, currentProject: previousCurrentProject });
+          throw error;
+        }
       },
 
       resumeMonitoring: async (id, duration) => {
-        const project = await api.post<Project>(`/projects/${id}/resume-monitoring`, { duration });
+        const previousProjects = get().projects;
+        const previousCurrentProject = get().currentProject;
+        const optimisticStartedAt = new Date().toISOString();
+
         set((state) => ({
-          projects: state.projects.map((item) => (item.id === id ? project : item)),
-          currentProject: state.currentProject?.id === id ? project : state.currentProject,
+          projects: state.projects.map((item) => (
+            item.id === id
+              ? {
+                  ...item,
+                  monitoringStatus: 'monitoring',
+                  monitoringStartedAt: optimisticStartedAt,
+                  monitoringEndsAt: null,
+                  monitoringDuration: duration,
+                  updatedAt: optimisticStartedAt,
+                }
+              : item
+          )),
+          currentProject: state.currentProject?.id === id
+            ? {
+                ...state.currentProject,
+                monitoringStatus: 'monitoring',
+                monitoringStartedAt: optimisticStartedAt,
+                monitoringEndsAt: null,
+                monitoringDuration: duration,
+                updatedAt: optimisticStartedAt,
+              }
+            : state.currentProject,
         }));
-        return project;
+
+        try {
+          const project = await api.post<Project>(`/projects/${id}/resume-monitoring`, { duration });
+          set((state) => ({
+            projects: state.projects.map((item) => (item.id === id ? project : item)),
+            currentProject: state.currentProject?.id === id ? project : state.currentProject,
+          }));
+          return project;
+        } catch (error) {
+          set({ projects: previousProjects, currentProject: previousCurrentProject });
+          throw error;
+        }
       },
 
       stopMonitoring: async (id) => {
-        const project = await api.post<Project>(`/projects/${id}/monitoring/stop`);
+        const previousProjects = get().projects;
+        const previousCurrentProject = get().currentProject;
+        const optimisticStoppedAt = new Date().toISOString();
+
         set((state) => ({
-          projects: state.projects.map((item) => (item.id === id ? project : item)),
-          currentProject: state.currentProject?.id === id ? project : state.currentProject,
+          projects: state.projects.map((item) => (
+            item.id === id
+              ? {
+                  ...item,
+                  monitoringStatus: 'disconnected',
+                  monitoringEndsAt: null,
+                  updatedAt: optimisticStoppedAt,
+                }
+              : item
+          )),
+          currentProject: state.currentProject?.id === id
+            ? {
+                ...state.currentProject,
+                monitoringStatus: 'disconnected',
+                monitoringEndsAt: null,
+                updatedAt: optimisticStoppedAt,
+              }
+            : state.currentProject,
         }));
-        return project;
+
+        try {
+          const project = await api.post<Project>(`/projects/${id}/monitoring/stop`);
+          set((state) => ({
+            projects: state.projects.map((item) => (item.id === id ? project : item)),
+            currentProject: state.currentProject?.id === id ? project : state.currentProject,
+          }));
+          return project;
+        } catch (error) {
+          set({ projects: previousProjects, currentProject: previousCurrentProject });
+          throw error;
+        }
       },
 
       setCurrentProject: (project) => {
@@ -336,6 +434,8 @@ export const useProjectStore = create<ProjectState>()(
     }),
     {
       name: 'project-storage',
+      storage: createJSONStorage(() => sessionStorage),
+      version: 2,
       partialize: (state) => ({
         projects: state.projects,
         currentProject: state.currentProject,

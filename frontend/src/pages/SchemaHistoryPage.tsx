@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
+import toast from 'react-hot-toast';
 import { useEndpointStore, useProjectStore } from '@/store';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/common/Card';
 import { Button } from '@/components/common/Button';
@@ -31,6 +32,9 @@ const itemVariants = {
   visible: { opacity: 1, y: 0 },
 };
 
+const schemaPreviewClass =
+  'schema-code-block whitespace-pre-wrap break-words rounded-lg border border-white/10 bg-slate-950/95 p-4 font-mono leading-6 text-slate-100 shadow-inner';
+
 interface SchemaVersion {
   id: string;
   version: number;
@@ -38,6 +42,15 @@ interface SchemaVersion {
   createdBy: string;
   changelog?: string;
   schema: Record<string, unknown>;
+}
+
+interface EndpointOption {
+  id: string;
+  name: string;
+  url: string;
+  method: string;
+  currentSchemaVersion: number;
+  schemaVersions: SchemaVersion[];
 }
 
 const mockEndpoints = [
@@ -130,7 +143,7 @@ function formatDateTime(dateString: string): string {
 
 export default function SchemaHistoryPage() {
   const { currentProject } = useProjectStore();
-  const { endpoints, isLoading, isUpdating, fetchEndpoints } = useEndpointStore();
+  const { endpoints, isLoading, isUpdating, fetchEndpoints, rollbackSchema } = useEndpointStore();
   const [selectedEndpoint, setSelectedEndpoint] = useState(mockEndpoints[0].id);
   const [selectedVersions, setSelectedVersions] = useState<string[]>([]);
   const [showPreviewModal, setShowPreviewModal] = useState(false);
@@ -143,7 +156,7 @@ export default function SchemaHistoryPage() {
     }
   }, [currentProject?.id, fetchEndpoints]);
 
-  const endpointOptions = useMemo(() => {
+  const endpointOptions = useMemo<EndpointOption[]>(() => {
     const projectEndpoints = currentProject?.id
       ? endpoints.filter((endpoint) => endpoint.projectId === currentProject.id)
       : [];
@@ -154,9 +167,10 @@ export default function SchemaHistoryPage() {
           name: endpoint.name,
           url: endpoint.url,
           method: endpoint.method,
+          currentSchemaVersion: endpoint.currentSchemaVersion,
           schemaVersions: endpoint.schemaVersions,
         }))
-      : mockEndpoints.map((endpoint) => ({ ...endpoint, schemaVersions: mockVersions }));
+      : mockEndpoints.map((endpoint) => ({ ...endpoint, currentSchemaVersion: mockVersions[0].version, schemaVersions: mockVersions }));
   }, [currentProject?.id, endpoints]);
 
   useEffect(() => {
@@ -168,20 +182,22 @@ export default function SchemaHistoryPage() {
   const currentEndpoint = endpointOptions.find((e) => e.id === selectedEndpoint);
   const canUpdateSchema = hasProjectPermission(currentProject?.currentUserRole, 'schema:update');
   const versions = useMemo(
-    () =>
-      currentEndpoint?.schemaVersions?.length
-        ? currentEndpoint.schemaVersions
-            .map((version) => ({
-              id: version.id,
-              version: version.version,
-              createdAt: version.createdAt,
-              createdBy: version.createdBy,
-              changelog: version.changelog,
-              schema: version.schema,
-            }))
-            .sort((left, right) => right.version - left.version)
-        : mockVersions,
-    [currentEndpoint?.schemaVersions]
+    () => {
+      if (currentEndpoint?.schemaVersions?.length) {
+        return currentEndpoint.schemaVersions
+          .map((version) => ({
+            id: version.id,
+            version: version.version,
+            createdAt: version.createdAt,
+            createdBy: version.createdBy,
+            changelog: version.changelog,
+            schema: version.schema,
+          }))
+          .sort((left, right) => right.version - left.version);
+      }
+      return currentProject?.id ? [] : mockVersions;
+    },
+    [currentEndpoint?.schemaVersions, currentProject?.id]
   );
 
   useEffect(() => {
@@ -193,12 +209,13 @@ export default function SchemaHistoryPage() {
     }
 
     setPreviewVersion((current) => {
-      if (current && versions.some((version) => version.id === current.id)) {
-        return current;
-      }
+      const freshCurrentVersion = current ? versions.find((version) => version.id === current.id) : null;
+      if (freshCurrentVersion) return freshCurrentVersion;
+      const activeVersion = versions.find((version) => version.version === currentEndpoint?.currentSchemaVersion);
+      if (activeVersion) return activeVersion;
       return versions[0];
     });
-  }, [selectedEndpoint, versions]);
+  }, [currentEndpoint?.currentSchemaVersion, selectedEndpoint, versions]);
 
   const handleVersionSelect = (versionId: string) => {
     if (selectedVersions.includes(versionId)) {
@@ -219,9 +236,23 @@ export default function SchemaHistoryPage() {
     }
   };
 
-  const handleRollback = (versionId: string) => {
+  const compareVersions = selectedVersions
+    .map((versionId) => versions.find((version) => version.id === versionId))
+    .filter((version): version is SchemaVersion => Boolean(version));
+
+  const handleRollback = async (versionId: string) => {
     if (!canUpdateSchema) return;
-    console.log('Rolling back to:', versionId);
+    if (!currentEndpoint || !currentProject?.id) return;
+    try {
+      await rollbackSchema(currentEndpoint.id, versionId);
+      if (currentProject?.id) await fetchEndpoints(currentProject.id);
+      setSelectedVersions([]);
+      setShowPreviewModal(false);
+      toast.success('Schema rolled back.');
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Schema rollback failed.';
+      toast.error(message);
+    }
   };
 
   return (
@@ -326,7 +357,7 @@ export default function SchemaHistoryPage() {
                               className="w-4 h-4 rounded border-white/20 bg-white/5 text-indigo-500"
                             />
                             <span className="text-white font-medium">Version {version.version}</span>
-                            {index === 0 && <Badge severity="low">Current</Badge>}
+                            {version.version === currentEndpoint?.currentSchemaVersion && <Badge severity="low">Current</Badge>}
                           </div>
                           <div className="flex items-center gap-2">
                             <Button
@@ -337,12 +368,13 @@ export default function SchemaHistoryPage() {
                             >
                               Preview
                             </Button>
-                            {index !== 0 && canUpdateSchema && (
+                            {version.version !== currentEndpoint?.currentSchemaVersion && canUpdateSchema && (
                               <Button
                                 size="sm"
                                 variant="ghost"
                                 leftIcon={<RotateCcw className="w-3 h-3" />}
-                                onClick={() => handleRollback(version.id)}
+                                loading={isUpdating}
+                                onClick={() => void handleRollback(version.id)}
                               >
                                 Rollback
                               </Button>
@@ -381,9 +413,15 @@ export default function SchemaHistoryPage() {
             </CardHeader>
             <CardContent>
               {previewVersion ? (
-                <pre className="schema-code-block text-xs font-mono p-3 rounded-lg overflow-auto max-h-96">
-                  {JSON.stringify(previewVersion.schema, null, 2)}
-                </pre>
+                <div className="space-y-3">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <span className="text-sm font-medium text-white">Version {previewVersion.version}</span>
+                    {previewVersion.version === currentEndpoint?.currentSchemaVersion && <Badge severity="low">Current</Badge>}
+                  </div>
+                  <pre className={`${schemaPreviewClass} max-h-[520px] overflow-auto text-xs`}>
+                    {JSON.stringify(previewVersion.schema, null, 2)}
+                  </pre>
+                </div>
               ) : (
                 <div className="text-center py-8 text-white/40">
                   <Eye className="w-8 h-8 mx-auto mb-2 opacity-50" />
@@ -402,7 +440,7 @@ export default function SchemaHistoryPage() {
           </h2>
         </ModalHeader>
         <ModalBody>
-          <pre className="schema-code-block text-sm font-mono p-4 rounded-lg overflow-auto max-h-96">
+          <pre className={`${schemaPreviewClass} max-h-[70vh] overflow-auto text-sm`}>
             {previewVersion && JSON.stringify(previewVersion.schema, null, 2)}
           </pre>
         </ModalBody>
@@ -414,10 +452,10 @@ export default function SchemaHistoryPage() {
             <Button
               leftIcon={<RotateCcw className="w-4 h-4" />}
               onClick={() => {
-                if (previewVersion) handleRollback(previewVersion.id);
-                setShowPreviewModal(false);
+                if (previewVersion) void handleRollback(previewVersion.id);
               }}
               loading={isUpdating}
+              disabled={previewVersion?.version === currentEndpoint?.currentSchemaVersion}
             >
               Rollback to this version
             </Button>
@@ -433,26 +471,18 @@ export default function SchemaHistoryPage() {
           <div className="grid grid-cols-2 gap-4">
             <div>
               <h3 className="text-sm font-medium text-white/80 mb-2">
-                Version {selectedVersions[0]}
+                Version {compareVersions[0]?.version ?? selectedVersions[0]}
               </h3>
-              <pre className="schema-code-block text-xs font-mono p-3 rounded-lg overflow-auto max-h-64">
-                {JSON.stringify(
-                  versions.find((v) => v.id === selectedVersions[0])?.schema,
-                  null,
-                  2
-                )}
+              <pre className={`${schemaPreviewClass} max-h-80 overflow-auto text-xs`}>
+                {JSON.stringify(compareVersions[0]?.schema, null, 2)}
               </pre>
             </div>
             <div>
               <h3 className="text-sm font-medium text-white/80 mb-2">
-                Version {selectedVersions[1]}
+                Version {compareVersions[1]?.version ?? selectedVersions[1]}
               </h3>
-              <pre className="schema-code-block text-xs font-mono p-3 rounded-lg overflow-auto max-h-64">
-                {JSON.stringify(
-                  versions.find((v) => v.id === selectedVersions[1])?.schema,
-                  null,
-                  2
-                )}
+              <pre className={`${schemaPreviewClass} max-h-80 overflow-auto text-xs`}>
+                {JSON.stringify(compareVersions[1]?.schema, null, 2)}
               </pre>
             </div>
           </div>

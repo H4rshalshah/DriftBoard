@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { useState, useEffect, useRef } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
-import { AlertCircle, Bell, FileWarning, Info, Menu, Search, X } from 'lucide-react';
+import { AlertCircle, Bell, FileWarning, Info, Menu, Search } from 'lucide-react';
 import { ThemeToggle } from '@/components/common/ThemeToggle';
 import { useAuthStore, useNotificationStore, useUIStore } from '@/store';
 import { cn } from '@/utils/cn';
@@ -19,11 +19,15 @@ const breadcrumbMap: Record<string, Breadcrumb[]> = {
   '/app/notifications': [{ label: 'Dashboard', path: '/app/dashboard' }, { label: 'Notifications' }],
   '/app/settings': [{ label: 'Dashboard', path: '/app/dashboard' }, { label: 'Settings' }],
   '/app/api-keys': [{ label: 'Dashboard', path: '/app/dashboard' }, { label: 'API Keys' }],
+  '/app/contact': [{ label: 'Dashboard', path: '/app/dashboard' }, { label: 'Contact' }],
 };
 
 export default function Header() {
   const location = useLocation();
-  const { sidebarCollapsed, setSidebarOpen, commandPaletteOpen, setCommandPaletteOpen } = useUIStore();
+  const navigate = useNavigate();
+  const notificationsRef = useRef<HTMLDivElement>(null);
+  const userMenuRef = useRef<HTMLDivElement>(null);
+  const { sidebarCollapsed, sidebarOpen, setSidebarOpen, commandPaletteOpen, setCommandPaletteOpen } = useUIStore();
   const { notifications, unreadCount, markAsRead, markAllAsRead } = useNotificationStore();
   const { user, logout } = useAuthStore();
   const [searchFocused, setSearchFocused] = useState(false);
@@ -46,6 +50,21 @@ export default function Header() {
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [commandPaletteOpen, setCommandPaletteOpen]);
 
+  useEffect(() => {
+    const handlePointerDown = (event: PointerEvent) => {
+      const target = event.target as Node;
+      if (notificationsOpen && notificationsRef.current && !notificationsRef.current.contains(target)) {
+        setNotificationsOpen(false);
+      }
+      if (userMenuOpen && userMenuRef.current && !userMenuRef.current.contains(target)) {
+        setUserMenuOpen(false);
+      }
+    };
+
+    document.addEventListener('pointerdown', handlePointerDown);
+    return () => document.removeEventListener('pointerdown', handlePointerDown);
+  }, [notificationsOpen, userMenuOpen]);
+
   const breadcrumbs = breadcrumbMap[location.pathname] || [{ label: 'Dashboard' }];
 
   const getNotificationIcon = (type: string) => {
@@ -61,6 +80,14 @@ export default function Header() {
     }
   };
 
+  const notificationTarget = (notification: { type: string; actionUrl?: string }) => {
+    if (notification.actionUrl) return notification.actionUrl;
+    if (notification.type === 'drift') return '/app/drift-events';
+    if (notification.type === 'schema') return '/app/schema-history';
+    if (notification.type === 'team' || notification.type === 'member') return '/app/settings';
+    return '/app/notifications';
+  };
+
   return (
     <header
       className={cn(
@@ -71,11 +98,11 @@ export default function Header() {
       <div className="flex h-full items-center justify-between gap-3 px-4">
         <div className="flex min-w-0 items-center gap-4">
           <button
-            onClick={() => setSidebarOpen(!sidebarCollapsed)}
-            className="rounded-lg p-2 text-gray-400 transition-colors hover:bg-white/10 hover:text-white lg:hidden"
+            onClick={() => setSidebarOpen(!sidebarOpen)}
+            className="grid h-10 w-10 place-items-center rounded-lg text-gray-400 transition-colors hover:bg-white/10 hover:text-white lg:hidden"
             aria-label="Toggle sidebar"
           >
-            {sidebarCollapsed ? <Menu className="h-5 w-5" /> : <X className="h-5 w-5" />}
+            <Menu className="h-5 w-5" />
           </button>
 
           <nav className="hidden items-center gap-2 text-sm sm:flex">
@@ -118,7 +145,7 @@ export default function Header() {
 
           <ThemeToggle className="h-9 w-[64px] flex-shrink-0" />
 
-          <div className="relative">
+          <div className="relative" ref={notificationsRef}>
             <button
               onClick={() => setNotificationsOpen(!notificationsOpen)}
               className="relative rounded-lg p-2 text-gray-400 transition-colors hover:bg-white/10 hover:text-white"
@@ -155,7 +182,11 @@ export default function Header() {
                       notifications.slice(0, 5).map((notification) => (
                         <button
                           key={notification.id}
-                          onClick={() => markAsRead(notification.id)}
+                          onClick={() => {
+                            void markAsRead(notification.id);
+                            setNotificationsOpen(false);
+                            navigate(notificationTarget(notification));
+                          }}
                           className={cn(
                             'notification-popover-row flex w-full items-start gap-3 px-4 py-3 text-left transition-colors duration-150',
                             !notification.read && 'notification-popover-row-unread'
@@ -183,7 +214,7 @@ export default function Header() {
             </AnimatePresence>
           </div>
 
-          <div className="relative">
+          <div className="relative" ref={userMenuRef}>
             <button
               onClick={() => setUserMenuOpen(!userMenuOpen)}
               className="flex items-center gap-2 rounded-lg p-1.5 transition-colors hover:bg-white/10"

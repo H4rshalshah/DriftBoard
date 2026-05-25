@@ -12,10 +12,10 @@ import {
   AlertTriangle,
   History,
   Bell,
+  Mail,
   Settings,
   Key,
-  ChevronLeft,
-  ChevronRight,
+  Menu,
   ChevronDown,
   LogOut,
   User,
@@ -42,6 +42,7 @@ const navItems: NavItem[] = [
   { path: '/app/notifications', label: 'Notifications', icon: Bell },
   { path: '/app/settings', label: 'Settings', icon: Settings },
   { path: '/app/api-keys', label: 'API Keys', icon: Key },
+  { path: '/app/contact', label: 'Contact', icon: Mail },
 ];
 
 function cn(...inputs: (string | undefined | null | false)[]) {
@@ -51,7 +52,7 @@ function cn(...inputs: (string | undefined | null | false)[]) {
 export default function Sidebar() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { sidebarCollapsed, setSidebarCollapsed } = useUIStore();
+  const { sidebarCollapsed, sidebarOpen, setSidebarCollapsed, setSidebarOpen } = useUIStore();
   const { projects, currentProject, setCurrentProject, fetchProjects, createProject, isLoading, isCreating } = useProjectStore();
   const { fetchEndpoints } = useEndpointStore();
   const { user, logout } = useAuthStore();
@@ -66,6 +67,8 @@ export default function Sidebar() {
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [setupError, setSetupError] = useState('');
   const [setupStatus, setSetupStatus] = useState('');
+  const [isMobile, setIsMobile] = useState(false);
+  const effectiveCollapsed = !isMobile && sidebarCollapsed;
 
   const sidebarVariants = {
     expanded: { width: 260 },
@@ -91,6 +94,13 @@ export default function Sidebar() {
   useEffect(() => {
     fetchProjects();
   }, [fetchProjects]);
+
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 1024);
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   useEffect(() => {
     if (!currentProject && projects.length > 0) {
@@ -244,21 +254,22 @@ export default function Sidebar() {
       className={cn(
         'fixed left-0 top-0 h-screen z-40',
         'app-sidebar-surface backdrop-blur-lg border-r border-white/0',
-        'flex flex-col transition-colors duration-300'
+        'flex flex-col transition-transform duration-300 lg:transition-colors',
+        sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
       )}
       initial={false}
-      animate={sidebarCollapsed ? 'collapsed' : 'expanded'}
+      animate={effectiveCollapsed ? 'collapsed' : 'expanded'}
       variants={sidebarVariants}
       transition={{ duration: 0.3, ease: 'easeInOut' }}
     >
       <div
         className={cn(
           'relative flex h-16 items-center border-b border-white/0 p-3',
-          sidebarCollapsed ? 'justify-start gap-5 pl-4 pr-3' : 'justify-between pr-16'
+          effectiveCollapsed ? 'justify-start gap-5 pl-4 pr-3' : 'justify-between pr-16'
         )}
       >
         <AnimatePresence mode="wait">
-          {!sidebarCollapsed && (
+          {!effectiveCollapsed && (
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -269,29 +280,25 @@ export default function Sidebar() {
             </motion.div>
           )}
         </AnimatePresence>
-        {sidebarCollapsed && canOpenProjectSetup && (
+        {effectiveCollapsed && canOpenProjectSetup && (
           <DriftBoardLogo compact />
         )}
         <button
           onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
           className={cn(
-            'z-50 rounded-lg border border-white/10 bg-glass-dark text-gray-400',
-            'shadow-lg transition-all duration-200 hover:scale-105 hover:bg-white/10 hover:text-white',
-            sidebarCollapsed
-              ? 'relative right-auto top-auto h-8 w-8 translate-y-0 p-0'
-              : 'absolute right-5 top-1/2 -translate-y-1/2 p-1.5'
+            'z-50 place-items-center rounded-full border border-white/20 bg-glass-dark text-gray-300',
+            'hidden shadow-lg transition-all duration-200 hover:scale-105 hover:bg-white/10 hover:text-white lg:inline-grid',
+            effectiveCollapsed
+              ? 'relative right-auto top-auto h-10 w-10 translate-y-0 p-0'
+              : 'absolute right-5 top-1/2 h-10 w-10 -translate-y-1/2 p-0'
           )}
-          aria-label={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          aria-label={effectiveCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
         >
-          {sidebarCollapsed ? (
-            <ChevronRight className="w-4 h-4" />
-          ) : (
-            <ChevronLeft className="w-4 h-4" />
-          )}
+          <Menu className="h-5 w-5" />
         </button>
       </div>
 
-      <div className={cn('flex-1 overflow-y-auto scrollbar-thin py-4', sidebarCollapsed ? 'px-2' : 'px-3')}>
+      <div className={cn('flex-1 overflow-y-auto scrollbar-thin py-4', effectiveCollapsed ? 'px-2' : 'px-3')}>
         <nav className="space-y-1">
           {navItems.map((item, index) => {
             const Icon = item.icon;
@@ -307,6 +314,7 @@ export default function Sidebar() {
               >
                 <NavLink
                   to={item.path}
+                  onClick={() => setSidebarOpen(false)}
                   className={cn(
                     'flex items-center gap-3 px-3 py-2.5 rounded-lg',
                     'transition-all duration-200 group relative',
@@ -323,7 +331,7 @@ export default function Sidebar() {
                     />
                   )}
                   <Icon className={cn('w-5 h-5 flex-shrink-0', isActive && 'text-primary-400')} />
-                  {!sidebarCollapsed && (
+                  {!effectiveCollapsed && (
                     <span className="text-sm font-medium">{item.label}</span>
                   )}
                 </NavLink>
@@ -333,8 +341,8 @@ export default function Sidebar() {
         </nav>
       </div>
 
-      <div className={cn('border-t border-white/0 p-3', sidebarCollapsed && 'px-2')}>
-        {sidebarCollapsed && (
+      <div className={cn('border-t border-white/0 p-3', effectiveCollapsed && 'px-2')}>
+        {effectiveCollapsed && (
           <div className="relative mb-2">
             <button
               onClick={openProjectSetup}
@@ -353,7 +361,7 @@ export default function Sidebar() {
           </div>
         )}
 
-        {!sidebarCollapsed && (
+        {!effectiveCollapsed && (
           <div className="mb-3">
             <button
               onClick={() => {
@@ -441,7 +449,7 @@ export default function Sidebar() {
             className={cn(
               'flex items-center gap-3 w-full p-2 rounded-lg',
               'hover:bg-white/10 transition-colors duration-200',
-              sidebarCollapsed && 'justify-center'
+              effectiveCollapsed && 'justify-center'
             )}
           >
             {user?.avatar ? (
@@ -451,7 +459,7 @@ export default function Sidebar() {
                 <User className="w-4 h-4 text-white" />
               </div>
             )}
-            {!sidebarCollapsed && (
+            {!effectiveCollapsed && (
               <>
                 <div className="flex-1 min-w-0 text-left">
                   <p className="text-sm font-medium text-white truncate">{user?.name || 'User'}</p>
@@ -470,7 +478,7 @@ export default function Sidebar() {
                 className={cn(
                   'sidebar-menu-surface absolute bottom-full z-[60] mb-2 w-full py-1',
                   'overflow-hidden rounded-lg border border-white/10 shadow-2xl',
-                  sidebarCollapsed ? 'left-0' : 'left-0'
+                  effectiveCollapsed ? 'left-0' : 'left-0'
                 )}
               >
                 <button

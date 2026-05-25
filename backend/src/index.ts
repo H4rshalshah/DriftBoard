@@ -3,6 +3,7 @@ import { createServer } from 'http';
 import fs from 'fs';
 import path from 'path';
 import cors from 'cors';
+import dotenv from 'dotenv';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import jwt from 'jsonwebtoken';
@@ -11,7 +12,19 @@ import { v4 as uuidv4 } from 'uuid';
 import crypto from 'crypto';
 import bcrypt from 'bcryptjs';
 import axios from 'axios';
+import nodemailer from 'nodemailer';
 import { Resend } from 'resend';
+
+[
+  path.resolve(process.cwd(), '.env'),
+  path.resolve(process.cwd(), '.env.local'),
+  path.resolve(__dirname, '..', '.env'),
+  path.resolve(__dirname, '..', '.env.local'),
+].forEach((envPath, index, envPaths) => {
+  if (envPaths.indexOf(envPath) === index && fs.existsSync(envPath)) {
+    dotenv.config({ path: envPath, override: false });
+  }
+});
 
 const PORT = Number(process.env.PORT || 5000);
 const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:3000';
@@ -21,6 +34,8 @@ const JWT_SECRET = process.env.JWT_SECRET || 'driftboard-local-demo-secret';
 const EMAIL_MOCK_MODE = process.env.EMAIL_MOCK_MODE === 'true';
 const TEST_EMAIL_WINDOW_MS = Number(process.env.TEST_EMAIL_WINDOW_MS || 10 * 60 * 1000);
 const TEST_EMAIL_MAX_REQUESTS = Number(process.env.TEST_EMAIL_MAX_REQUESTS || 3);
+const OWNER_EMAIL = 'h4rshal.workspace@gmail.com';
+const HTTP_METHODS = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'] as const;
 
 type User = {
   id: string;
@@ -89,6 +104,8 @@ type DetectedEndpoint = {
   url: string;
   method: Endpoint['method'];
   currentSchema?: Record<string, unknown>;
+  sourceFile?: string;
+  monitoringEnabled?: boolean;
 };
 
 type UploadedFile = {
@@ -100,6 +117,7 @@ type UploadedFile = {
   fileType: string;
   fileSize: number;
   uploadedAt: string;
+  detectedEndpoints?: DetectedEndpoint[];
 };
 
 type DriftEvent = {
@@ -197,6 +215,23 @@ type TeamInvite = {
   inviteLink: string;
   invitePassword: string;
   expiresAt: string;
+  createdAt: string;
+};
+
+type InviteAccountStatus = 'existing' | 'new';
+
+type ContactMessage = {
+  id: string;
+  name: string;
+  email: string;
+  subject: 'sales' | 'support' | 'billing' | 'security' | 'feedback' | 'other';
+  message: string;
+  userId?: string;
+  userEmail?: string;
+  ipAddress?: string;
+  userAgent?: string;
+  notificationStatus: 'sent' | 'not_configured' | 'failed';
+  notificationError?: string;
   createdAt: string;
 };
 
@@ -463,6 +498,7 @@ const notifications: AppNotification[] = [
 const apiKeys: ApiKey[] = [];
 const monitoringLogs: MonitoringLog[] = [];
 const emailOutbox: EmailOutboxMessage[] = [];
+const contactMessages: ContactMessage[] = [];
 const teamMembers: TeamMember[] = [
   { id: 'team_member_owner', projectId: 'project_demo', userEmail: demoUser.email, name: demoUser.name, role: 'admin', status: 'joined', joinedAt: now() },
 ];
@@ -481,6 +517,7 @@ type PersistedAppState = {
   apiKeys?: ApiKey[];
   monitoringLogs?: MonitoringLog[];
   emailOutbox?: EmailOutboxMessage[];
+  contactMessages?: ContactMessage[];
   teamMembers?: TeamMember[];
   teamInvites?: TeamInvite[];
   uploadedFiles?: UploadedFile[];
@@ -599,6 +636,7 @@ function loadAppState() {
     replaceArray(apiKeys, parsed.apiKeys);
     replaceArray(monitoringLogs, parsed.monitoringLogs);
     replaceArray(emailOutbox, parsed.emailOutbox);
+    replaceArray(contactMessages, parsed.contactMessages);
     replaceArray(teamMembers, parsed.teamMembers);
     teamMembers.splice(0, teamMembers.length, ...teamMembers.map(normalizeTeamMember));
     replaceArray(teamInvites, parsed.teamInvites);
@@ -625,6 +663,7 @@ function saveAppState() {
       apiKeys,
       monitoringLogs,
       emailOutbox,
+      contactMessages,
       teamMembers,
       teamInvites,
       uploadedFiles,
@@ -651,6 +690,12 @@ type AlertContext = {
   driftEvent?: DriftEvent;
   changes?: DriftEvent['changes'];
   severity?: DriftEvent['severity'];
+  previousResponse?: unknown;
+  currentResponse?: unknown;
+  statusCode?: number | string;
+  isTest?: boolean;
+  webhookStatus?: string;
+  emailStatus?: string;
 };
 
 function notificationSignature(projectId: string, type: AppNotification['type'], title: string, message: string) {
@@ -724,6 +769,12 @@ function alertSummary(title: string, message: string, projectId: string, type: A
     severity,
     driftKind,
     changedFields,
+    previousResponse: context.previousResponse,
+    currentResponse: context.currentResponse,
+    statusCode: context.statusCode,
+    isTest: context.isTest,
+    webhookStatus: context.webhookStatus,
+    emailStatus: context.emailStatus,
     subject: `[DriftBoard] ${title}${project ? ` - ${project.name}` : ''}`,
     title,
     message,
@@ -745,29 +796,40 @@ function isValidEmailAddress(value: string) {
 }
 
 function emailConfigStatus() {
-  const missing = [
+  const missingResend = [
     ['RESEND_API_KEY', process.env.RESEND_API_KEY],
     ['ALERT_FROM_EMAIL', process.env.ALERT_FROM_EMAIL],
   ]
     .filter(([, value]) => !value)
     .map(([key]) => key);
+  const missingSmtp = [
+    ['SMTP_USER', process.env.SMTP_USER],
+    ['SMTP_PASS', process.env.SMTP_PASS],
+  ]
+    .filter(([, value]) => !value)
+    .map(([key]) => key);
+  const hasResend = missingResend.length === 0;
+  const hasSmtp = missingSmtp.length === 0;
+  const provider = hasResend ? 'resend' : hasSmtp ? 'smtp' : EMAIL_MOCK_MODE ? 'mock' : null;
 
   return {
-    configured: missing.length === 0,
+    configured: Boolean(provider),
     mockMode: EMAIL_MOCK_MODE,
-    missing,
-    message: missing.length === 0
-      ? 'Email notifications active'
-      : `Email notifications are not configured. Missing ${missing.join(', ')}.`,
+    provider,
+    missing: hasSmtp ? missingResend : missingSmtp,
+    message: provider
+      ? `Email notifications active via ${provider.toUpperCase()}`
+      : `Email notifications are not configured. Missing ${missingSmtp.join(', ')} for SMTP or ${missingResend.join(', ')} for Resend.`,
   };
 }
 
 type SendEmailInput = {
   to: string;
+  replyTo?: string;
   subject: string;
   html: string;
   text: string;
-  tag: 'drift_alert' | 'team_invitation' | 'test_alert';
+  tag: 'drift_alert' | 'team_invitation' | 'test_alert' | 'contact_message';
 };
 
 async function sendEmailWithResend(input: SendEmailInput): Promise<AlertDelivery> {
@@ -778,7 +840,7 @@ async function sendEmailWithResend(input: SendEmailInput): Promise<AlertDelivery
   }
 
   const status = emailConfigStatus();
-  if (!status.configured) {
+  if (status.provider !== 'resend') {
     console.warn('Missing email configuration', { missing: status.missing, tag: input.tag });
     if (EMAIL_MOCK_MODE) {
       console.info('Email mock mode enabled', { to, subject: input.subject, tag: input.tag });
@@ -797,7 +859,7 @@ async function sendEmailWithResend(input: SendEmailInput): Promise<AlertDelivery
   const payload = {
     from: process.env.ALERT_FROM_EMAIL!,
     to,
-    replyTo: process.env.ALERT_REPLY_TO || undefined,
+    replyTo: input.replyTo || process.env.ALERT_REPLY_TO || undefined,
     subject: input.subject,
     html: input.html,
     text: input.text,
@@ -848,6 +910,23 @@ async function sendEmailWithResend(input: SendEmailInput): Promise<AlertDelivery
   });
   saveAppState();
   throw new Error(lastError instanceof Error ? lastError.message : 'Email delivery failed');
+}
+
+async function sendEmail(input: SendEmailInput): Promise<AlertDelivery> {
+  const status = emailConfigStatus();
+
+  if (status.provider === 'resend') {
+    try {
+      return await sendEmailWithResend(input);
+    } catch (error) {
+      if (!smtpConfigStatus().configured) {
+        throw error;
+      }
+      console.warn('Resend delivery failed. Trying SMTP fallback.', error instanceof Error ? error.message : error);
+    }
+  }
+
+  return sendEmailWithSmtp(input);
 }
 
 function emailShell(title: string, eyebrow: string, body: string, buttonUrl: string, buttonText: string) {
@@ -904,6 +983,52 @@ function detailRows(rows: Array<[string, unknown]>) {
     </table>`;
 }
 
+function formatEmailValue(value: unknown) {
+  if (value === undefined || value === null || value === '') return 'N/A';
+  if (typeof value === 'object') return JSON.stringify(value, null, 2);
+  return String(value);
+}
+
+function formatDateTimeForEmail(value?: string) {
+  return value ? new Date(value).toLocaleString() : 'N/A';
+}
+
+function endpointDetailRows(endpoint?: Endpoint): Array<[string, unknown]> {
+  if (!endpoint) return [];
+  return [
+    ['Endpoint name', endpoint.name],
+    ['Endpoint URL', endpoint.url],
+    ['HTTP method', endpoint.method],
+    ['Endpoint status', endpoint.status],
+    ['Health score', `${endpoint.health}%`],
+    ['Response time', `${endpoint.responseTime} ms`],
+    ['Monitoring', endpoint.monitoringEnabled ? 'Enabled' : 'Disabled'],
+    ['Check frequency', endpoint.frequency],
+    ['Schema version', endpoint.currentSchemaVersion],
+    ['Last checked', formatDateTimeForEmail(endpoint.lastCheckedAt)],
+    ['Last drift', formatDateTimeForEmail(endpoint.lastDriftAt)],
+  ];
+}
+
+function changeDetailText(changes: DriftEvent['changes']) {
+  if (!changes.length) return 'No field-level change details were attached.';
+  return changes.slice(0, 12).map((change) => [
+    `${String(change.type || 'modified').toUpperCase()}: ${change.path || change.field}`,
+    `Field: ${change.field || 'N/A'}`,
+    `Expected: ${formatEmailValue(change.expected)}`,
+    `Actual: ${formatEmailValue(change.actual)}`,
+  ].join('\n')).join('\n\n');
+}
+
+function alertPayloadText(value: unknown, fallback = 'N/A', maxLength = 900) {
+  const raw = value === undefined || value === null || value === ''
+    ? fallback
+    : typeof value === 'string'
+    ? value
+    : JSON.stringify(value, null, 2);
+  return raw.length > maxLength ? `${raw.slice(0, maxLength - 3)}...` : raw;
+}
+
 async function sendDriftAlertEmail(to: string, summary: ReturnType<typeof alertSummary>) {
   const endpointLabel = summary.endpoint ? `${summary.endpoint.method} ${summary.endpoint.name || summary.endpoint.url}` : summary.driftEvent?.endpointName || 'Project event';
   const html = emailShell(
@@ -913,15 +1038,21 @@ async function sendDriftAlertEmail(to: string, summary: ReturnType<typeof alertS
       ${detailRows([
         ['Project', summary.project?.name || 'Unknown project'],
         ['Endpoint', endpointLabel],
-        ['HTTP method', summary.endpoint?.method || 'N/A'],
         ['Drift type', summary.driftKind],
         ['Severity', String(summary.severity || 'drift').toUpperCase()],
         ['Timestamp', new Date(summary.detectedAt).toLocaleString()],
+        ...endpointDetailRows(summary.endpoint),
       ])}
       <div style="margin-top:18px;padding:14px;border-radius:12px;background:#111827;border:1px solid #253044;">
         <div style="color:#94a3b8;font-size:13px;font-weight:700;margin-bottom:8px;">Changed fields</div>
-        <pre style="white-space:pre-wrap;margin:0;color:#dbeafe;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:13px;line-height:1.6;">${htmlEscape(summary.changedFields)}</pre>
+        <pre style="white-space:pre-wrap;margin:0;color:#dbeafe;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:13px;line-height:1.6;">${htmlEscape(changeDetailText(summary.changes))}</pre>
       </div>
+      ${summary.endpoint ? `
+        <div style="margin-top:18px;padding:14px;border-radius:12px;background:#111827;border:1px solid #253044;">
+          <div style="color:#94a3b8;font-size:13px;font-weight:700;margin-bottom:8px;">Current schema</div>
+          <pre style="white-space:pre-wrap;margin:0;color:#dbeafe;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:13px;line-height:1.6;">${htmlEscape(formatEmailValue(summary.endpoint.currentSchema))}</pre>
+        </div>
+      ` : ''}
     `,
     summary.url,
     'View Drift'
@@ -932,17 +1063,19 @@ async function sendDriftAlertEmail(to: string, summary: ReturnType<typeof alertS
     '',
     `Project: ${summary.project?.name || 'Unknown project'}`,
     `Endpoint: ${endpointLabel}`,
-    `HTTP method: ${summary.endpoint?.method || 'N/A'}`,
     `Drift type: ${summary.driftKind}`,
     `Severity: ${String(summary.severity || 'drift').toUpperCase()}`,
     `Timestamp: ${new Date(summary.detectedAt).toLocaleString()}`,
+    ...endpointDetailRows(summary.endpoint).map(([label, value]) => `${label}: ${formatEmailValue(value)}`),
     '',
-    summary.changedFields,
+    'Changed fields:',
+    changeDetailText(summary.changes),
+    ...(summary.endpoint ? ['', 'Current schema:', formatEmailValue(summary.endpoint.currentSchema)] : []),
     '',
     `View Drift: ${summary.url}`,
   ].join('\n');
 
-  return sendEmailWithResend({ to, subject: summary.subject, html, text, tag: 'drift_alert' });
+  return sendEmail({ to, subject: summary.subject, html, text, tag: 'drift_alert' });
 }
 
 async function sendInvitationEmail(to: string, invite: TeamInvite, projectName: string) {
@@ -969,7 +1102,7 @@ async function sendInvitationEmail(to: string, invite: TeamInvite, projectName: 
     `Accept invitation: ${invite.inviteLink}`,
   ].join('\n');
 
-  return sendEmailWithResend({
+  return sendEmail({
     to,
     subject: `DriftBoard invitation to ${projectName}`,
     html,
@@ -979,45 +1112,262 @@ async function sendInvitationEmail(to: string, invite: TeamInvite, projectName: 
 }
 
 async function sendTestAlertEmail(to: string, summary: ReturnType<typeof alertSummary>) {
-  return sendEmailWithResend({
+  const endpointLabel = summary.endpoint ? `${summary.endpoint.method} ${summary.endpoint.name || summary.endpoint.url}` : 'Checkout API';
+  return sendEmail({
     to,
-    subject: '[DriftBoard] Test alert',
+    subject: '[DriftBoard] TEST ALERT - Notification setup',
     html: emailShell(
-      'Test alert delivered',
-      'Your DriftBoard email notification channel is working.',
-      detailRows([
-        ['Project', summary.project?.name || 'Demo Project'],
-        ['Endpoint', summary.endpoint ? `${summary.endpoint.method} ${summary.endpoint.name || summary.endpoint.url}` : 'Checkout API'],
-        ['Severity', 'TEST'],
-        ['Timestamp', new Date().toLocaleString()],
-      ]),
+      'TEST ALERT delivered',
+      'This is a notification setup test, not a real API drift incident.',
+      `
+        ${detailRows([
+          ['Project', summary.project?.name || 'Demo Project'],
+          ['Endpoint', endpointLabel],
+          ['Endpoint method', summary.endpoint?.method || 'POST'],
+          ['Endpoint path', summary.endpoint?.url || '/api/users'],
+          ['Alert type', summary.driftKind],
+          ['Severity', 'TEST'],
+          ['Status code', summary.statusCode || 200],
+          ['Webhook status', summary.webhookStatus || 'Configured for this test'],
+          ['Email status', summary.emailStatus || 'Configured for this test'],
+          ['Timestamp', new Date().toLocaleString()],
+          ...endpointDetailRows(summary.endpoint),
+        ])}
+        <div style="margin-top:18px;padding:14px;border-radius:12px;background:#111827;border:1px solid #253044;">
+          <div style="color:#94a3b8;font-size:13px;font-weight:700;margin-bottom:8px;">Preview changes</div>
+          <pre style="white-space:pre-wrap;margin:0;color:#dbeafe;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:13px;line-height:1.6;">${htmlEscape(changeDetailText(summary.changes))}</pre>
+        </div>
+        <div style="margin-top:18px;padding:14px;border-radius:12px;background:#111827;border:1px solid #253044;">
+          <div style="color:#94a3b8;font-size:13px;font-weight:700;margin-bottom:8px;">Sample previous response</div>
+          <pre style="white-space:pre-wrap;margin:0;color:#dbeafe;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:13px;line-height:1.6;">${htmlEscape(alertPayloadText(summary.previousResponse, 'N/A', 1800))}</pre>
+        </div>
+        <div style="margin-top:18px;padding:14px;border-radius:12px;background:#111827;border:1px solid #253044;">
+          <div style="color:#94a3b8;font-size:13px;font-weight:700;margin-bottom:8px;">Sample current response</div>
+          <pre style="white-space:pre-wrap;margin:0;color:#dbeafe;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:13px;line-height:1.6;">${htmlEscape(alertPayloadText(summary.currentResponse, 'N/A', 1800))}</pre>
+        </div>
+        ${summary.endpoint ? `
+          <div style="margin-top:18px;padding:14px;border-radius:12px;background:#111827;border:1px solid #253044;">
+            <div style="color:#94a3b8;font-size:13px;font-weight:700;margin-bottom:8px;">Current schema</div>
+            <pre style="white-space:pre-wrap;margin:0;color:#dbeafe;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:13px;line-height:1.6;">${htmlEscape(formatEmailValue(summary.endpoint.currentSchema))}</pre>
+          </div>
+        ` : ''}
+      `,
       summary.url,
       'Open DriftBoard'
     ),
-    text: `Your DriftBoard test alert was delivered.\n\nOpen DriftBoard: ${summary.url}`,
+    text: [
+      'TEST ALERT: Your DriftBoard notification setup test was delivered.',
+      '',
+      `Project: ${summary.project?.name || 'Demo Project'}`,
+      `Endpoint: ${endpointLabel}`,
+      `Endpoint method: ${summary.endpoint?.method || 'POST'}`,
+      `Endpoint path: ${summary.endpoint?.url || '/api/users'}`,
+      `Alert type: ${summary.driftKind}`,
+      'Severity: TEST',
+      `Status code: ${summary.statusCode || 200}`,
+      `Webhook status: ${summary.webhookStatus || 'Configured for this test'}`,
+      `Email status: ${summary.emailStatus || 'Configured for this test'}`,
+      `Timestamp: ${new Date().toLocaleString()}`,
+      ...endpointDetailRows(summary.endpoint).map(([label, value]) => `${label}: ${formatEmailValue(value)}`),
+      '',
+      'Preview changes:',
+      changeDetailText(summary.changes),
+      '',
+      'Sample previous response:',
+      alertPayloadText(summary.previousResponse, 'N/A', 1800),
+      '',
+      'Sample current response:',
+      alertPayloadText(summary.currentResponse, 'N/A', 1800),
+      ...(summary.endpoint ? ['', 'Current schema:', formatEmailValue(summary.endpoint.currentSchema)] : []),
+      '',
+      `Open DriftBoard: ${summary.url}`,
+    ].join('\n'),
     tag: 'test_alert',
   });
 }
 
+function contactSubjectLabel(subject: ContactMessage['subject']) {
+  const labels: Record<ContactMessage['subject'], string> = {
+    sales: 'Sales',
+    support: 'Technical support',
+    billing: 'Billing',
+    security: 'Security',
+    feedback: 'Product feedback',
+    other: 'Other',
+  };
+  return labels[subject] || labels.other;
+}
+
+function contactAdminEmail() {
+  return (
+    process.env.CONTACT_ADMIN_EMAIL ||
+    process.env.SUPPORT_EMAIL ||
+    process.env.ALERT_TO_EMAIL ||
+    OWNER_EMAIL
+  ).trim().toLowerCase();
+}
+
+function smtpConfigStatus() {
+  const missing = [
+    ['SMTP_USER', process.env.SMTP_USER],
+    ['SMTP_PASS', process.env.SMTP_PASS],
+  ]
+    .filter(([, value]) => !value)
+    .map(([key]) => key);
+
+  return {
+    configured: missing.length === 0,
+    missing,
+    message: missing.length === 0
+      ? 'SMTP email is configured'
+      : `SMTP email is not configured. Missing ${missing.join(', ')}.`,
+  };
+}
+
+async function sendEmailWithSmtp(input: SendEmailInput): Promise<AlertDelivery> {
+  const to = input.to.trim().toLowerCase();
+  if (!isValidEmailAddress(to)) {
+    throw new Error('Invalid recipient email address.');
+  }
+
+  const status = smtpConfigStatus();
+  if (!status.configured) {
+    if (EMAIL_MOCK_MODE) {
+      console.info('Email mock mode enabled', { to, subject: input.subject, tag: input.tag, provider: 'smtp' });
+      return {
+        channel: 'email',
+        target: to,
+        status: 'mock_sent',
+        provider: 'mock',
+        message: 'Email mock mode is enabled. No real email was sent.',
+      };
+    }
+    throw new Error(status.message);
+  }
+
+  const port = Number(process.env.SMTP_PORT || 587);
+  const transporter = nodemailer.createTransport({
+    host: process.env.SMTP_HOST || 'smtp.gmail.com',
+    port,
+    secure: process.env.SMTP_SECURE === 'true' || port === 465,
+    auth: {
+      user: process.env.SMTP_USER,
+      pass: process.env.SMTP_PASS,
+    },
+  });
+
+  await transporter.sendMail({
+    from: process.env.EMAIL_FROM || `DriftBoard <${process.env.SMTP_USER}>`,
+    to,
+    replyTo: input.replyTo || process.env.ALERT_REPLY_TO || OWNER_EMAIL,
+    subject: input.subject,
+    html: input.html,
+    text: input.text,
+  });
+
+  emailOutbox.unshift({
+    id: uuidv4(),
+    to,
+    subject: input.subject,
+    text: input.text,
+    html: input.html,
+    status: 'sent',
+    provider: 'local',
+    createdAt: now(),
+  });
+  saveAppState();
+  console.info('Email sent successfully', { to, tag: input.tag, provider: 'smtp' });
+  return { channel: 'email', target: to, status: 'sent', provider: 'smtp' };
+}
+
+async function sendContactAdminEmail(message: ContactMessage) {
+  const to = contactAdminEmail();
+  if (!to || !isValidEmailAddress(to)) {
+    throw new Error('Contact admin email is not configured. Set CONTACT_ADMIN_EMAIL, SUPPORT_EMAIL, or ALERT_TO_EMAIL.');
+  }
+
+  const subjectLabel = contactSubjectLabel(message.subject);
+  const html = emailShell(
+    'New contact request',
+    `${message.name} sent a ${subjectLabel.toLowerCase()} message from DriftBoard.`,
+    `
+      ${detailRows([
+        ['Name', message.name],
+        ['Email', message.email],
+        ['Subject', subjectLabel],
+        ['Signed-in user', message.userEmail || 'Guest form'],
+        ['Submitted', new Date(message.createdAt).toLocaleString()],
+      ])}
+      <div style="margin-top:18px;padding:16px;border-radius:12px;background:#111827;border:1px solid #253044;">
+        <div style="color:#94a3b8;font-size:13px;font-weight:700;margin-bottom:8px;">Message</div>
+        <div style="white-space:pre-wrap;color:#e2e8f0;font-size:14px;line-height:1.7;">${htmlEscape(message.message)}</div>
+      </div>
+    `,
+    `${FRONTEND_URL}/app/contact`,
+    'Open DriftBoard'
+  );
+  const text = [
+    'New DriftBoard contact request',
+    '',
+    `Name: ${message.name}`,
+    `Email: ${message.email}`,
+    `Subject: ${subjectLabel}`,
+    `Signed-in user: ${message.userEmail || 'Guest form'}`,
+    `Submitted: ${new Date(message.createdAt).toLocaleString()}`,
+    '',
+    message.message,
+  ].join('\n');
+
+  const input: SendEmailInput = {
+    to,
+    replyTo: message.email,
+    subject: `[DriftBoard Contact] ${subjectLabel} - ${message.name}`,
+    html,
+    text,
+    tag: 'contact_message',
+  };
+
+  return sendEmail(input);
+}
+
 async function sendDiscordAlert(title: string, message: string, projectId: string, type: AppNotification['type'], context: AlertContext): Promise<AlertDelivery> {
   const summary = alertSummary(title, message, projectId, type, context);
+  const endpointMethod = summary.endpoint?.method || 'N/A';
+  const endpointPath = summary.endpoint?.url || summary.driftEvent?.endpointName || 'Project event';
+  const baseFields = [
+    { name: 'Project', value: summary.project?.name || 'Unknown project', inline: true },
+    { name: 'Endpoint method', value: endpointMethod, inline: true },
+    { name: 'Endpoint path', value: endpointPath, inline: true },
+    { name: 'Severity', value: String(summary.severity || type).toUpperCase(), inline: true },
+    { name: 'Drift type', value: summary.driftKind, inline: true },
+    { name: 'Status code', value: String(summary.statusCode ?? 'N/A'), inline: true },
+    { name: 'Detection time', value: new Date(summary.detectedAt).toLocaleString(), inline: true },
+    { name: 'Previous response', value: alertPayloadText(summary.previousResponse, summary.changes.length ? changeDetailText(summary.changes.map((change) => ({ ...change, actual: change.expected }))) : 'N/A'), inline: false },
+    { name: 'Current response', value: alertPayloadText(summary.currentResponse, summary.changes.length ? changeDetailText(summary.changes) : 'N/A'), inline: false },
+    { name: 'Changed fields', value: summary.changedFields.slice(0, 1000), inline: false },
+  ];
+  const testFields = summary.isTest
+    ? [
+        { name: 'Alert type', value: 'TEST ALERT', inline: true },
+        { name: 'Webhook status', value: summary.webhookStatus || 'Configured for this test', inline: true },
+        { name: 'Email status', value: summary.emailStatus || 'Configured for this test', inline: true },
+      ]
+    : [];
+
   await axios.post(notificationChannels.discord.webhookUrl, {
     username: 'DriftBoard',
     avatar_url: `${FRONTEND_URL}/driftboard.svg`,
     embeds: [
       {
-        title: summary.title,
+        title: summary.isTest ? `[TEST ALERT] ${summary.title}` : summary.title,
         description: summary.message,
         color: severityColor(summary.severity),
         url: summary.url,
         timestamp: summary.detectedAt,
         footer: { text: 'DriftBoard Contract Radar' },
         fields: [
-          { name: 'Project', value: summary.project?.name || 'Unknown project', inline: true },
-          { name: 'Endpoint', value: summary.endpoint ? `${summary.endpoint.method} ${summary.endpoint.url}` : summary.driftEvent?.endpointName || 'Project event', inline: true },
-          { name: 'Severity', value: String(summary.severity || type).toUpperCase(), inline: true },
-          { name: 'Drift type', value: summary.driftKind, inline: true },
-          { name: 'Changed fields', value: summary.changedFields.slice(0, 1000), inline: false },
+          ...testFields,
+          ...baseFields,
           { name: 'Open in DriftBoard', value: summary.url, inline: false },
         ],
       },
@@ -1043,7 +1393,7 @@ async function deliverConfiguredAlert(title: string, message: string, projectId:
     }
   }
 
-  if (notificationChannels.email.enabled && notificationChannels.email.address) {
+  if (type !== 'drift' && notificationChannels.email.enabled && notificationChannels.email.address) {
     try {
       await sendEmailAlert(title, message, projectId, type, context);
     } catch (error) {
@@ -1080,7 +1430,7 @@ app.use(
   '/api',
   rateLimit({
     windowMs: Number(process.env.RATE_LIMIT_WINDOW_MS || 900000),
-    max: Number(process.env.RATE_LIMIT_MAX_REQUESTS || 500),
+    max: Number(process.env.RATE_LIMIT_MAX_REQUESTS || 2000),
     standardHeaders: true,
     legacyHeaders: false,
   })
@@ -1091,6 +1441,13 @@ const testEmailLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   message: { message: 'Too many test alerts. Please wait before sending another one.' },
+});
+const contactLimiter = rateLimit({
+  windowMs: Number(process.env.CONTACT_RATE_LIMIT_WINDOW_MS || 15 * 60 * 1000),
+  max: Number(process.env.CONTACT_RATE_LIMIT_MAX_REQUESTS || 5),
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { message: 'Too many contact requests. Please wait a few minutes and try again.' },
 });
 app.use('/api', (req, res, next) => {
   res.on('finish', () => {
@@ -1465,7 +1822,10 @@ function syncUserMembershipAfterProfileChange(previousEmail: string, user: User)
   teamMembers
     .filter((member) => member.userEmail.toLowerCase() === previousEmail.toLowerCase())
     .forEach((member) => {
-      member.userEmail = user.email;
+      const project = projects.find((item) => item.id === member.projectId);
+      if (member.role !== 'owner' || project?.ownerId === user.id || member.userId === user.id) {
+        member.userEmail = user.email;
+      }
       member.name = user.name;
     });
 }
@@ -1667,7 +2027,7 @@ function createEndpointFromDetection(projectId: string, detected: DetectedEndpoi
     status: 'healthy',
     health: 100,
     responseTime: 0,
-    monitoringEnabled: true,
+    monitoringEnabled: detected.monitoringEnabled !== false,
     frequency: '5m',
     currentSchema,
     currentSchemaVersion: 1,
@@ -1688,6 +2048,103 @@ function createEndpointFromDetection(projectId: string, detected: DetectedEndpoi
   });
 
   return endpoint;
+}
+
+function normalizeDetectedPath(value: string) {
+  const trimmed = value.trim().replace(/^['"`]|['"`]$/g, '');
+  if (!trimmed) return '';
+  if (/^https?:\/\//i.test(trimmed)) return trimmed;
+  return trimmed.startsWith('/') ? trimmed : `/${trimmed}`;
+}
+
+function pushDetectedEndpoint(candidates: DetectedEndpoint[], method: string, rawPath: string, sourceFile?: string, currentSchema?: Record<string, unknown>) {
+  const upperMethod = method.toUpperCase() as Endpoint['method'];
+  if (!HTTP_METHODS.includes(upperMethod)) return;
+  const url = normalizeDetectedPath(rawPath);
+  if (!url || url === '/') return;
+  const signature = `${upperMethod} ${url}`;
+  if (candidates.some((endpoint) => `${endpoint.method} ${endpoint.url}` === signature)) return;
+  candidates.push({
+    method: upperMethod,
+    url,
+    name: endpointName(upperMethod, url),
+    currentSchema,
+    sourceFile,
+    monitoringEnabled: true,
+  });
+}
+
+function objectSchemaFromOpenApi(operation: unknown): Record<string, unknown> | undefined {
+  if (!operation || typeof operation !== 'object') return undefined;
+  const responses = (operation as { responses?: Record<string, unknown> }).responses;
+  if (!responses || typeof responses !== 'object') return undefined;
+  const response = responses['200'] || responses['201'] || responses.default || Object.values(responses)[0];
+  if (!response || typeof response !== 'object') return undefined;
+  const content = (response as { content?: Record<string, { schema?: unknown }> }).content;
+  const schema = content?.['application/json']?.schema || (response as { schema?: unknown }).schema;
+  return schema && typeof schema === 'object' && !Array.isArray(schema) ? schema as Record<string, unknown> : undefined;
+}
+
+function detectEndpointsFromOpenApiJson(parsed: unknown, sourceFile?: string) {
+  const detected: DetectedEndpoint[] = [];
+  const paths = parsed && typeof parsed === 'object' ? (parsed as { paths?: Record<string, unknown> }).paths : undefined;
+  if (!paths || typeof paths !== 'object') return detected;
+
+  Object.entries(paths).forEach(([pathName, definition]) => {
+    if (!definition || typeof definition !== 'object') return;
+    HTTP_METHODS.forEach((method) => {
+      const operation = (definition as Record<string, unknown>)[method.toLowerCase()];
+      if (operation) pushDetectedEndpoint(detected, method, pathName, sourceFile, objectSchemaFromOpenApi(operation));
+    });
+  });
+
+  return detected;
+}
+
+function detectEndpointsFromText(content: string, sourceFile?: string) {
+  const detected: DetectedEndpoint[] = [];
+  const methodPattern = HTTP_METHODS.join('|');
+  const routePatterns = [
+    new RegExp(`\\b(?:app|router|api|server|fastify)\\s*\\.\\s*(${methodPattern.toLowerCase()})\\s*\\(\\s*['"\`]([^'"\`]+)['"\`]`, 'gi'),
+    new RegExp(`\\bRoute\\s*::\\s*(${methodPattern.toLowerCase()})\\s*\\(\\s*['"\`]([^'"\`]+)['"\`]`, 'gi'),
+    new RegExp(`@(${methodPattern})\\s*\\(\\s*['"\`]([^'"\`]+)['"\`]`, 'gi'),
+    new RegExp(`\\bmethod\\s*:\\s*['"\`](${methodPattern})['"\`][\\s\\S]{0,160}?\\b(?:url|path)\\s*:\\s*['"\`]([^'"\`]+)['"\`]`, 'gi'),
+    new RegExp(`\\b(${methodPattern})\\s+((?:https?:\\/\\/|\\/)[^\\s"'<>]+)`, 'gi'),
+  ];
+
+  routePatterns.forEach((pattern) => {
+    let match: RegExpExecArray | null;
+    while ((match = pattern.exec(content)) !== null) {
+      pushDetectedEndpoint(detected, match[1], match[2], sourceFile);
+    }
+  });
+
+  const lines = content.split(/\r?\n/);
+  lines.forEach((line, index) => {
+    const pathMatch = line.match(/^\s{0,8}(\/[A-Za-z0-9_./:{}-]+)\s*:\s*$/);
+    if (!pathMatch) return;
+    for (let cursor = index + 1; cursor < Math.min(lines.length, index + 12); cursor += 1) {
+      const methodMatch = lines[cursor].match(/^\s+(get|post|put|patch|delete)\s*:/i);
+      if (methodMatch) pushDetectedEndpoint(detected, methodMatch[1], pathMatch[1], sourceFile);
+    }
+  });
+
+  return detected;
+}
+
+function detectEndpointsFromFileContent(content: string, sourceFile?: string) {
+  try {
+    const parsed = JSON.parse(content);
+    const detected = detectEndpointsFromOpenApiJson(parsed, sourceFile);
+    if (detected.length > 0) return detected;
+  } catch {
+    // Non-JSON source files are handled with route regexes below.
+  }
+  return detectEndpointsFromText(content, sourceFile);
+}
+
+function sanitizeUploadFileName(name: string) {
+  return (name || 'uploaded-api-source.txt').replace(/[\\/:*?"<>|]+/g, '_');
 }
 
 function removeProjectData(projectId: string) {
@@ -2073,6 +2530,20 @@ function endpointRequestInit(endpoint: Endpoint): RequestInit {
 }
 
 async function fetchEndpointResponse(endpoint: Endpoint) {
+  if (!validateFullHttpUrl(endpoint.url)) {
+    const schema = Object.keys(endpoint.currentSchema || {}).length
+      ? endpoint.currentSchema
+      : { status: 'string', data: 'object' };
+    return {
+      statusCode: 204,
+      responseTime: 0,
+      ok: true,
+      body: {},
+      schema,
+      contractOnly: true,
+    };
+  }
+
   const startedAt = Date.now();
   const response = await fetch(endpoint.url, endpointRequestInit(endpoint));
   const responseTime = Date.now() - startedAt;
@@ -2084,6 +2555,10 @@ async function fetchEndpointResponse(endpoint: Endpoint) {
     body = { value: text };
   }
   return { statusCode: response.status, responseTime, ok: response.ok, body };
+}
+
+function schemaFromEndpointResponse(response: Awaited<ReturnType<typeof fetchEndpointResponse>>) {
+  return response.schema || inferSchema(response.body);
 }
 
 function addMonitoringLog(endpoint: Endpoint, statusCode: number, responseTime: number, success: boolean, errorMessage?: string) {
@@ -2231,6 +2706,80 @@ app.get('/health', (_req, res) => {
 
 app.get('/api/health', (_req, res) => {
   res.json({ status: 'healthy', database: 'demo-memory', redis: 'demo-memory', timestamp: now() });
+});
+
+app.post('/api/contact', contactLimiter, async (req, res) => {
+  const allowedSubjects: ContactMessage['subject'][] = ['sales', 'support', 'billing', 'security', 'feedback', 'other'];
+  const signedInUser = getRequestUser(req, false);
+  const name = typeof req.body?.name === 'string' ? req.body.name.trim() : '';
+  const email = normalizeEmail(req.body?.email);
+  const subject = allowedSubjects.includes(req.body?.subject) ? req.body.subject as ContactMessage['subject'] : 'other';
+  const message = typeof req.body?.message === 'string' ? req.body.message.trim() : '';
+  const honeypot = typeof req.body?.website === 'string' ? req.body.website.trim() : '';
+  const startedAt = typeof req.body?.startedAt === 'number' ? req.body.startedAt : Number(req.body?.startedAt || 0);
+
+  if (honeypot) {
+    res.status(202).json({ message: 'Thanks, your message has been received.' });
+    return;
+  }
+
+  if (startedAt && Date.now() - startedAt < 1200) {
+    res.status(429).json({ message: 'Please wait a moment before submitting the form.' });
+    return;
+  }
+
+  if (!name || !email || !message) {
+    res.status(400).json({ message: 'Name, email, and message are required.' });
+    return;
+  }
+
+  if (!isValidEmailAddress(email)) {
+    res.status(400).json({ message: 'Enter a valid email address.' });
+    return;
+  }
+
+  if (name.length > 120) {
+    res.status(400).json({ message: 'Name must be 120 characters or fewer.' });
+    return;
+  }
+
+  if (message.length < 20 || message.length > 4000) {
+    res.status(400).json({ message: 'Message must be between 20 and 4000 characters.' });
+    return;
+  }
+
+  const contactMessage: ContactMessage = {
+    id: uuidv4(),
+    name,
+    email,
+    subject,
+    message,
+    userId: signedInUser?.id,
+    userEmail: signedInUser?.email,
+    ipAddress: req.ip,
+    userAgent: Array.isArray(req.headers['user-agent']) ? req.headers['user-agent'][0] : req.headers['user-agent'],
+    notificationStatus: 'not_configured',
+    createdAt: now(),
+  };
+
+  contactMessages.unshift(contactMessage);
+
+  try {
+    await sendContactAdminEmail(contactMessage);
+    contactMessage.notificationStatus = 'sent';
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Contact email notification failed.';
+    contactMessage.notificationError = errorMessage;
+    contactMessage.notificationStatus = errorMessage.toLowerCase().includes('configured') ? 'not_configured' : 'failed';
+    console.warn('Contact notification was not delivered.', { error: errorMessage, contactMessageId: contactMessage.id });
+  }
+
+  saveAppState();
+  res.status(201).json({
+    message: 'Thanks, your message has been received. We will get back to you soon.',
+    contactId: contactMessage.id,
+    notificationStatus: contactMessage.notificationStatus,
+  });
 });
 
 app.post('/api/auth/login', sendLoginResponse);
@@ -2489,6 +3038,176 @@ app.get('/api/projects/:projectId/files', (req, res) => {
   res.json(uploadedFiles.filter((file) => file.projectId === req.params.projectId));
 });
 
+app.post('/api/projects/:projectId/files/detect-endpoints', (req, res) => {
+  const user = requireProjectPermission(req, res, req.params.projectId, 'endpoint:create');
+  if (!user) return;
+  const project = projects.find((item) => item.id === req.params.projectId);
+  if (!project) {
+    res.status(404).json({ message: 'Project not found' });
+    return;
+  }
+
+  const file = req.body?.file && typeof req.body.file === 'object' ? req.body.file as Record<string, unknown> : {};
+  const originalName = String(file.originalName || file.name || '').trim();
+  const content = String(file.content || '');
+  if (!originalName || !content.trim()) {
+    res.status(400).json({ message: 'Upload a file with readable text content.' });
+    return;
+  }
+  if (content.length > 2_000_000) {
+    res.status(413).json({ message: 'File is too large. Upload a source or OpenAPI file under 2 MB.' });
+    return;
+  }
+
+  const projectUploadRoot = path.join(uploadsRoot, project.id);
+  fs.mkdirSync(projectUploadRoot, { recursive: true });
+  const safeName = `${Date.now()}-${sanitizeUploadFileName(originalName)}`;
+  const storedPath = path.join(projectUploadRoot, safeName);
+  fs.writeFileSync(storedPath, content, 'utf8');
+
+  const detectedEndpoints = detectEndpointsFromFileContent(content, originalName);
+  const uploadedFile: UploadedFile = {
+    id: uuidv4(),
+    userId: user.id,
+    projectId: project.id,
+    originalName,
+    storedPath,
+    fileType: String(file.fileType || file.type || path.extname(originalName).replace(/^\./, '') || 'file'),
+    fileSize: Number(file.fileSize || file.size || Buffer.byteLength(content, 'utf8')),
+    uploadedAt: now(),
+    detectedEndpoints,
+  };
+  uploadedFiles.unshift(uploadedFile);
+  createNotification(project.id, 'system', 'File uploaded', `${originalName} uploaded with ${detectedEndpoints.length} detected endpoint${detectedEndpoints.length === 1 ? '' : 's'}.`, false);
+  saveAppState();
+
+  res.status(201).json({ file: uploadedFile, detectedEndpoints });
+});
+
+app.post('/api/projects/:projectId/endpoints/import-detected', (req, res) => {
+  const user = requireProjectPermission(req, res, req.params.projectId, 'endpoint:create');
+  if (!user) return;
+  const project = projects.find((item) => item.id === req.params.projectId);
+  if (!project) {
+    res.status(404).json({ message: 'Project not found' });
+    return;
+  }
+
+  const selectedEndpoints = Array.isArray(req.body?.endpoints)
+    ? (req.body.endpoints as DetectedEndpoint[]).filter((endpoint) => endpoint?.url && endpoint?.method)
+    : [];
+  if (selectedEndpoints.length === 0) {
+    res.status(400).json({ message: 'Select at least one endpoint to monitor.' });
+    return;
+  }
+
+  const imported: Endpoint[] = [];
+  selectedEndpoints.forEach((detected) => {
+    const method = String(detected.method || '').toUpperCase() as Endpoint['method'];
+    const url = normalizeDetectedPath(String(detected.url || ''));
+    if (!HTTP_METHODS.includes(method) || !url) return;
+
+    const existing = endpoints.find((endpoint) =>
+      endpoint.projectId === project.id &&
+      endpoint.method === method &&
+      endpoint.url === url
+    );
+    if (existing) {
+      const previousSchema = existing.currentSchema;
+      existing.monitoringEnabled = detected.monitoringEnabled !== false;
+      existing.updatedAt = now();
+      if (detected.currentSchema && isPlainSchemaObject(detected.currentSchema)) {
+        if (existing.currentSchemaVersion < 1 || existing.schemaVersions.length === 0) {
+          existing.currentSchema = detected.currentSchema;
+          existing.currentSchemaVersion = 1;
+          existing.schemaVersions.push({
+            id: uuidv4(),
+            endpointId: existing.id,
+            version: 1,
+            schema: detected.currentSchema,
+            createdAt: existing.updatedAt,
+            createdBy: 'Uploaded file scanner',
+            changelog: `Baseline schema extracted from ${detected.sourceFile || 'uploaded file'}`,
+          });
+          existing.status = existing.monitoringEnabled ? 'healthy' : 'disabled';
+          existing.health = existing.monitoringEnabled ? Math.max(existing.health || 0, 90) : existing.health;
+        } else {
+          const comparison = compareSchemas(existing.currentSchema, detected.currentSchema);
+          if (comparison.changes.length > 0) {
+            const version = existing.currentSchemaVersion + 1;
+            const schemaVersion = {
+              id: uuidv4(),
+              endpointId: existing.id,
+              version,
+              schema: detected.currentSchema,
+              createdAt: existing.updatedAt,
+              createdBy: 'Uploaded file scanner',
+              changelog: comparison.changes.map(formatSchemaChange).join(', '),
+            };
+            existing.schemaVersions.push(schemaVersion);
+            existing.currentSchema = detected.currentSchema;
+            existing.currentSchemaVersion = version;
+            existing.status = existing.monitoringEnabled ? 'drifted' : 'disabled';
+            existing.health = existing.monitoringEnabled ? comparison.severity === 'breaking' ? 62 : 78 : existing.health;
+            existing.lastDriftAt = existing.updatedAt;
+            const event: DriftEvent = {
+              id: uuidv4(),
+              endpointId: existing.id,
+              endpointName: existing.name,
+              projectId: existing.projectId,
+              projectName: project.name,
+              severity: comparison.severity,
+              status: 'new',
+              detectedAt: existing.updatedAt,
+              message: `${existing.name} changed in uploaded file: ${comparison.changes.map(formatSchemaChange).join(', ')}`,
+              changes: comparison.changes,
+            };
+            driftEvents.unshift(event);
+            createNotification(existing.projectId, 'drift', 'API Drift Detected', event.message, true, {
+              endpoint: existing,
+              driftEvent: event,
+              changes: event.changes,
+              severity: event.severity,
+              previousResponse: previousSchema,
+              currentResponse: detected.currentSchema,
+              statusCode: 'Uploaded file schema',
+            });
+            createNotification(existing.projectId, 'schema', `Schema Version ${version} created`, `${existing.name} changed from uploaded file scan to Version ${version}.`, false, {
+              endpoint: existing,
+              driftEvent: event,
+              changes: event.changes,
+              severity: event.severity,
+            });
+            io.emit('drift:new', event);
+          } else {
+            existing.status = existing.monitoringEnabled ? (existing.status === 'disabled' ? 'healthy' : existing.status) : 'disabled';
+          }
+        }
+      } else {
+        existing.status = existing.monitoringEnabled ? (existing.status === 'disabled' ? 'healthy' : existing.status) : 'disabled';
+      }
+      io.emit('endpoint:updated', existing);
+      imported.push(existing);
+      return;
+    }
+
+    const endpoint = createEndpointFromDetection(project.id, {
+      ...detected,
+      method,
+      url,
+      monitoringEnabled: detected.monitoringEnabled !== false,
+    });
+    endpoints.push(endpoint);
+    imported.push(endpoint);
+    io.emit('endpoint:created', endpoint);
+  });
+
+  syncProjectEndpointCount(project.id);
+  createNotification(project.id, 'system', 'Endpoints imported', `${imported.length} endpoint${imported.length === 1 ? '' : 's'} added to monitoring from uploaded file.`, false);
+  saveAppState();
+  res.status(201).json(imported);
+});
+
 function createProjectHandler(req: Request, res: Response) {
   const user = requireAccountProjectCreate(req, res);
   if (!user) return;
@@ -2744,7 +3463,7 @@ app.post('/api/projects/:projectId/endpoints', async (req, res) => {
   try {
     const result = await fetchEndpointResponse(endpoint);
     if (result.ok && !hasManualSchema) {
-      initialSchema = inferSchema(result.body);
+      initialSchema = schemaFromEndpointResponse(result);
       baselineCreated = true;
       endpoint.currentSchemaVersion = 1;
     }
@@ -2826,8 +3545,80 @@ app.patch('/api/endpoints/:id', (req, res) => {
     res.status(400).json({ message: 'Initial Schema must be a valid JSON object.' });
     return;
   }
-  Object.assign(endpoint, req.body, { updatedAt: now() });
+  const nextSchema = req.body?.currentSchema as Record<string, unknown> | undefined;
+  const updates = { ...req.body };
+  delete updates.currentSchema;
+  Object.assign(endpoint, updates, { updatedAt: now() });
+
+  if (nextSchema) {
+    if (endpoint.currentSchemaVersion < 1 || endpoint.schemaVersions.length === 0) {
+      endpoint.currentSchema = nextSchema;
+      endpoint.currentSchemaVersion = 1;
+      endpoint.status = endpoint.monitoringEnabled === false ? 'disabled' : 'healthy';
+      endpoint.health = endpoint.monitoringEnabled === false ? endpoint.health : Math.max(endpoint.health || 0, 90);
+      endpoint.schemaVersions.push({
+        id: uuidv4(),
+        endpointId: endpoint.id,
+        version: 1,
+        schema: nextSchema,
+        createdAt: endpoint.updatedAt,
+        createdBy: user.name,
+        changelog: 'Manual baseline schema',
+      });
+      createNotification(endpoint.projectId, 'schema', 'Baseline Schema Updated', `${endpoint.name} manual schema was saved as Version 1.`, false, { endpoint, severity: 'low' });
+    } else {
+      const comparison = compareSchemas(endpoint.currentSchema, nextSchema);
+      const changed = comparison.changes.length > 0;
+      if (changed) {
+        const version = endpoint.currentSchemaVersion + 1;
+        const previousVersion = endpoint.schemaVersions.find((item) => item.version === endpoint.currentSchemaVersion);
+        endpoint.currentSchema = nextSchema;
+        endpoint.currentSchemaVersion = version;
+        endpoint.status = endpoint.monitoringEnabled === false ? 'disabled' : 'drifted';
+        endpoint.health = endpoint.monitoringEnabled === false ? endpoint.health : comparison.severity === 'breaking' ? 62 : 78;
+        endpoint.lastDriftAt = endpoint.updatedAt;
+        const schemaVersion = {
+          id: uuidv4(),
+          endpointId: endpoint.id,
+          version,
+          schema: nextSchema,
+          createdAt: endpoint.updatedAt,
+          createdBy: user.name,
+          changelog: comparison.changes.map(formatSchemaChange).join(', '),
+        };
+        endpoint.schemaVersions.push(schemaVersion);
+        const event: DriftEvent = {
+          id: uuidv4(),
+          endpointId: endpoint.id,
+          endpointName: endpoint.name,
+          projectId: endpoint.projectId,
+          projectName: projects.find((project) => project.id === endpoint.projectId)?.name || 'Project',
+          severity: comparison.severity,
+          status: 'new',
+          detectedAt: endpoint.updatedAt,
+          message: `${endpoint.name} changed: ${comparison.changes.map(formatSchemaChange).join(', ')}`,
+          changes: comparison.changes,
+        };
+        driftEvents.unshift(event);
+        createNotification(endpoint.projectId, 'drift', 'API Drift Detected', event.message, true, {
+          endpoint,
+          driftEvent: event,
+          changes: event.changes,
+          severity: event.severity,
+          previousResponse: previousVersion?.schema,
+          currentResponse: nextSchema,
+          statusCode: 'Manual schema update',
+        });
+        createNotification(endpoint.projectId, 'schema', `Schema Version ${version} created`, `${endpoint.name} changed from Version ${previousVersion?.version || version - 1} to Version ${version}.`, false, { endpoint, driftEvent: event, changes: event.changes, severity: event.severity });
+        io.emit('drift:new', event);
+      } else {
+        endpoint.currentSchema = nextSchema;
+      }
+    }
+  }
+
   if (req.body?.status === 'disabled') endpoint.monitoringEnabled = false;
+  if (endpoint.monitoringEnabled === false) endpoint.status = 'disabled';
   io.emit('endpoint:updated', endpoint);
   res.json(endpoint);
 });
@@ -2934,7 +3725,7 @@ app.post('/api/endpoints/:id/refresh', async (req, res) => {
   }
 
   resolveEndpointFailureIncident(endpoint);
-  const incomingSchema = req.body?.currentSchema || inferSchema(response.body);
+  const incomingSchema = req.body?.currentSchema || schemaFromEndpointResponse(response);
   if (!isPlainSchemaObject(incomingSchema)) {
     res.status(400).json({ message: 'Initial Schema must be a valid JSON object.' });
     return;
@@ -3000,7 +3791,15 @@ app.post('/api/endpoints/:id/refresh', async (req, res) => {
       changes: comparison.changes,
     };
     driftEvents.unshift(event);
-    driftNotification = createNotification(endpoint.projectId, 'drift', 'API Drift Detected', event.message, true, { endpoint, driftEvent: event, changes: event.changes, severity: event.severity });
+    driftNotification = createNotification(endpoint.projectId, 'drift', 'API Drift Detected', event.message, true, {
+      endpoint,
+      driftEvent: event,
+      changes: event.changes,
+      severity: event.severity,
+      previousResponse: oldVersion?.schema,
+      currentResponse: incomingSchema,
+      statusCode: response.statusCode,
+    });
     versionNotification = createNotification(endpoint.projectId, 'schema', `Schema Version ${version} created`, `${endpoint.name} changed from Version ${oldVersion?.version || version - 1} to Version ${version}.`, false, { endpoint, driftEvent: event, changes: event.changes, severity: event.severity });
     io.emit('drift:new', event);
   } else {
@@ -3022,12 +3821,24 @@ app.post('/api/endpoints/:id/rollback', (req, res) => {
   const user = requireProjectPermission(req, res, endpoint.projectId, 'schema:update');
   if (!user) return;
   const version = endpoint.schemaVersions.find((item) => item.id === req.body?.versionId);
-  if (version) {
-    endpoint.currentSchema = version.schema;
-    endpoint.currentSchemaVersion = version.version;
-    endpoint.updatedAt = now();
-    createNotification(endpoint.projectId, 'schema', 'Schema baseline rolled back', `${endpoint.name} was rolled back to Version ${version.version}.`);
+  if (!version) {
+    res.status(404).json({ message: 'Schema version not found for this endpoint.' });
+    return;
   }
+  endpoint.currentSchema = version.schema;
+  endpoint.currentSchemaVersion = version.version;
+  endpoint.status = endpoint.monitoringEnabled === false ? 'disabled' : 'healthy';
+  endpoint.health = endpoint.monitoringEnabled === false ? endpoint.health : Math.max(endpoint.health || 0, 90);
+  endpoint.updatedAt = now();
+  driftEvents
+    .filter((event) => event.endpointId === endpoint.id && event.status === 'new')
+    .forEach((event) => {
+      event.status = 'resolved';
+      event.resolvedAt = endpoint.updatedAt;
+    });
+  createNotification(endpoint.projectId, 'schema', 'Schema baseline rolled back', `${endpoint.name} was rolled back to Version ${version.version}.`, false, { endpoint, severity: 'low' });
+  io.emit('endpoint:updated', endpoint);
+  saveAppState();
   res.json(endpoint);
 });
 
@@ -3097,8 +3908,18 @@ app.post('/api/schema-versions/:id/rollback', (req, res) => {
   const version = endpoint.schemaVersions.find((item) => item.id === req.params.id)!;
   endpoint.currentSchema = version.schema;
   endpoint.currentSchemaVersion = version.version;
+  endpoint.status = endpoint.monitoringEnabled === false ? 'disabled' : 'healthy';
+  endpoint.health = endpoint.monitoringEnabled === false ? endpoint.health : Math.max(endpoint.health || 0, 90);
   endpoint.updatedAt = now();
-  createNotification(endpoint.projectId, 'schema', 'Schema baseline rolled back', `${endpoint.name} was rolled back to Version ${version.version}.`);
+  driftEvents
+    .filter((event) => event.endpointId === endpoint.id && event.status === 'new')
+    .forEach((event) => {
+      event.status = 'resolved';
+      event.resolvedAt = endpoint.updatedAt;
+    });
+  createNotification(endpoint.projectId, 'schema', 'Schema baseline rolled back', `${endpoint.name} was rolled back to Version ${version.version}.`, false, { endpoint, severity: 'low' });
+  io.emit('endpoint:updated', endpoint);
+  saveAppState();
   res.json(endpoint);
 });
 
@@ -3139,7 +3960,7 @@ app.post('/api/projects/:projectId/drift-events/refresh', async (req, res) => {
         checked.push({ endpoint, log, notification, changed: false, failure: true });
       } else {
         resolveEndpointFailureIncident(endpoint);
-        const latestSchema = inferSchema(response.body);
+        const latestSchema = schemaFromEndpointResponse(response);
         if (endpoint.currentSchemaVersion < 1 || endpoint.schemaVersions.length === 0) {
           const schemaVersion = {
             id: uuidv4(),
@@ -3190,7 +4011,15 @@ app.post('/api/projects/:projectId/drift-events/refresh', async (req, res) => {
             changes: comparison.changes,
           };
           driftEvents.unshift(event);
-          createNotification(endpoint.projectId, 'drift', 'API Drift Detected', event.message, true, { endpoint, driftEvent: event, changes: event.changes, severity: event.severity });
+          createNotification(endpoint.projectId, 'drift', 'API Drift Detected', event.message, true, {
+            endpoint,
+            driftEvent: event,
+            changes: event.changes,
+            severity: event.severity,
+            previousResponse: schemaVersion.version > 1 ? endpoint.schemaVersions.find((item) => item.version === version - 1)?.schema : endpoint.currentSchema,
+            currentResponse: latestSchema,
+            statusCode: response.statusCode,
+          });
           createNotification(endpoint.projectId, 'schema', `Schema Version ${version} created`, `${endpoint.name} changed to Version ${version}.`, false, { endpoint, driftEvent: event, changes: event.changes, severity: event.severity });
           io.emit('drift:new', event);
           checked.push({ endpoint, log, schemaVersion, event, changed: true });
@@ -3593,10 +4422,12 @@ app.get('/api/team/invite/:token', (req, res) => {
     return;
   }
   const project = projects.find((item) => item.id === invite.projectId);
+  const existingUser = findUserByEmail(invite.userEmail);
   res.json({
     projectName: project?.name || 'DriftBoard Project',
     email: invite.userEmail,
     role: invite.role,
+    accountStatus: existingUser ? 'existing' : 'new',
     expiresAt: invite.expiresAt,
   });
 });
@@ -3624,15 +4455,65 @@ app.post('/api/team/invite/:token/accept', (req, res) => {
   }
 
   const existingUser = findUserByEmail(invite.userEmail);
+  const hasExistingAccount = Boolean(existingUser);
+  const accountMode = req.body?.accountMode === 'existing' || req.body?.accountMode === 'new'
+    ? req.body.accountMode as InviteAccountStatus
+    : hasExistingAccount
+    ? 'existing'
+    : 'new';
+
+  if (hasExistingAccount && accountMode !== 'existing') {
+    res.status(409).json({ message: 'An account already exists for this invite email. Choose existing account and enter that account password.' });
+    return;
+  }
+
+  if (!hasExistingAccount && accountMode !== 'new') {
+    res.status(404).json({ message: 'No account exists for this invite email. Choose create account to join this project.' });
+    return;
+  }
+
+  if (existingUser?.passwordHash) {
+    const accountPassword = String(req.body?.accountPassword || '');
+    if (!accountPassword) {
+      res.status(400).json({ message: 'Enter the invited account password.' });
+      return;
+    }
+    if (!bcrypt.compareSync(accountPassword, existingUser.passwordHash)) {
+      res.status(401).json({ message: 'Invited account password is incorrect.' });
+      return;
+    }
+  }
+
+  const newAccountPassword = String(req.body?.newPassword || '');
+  const invitedName = typeof req.body?.name === 'string' && req.body.name.trim()
+    ? req.body.name.trim()
+    : invite.userEmail.split('@')[0];
+  const invitedUsername = normalizeUsername(req.body?.username, invite.userEmail);
+
+  if (!existingUser) {
+    if (!newAccountPassword || newAccountPassword.length < 8) {
+      res.status(400).json({ message: 'Create an account password of at least 8 characters.' });
+      return;
+    }
+    if (!invitedName) {
+      res.status(400).json({ message: 'Full name is required.' });
+      return;
+    }
+    if (isUsernameTaken(invitedUsername)) {
+      res.status(409).json({ message: 'That username is already taken.' });
+      return;
+    }
+  }
+
   const invitedUser = upsertUser({
     ...(existingUser || {}),
     id: existingUser?.id || uuidv4(),
     email: invite.userEmail,
-    username: existingUser?.username || usernameFrom(invite.userEmail),
-    name: existingUser?.name || invite.userEmail.split('@')[0],
-    role: existingUser?.role || invite.role,
+    username: existingUser?.username || invitedUsername,
+    name: existingUser?.name || invitedName,
+    role: existingUser?.role || 'member',
     authProvider: existingUser?.authProvider || 'password',
-    passwordHash: existingUser?.passwordHash || bcrypt.hashSync(invite.invitePassword, 10),
+    passwordHash: existingUser?.passwordHash || bcrypt.hashSync(newAccountPassword, 10),
   } as User);
 
   let member = teamMembers.find(
@@ -3665,7 +4546,6 @@ app.post('/api/team/invite/:token/accept', (req, res) => {
   }
   project.memberCount = teamMembers.filter((item) => item.projectId === project.id && item.status !== 'removed').length;
 
-  setActiveUser(invitedUser);
   teamInvites.splice(inviteIndex, 1);
   createNotification(invite.projectId, 'team', 'Team member joined', `${invite.userEmail} joined ${project.name}.`);
   res.json({ user: publicUser(invitedUser), token: issueToken(invitedUser), project: projectForUser(project, invitedUser) });
@@ -3815,30 +4695,73 @@ async function sendTestAlertHandler(req: Request, res: Response) {
   };
   const title = 'Schema Drift Alert Preview';
   const message = driftEvent.message;
-  const context: AlertContext = { endpoint, driftEvent, changes: driftEvent.changes, severity: driftEvent.severity };
   const delivered: AlertDelivery[] = [];
+  const requestedDiscord = req.body?.discord || {};
+  const requestedEmail = req.body?.email || {};
+  const discordEnabled = typeof requestedDiscord.enabled === 'boolean' ? requestedDiscord.enabled : notificationChannels.discord.enabled;
+  const discordWebhookUrl = typeof requestedDiscord.webhookUrl === 'string' ? requestedDiscord.webhookUrl.trim() : notificationChannels.discord.webhookUrl;
+  const emailEnabled = typeof requestedEmail.enabled === 'boolean' ? requestedEmail.enabled : notificationChannels.email.enabled;
+  const emailAddress = typeof requestedEmail.address === 'string' && requestedEmail.address.trim()
+    ? requestedEmail.address.trim().toLowerCase()
+    : notificationChannels.email.address;
+  const context: AlertContext = {
+    endpoint,
+    driftEvent,
+    changes: driftEvent.changes,
+    severity: driftEvent.severity,
+    previousResponse: {
+      response: {
+        id: 'usr_123',
+        email: 'sam@example.com',
+        name: 'Sam Example',
+      },
+    },
+    currentResponse: {
+      response: {
+        id: 'usr_123',
+        email: null,
+        name: 'Sam Example',
+        customer: { tier: 'pro' },
+      },
+    },
+    statusCode: 200,
+    isTest: true,
+    webhookStatus: discordWebhookUrl ? 'Ready' : 'Missing Discord webhook URL',
+    emailStatus: emailAddress ? 'Ready' : 'Missing email address',
+  };
 
   try {
-    if (notificationChannels.discord.enabled) {
-      if (!notificationChannels.discord.webhookUrl) {
-        res.status(400).json({ message: 'Discord webhook URL is required' });
-        return;
-      }
-      delivered.push(await sendDiscordAlert(title, message, driftEvent.projectId, 'drift', context));
+    if (!discordWebhookUrl) {
+      res.status(400).json({ message: 'Discord webhook URL is required for a full test alert.' });
+      return;
+    }
+    if (!emailAddress) {
+      res.status(400).json({ message: 'Email address is required for a full test alert.' });
+      return;
+    }
+    if (!isValidEmailAddress(emailAddress)) {
+      res.status(400).json({ message: 'Enter a valid alert email address.' });
+      return;
     }
 
-    if (notificationChannels.email.enabled) {
-      if (!notificationChannels.email.address) {
-        res.status(400).json({ message: 'Email address is required' });
-        return;
+    if (discordEnabled || discordWebhookUrl) {
+      const previousWebhookUrl = notificationChannels.discord.webhookUrl;
+      notificationChannels.discord.webhookUrl = discordWebhookUrl;
+      try {
+        delivered.push(await sendDiscordAlert(title, message, driftEvent.projectId, 'drift', context));
+      } finally {
+        notificationChannels.discord.webhookUrl = previousWebhookUrl;
       }
+    }
+
+    if (emailEnabled || emailAddress) {
       const summary = alertSummary(title, message, driftEvent.projectId, 'drift', context);
-      delivered.push(await sendTestAlertEmail(notificationChannels.email.address, summary));
-      createNotification(req.body?.projectId || 'project_demo', 'system', 'Test email sent', `Test email sent to ${notificationChannels.email.address}.`, false);
+      delivered.push(await sendTestAlertEmail(emailAddress, summary));
+      createNotification(req.body?.projectId || 'project_demo', 'system', 'Test email sent', `Test email sent to ${emailAddress}.`, false);
     }
 
     if (delivered.length === 0) {
-      res.status(400).json({ message: 'Choose Discord or Email before sending a test alert' });
+      res.status(400).json({ message: 'Enable both Discord and Email before sending a full test alert.' });
       return;
     }
 
@@ -4056,7 +4979,7 @@ const monitoringTimer = setInterval(() => {
           }
 
           resolveEndpointFailureIncident(endpoint);
-          const latestSchema = inferSchema(response.body);
+          const latestSchema = schemaFromEndpointResponse(response);
           if (endpoint.currentSchemaVersion < 1 || endpoint.schemaVersions.length === 0) {
             const schemaVersion = {
               id: uuidv4(),
@@ -4115,7 +5038,16 @@ const monitoringTimer = setInterval(() => {
             changes: comparison.changes,
           };
           driftEvents.unshift(event);
-          const notification = createNotification(endpoint.projectId, 'drift', 'API Drift Detected', event.message, true, { endpoint, driftEvent: event, changes: event.changes, severity: event.severity });
+          const previousSchema = endpoint.schemaVersions.find((item) => item.version === version - 1)?.schema;
+          const notification = createNotification(endpoint.projectId, 'drift', 'API Drift Detected', event.message, true, {
+            endpoint,
+            driftEvent: event,
+            changes: event.changes,
+            severity: event.severity,
+            previousResponse: previousSchema,
+            currentResponse: latestSchema,
+            statusCode: response.statusCode,
+          });
           createNotification(endpoint.projectId, 'schema', `Schema Version ${version} created`, `${endpoint.name} changed to Version ${version}.`, false, { endpoint, driftEvent: event, changes: event.changes, severity: event.severity });
           io.emit('drift:new', event);
           io.emit('endpoint:checked', { endpoint, log, schemaVersion, event, notification, changed: true });

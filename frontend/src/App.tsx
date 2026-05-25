@@ -12,6 +12,7 @@ import SchemaHistoryPage from '@/pages/SchemaHistoryPage';
 import SettingsPage from '@/pages/SettingsPage';
 import NotificationsPage from '@/pages/NotificationsPage';
 import ApiKeysPage from '@/pages/ApiKeysPage';
+import ContactPage from '@/pages/ContactPage';
 import Layout from '@/components/layout/Layout';
 import { ScrollToTop } from '@/components/common/ScrollToTop';
 
@@ -60,6 +61,7 @@ function App() {
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/invite/:token" element={<InvitePage />} />
+        <Route path="/contact" element={<ContactPage />} />
         <Route
           path="/app"
           element={
@@ -76,6 +78,7 @@ function App() {
           <Route path="notifications" element={<NotificationsPage />} />
           <Route path="settings" element={<SettingsPage />} />
           <Route path="api-keys" element={<ApiKeysPage />} />
+          <Route path="contact" element={<ContactPage />} />
         </Route>
       </Routes>
     </>

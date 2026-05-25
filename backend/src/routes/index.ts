@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import contactRoutes from './contact';
 import authRoutes from './auth';
 import userRoutes from './users';
 import teamRoutes from './teams';
@@ -13,6 +14,7 @@ const router = Router();
 
 router.use('/auth', authRoutes);
 router.use('/users', userRoutes);
+router.use('/contact', contactRoutes);
 router.use('/teams', teamRoutes);
 router.use('/projects', projectRoutes);
 router.use('/endpoints', endpointRoutes);

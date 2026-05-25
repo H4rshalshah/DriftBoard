@@ -136,7 +136,7 @@ function isLocalInviteLink(link?: string) {
 
 export default function SettingsPage() {
   const { user, setUser } = useAuthStore();
-  const { currentProject } = useProjectStore();
+  const { currentProject, fetchCurrentProject } = useProjectStore();
   const { preferences, updatePreferences } = useNotificationStore();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isSavingProfile, setIsSavingProfile] = useState(false);
@@ -179,6 +179,12 @@ export default function SettingsPage() {
       avatar: user?.avatar || '',
     }));
   }, [user?.avatar, user?.email, user?.name, user?.username]);
+
+  useEffect(() => {
+    if (!currentProject?.id) {
+      void fetchCurrentProject();
+    }
+  }, [currentProject?.id, fetchCurrentProject]);
 
   useEffect(() => {
     if (!currentProject?.id) return;
@@ -230,8 +236,8 @@ export default function SettingsPage() {
       toast.error('You do not have permission to perform this action.');
       return;
     }
-    if (!notificationChannels.discord.enabled && !notificationChannels.email.enabled) {
-      toast.error('Choose Discord or Email before sending a test alert.');
+    if (!notificationChannels.discord.enabled || !notificationChannels.email.enabled) {
+      toast.error('Enable both Discord and Email before sending a full test alert.');
       return;
     }
     if (notificationChannels.discord.enabled && !notificationChannels.discord.webhookUrl.trim()) {
@@ -246,6 +252,8 @@ export default function SettingsPage() {
     try {
       const result = await api.post<{ delivered: AlertDelivery[]; message: string }>('/settings/test-alert', {
         projectId: currentProject?.id,
+        discord: notificationChannels.discord,
+        email: notificationChannels.email,
       });
       const emailDelivery = result.delivered.find((delivery) => delivery.channel === 'email');
       if (emailDelivery?.status === 'mock_sent') {
@@ -285,6 +293,9 @@ export default function SettingsPage() {
         role: inviteRole,
       });
       setGeneratedInvite(invited);
+      const members = await api.get<TeamMember[]>(`/team/${currentProject.id}`);
+      setTeamMembers(members);
+      await fetchCurrentProject();
       setInviteRole('member');
       toast.success('Invite link generated.');
     } catch (error) {
@@ -348,6 +359,7 @@ export default function SettingsPage() {
     try {
       const updated = await api.put<TeamMember>(`/team/member/${member.id}`, { role });
       setTeamMembers((current) => current.map((item) => (item.id === member.id ? updated : item)));
+      await fetchCurrentProject();
       toast.success('Member role updated.');
     } catch (error) {
       toast.error(getErrorMessage(error, 'Could not update role.'));
@@ -375,6 +387,7 @@ export default function SettingsPage() {
     try {
       await api.delete(`/team/member/${member.id}`);
       setTeamMembers((current) => current.filter((item) => item.id !== member.id));
+      await fetchCurrentProject();
       toast.success(isCurrentUser ? 'You left the team.' : 'Member removed.');
     } catch (error) {
       toast.error(getErrorMessage(error, 'Could not remove member.'));
@@ -786,7 +799,7 @@ export default function SettingsPage() {
                             </Badge>
                           </div>
                           <p className="mt-1 text-sm leading-6 text-white/55">
-                            Sends a polished HTML and plain-text incident email with the same drift details your team sees in Discord.
+                            Sends a polished HTML and plain-text incident email to the alert address you enter below.
                           </p>
                         </div>
                       </div>
@@ -826,7 +839,7 @@ export default function SettingsPage() {
                     )}
                     {!notificationChannels.emailConfig?.configured && (
                       <div className="mt-4 rounded-lg border border-amber-400/25 bg-amber-400/10 px-3 py-2 text-sm leading-6 text-amber-100">
-                        Email notifications are not configured.
+                        Email notifications are not configured. Add SMTP or Resend credentials on the server.
                       </div>
                     )}
                   </div>
@@ -841,7 +854,7 @@ export default function SettingsPage() {
                   </Button>
                 </div>
                 <p className="text-sm text-white/50">
-                  Discord sends immediately through your webhook. Email sends server-side through Resend when `RESEND_API_KEY` and `ALERT_FROM_EMAIL` are configured.
+                  Discord sends immediately through your webhook. Email sends server-side through SMTP or Resend to the saved alert address.
                 </p>
               </CardContent>
             </Card>

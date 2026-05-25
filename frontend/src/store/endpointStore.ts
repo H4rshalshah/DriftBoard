@@ -138,7 +138,9 @@ export const useEndpointStore = create<EndpointState>((set, get) => ({
     try {
       const endpoint = await api.patch<Endpoint>(`/endpoints/${id}`, data);
       set((state) => ({
+        endpoints: state.endpoints.map((item) => (item.id === id ? endpoint : item)),
         activeEndpoint: state.activeEndpoint?.id === id ? endpoint : state.activeEndpoint,
+        schemaHistory: state.schemaHistory.some((version) => version.endpointId === id) ? endpoint.schemaVersions : state.schemaHistory,
         isUpdating: false,
       }));
     } catch (error) {
@@ -206,6 +208,7 @@ export const useEndpointStore = create<EndpointState>((set, get) => ({
       set((state) => ({
         endpoints: state.endpoints.map((e) => (e.id === endpointId ? endpoint : e)),
         activeEndpoint: state.activeEndpoint?.id === endpointId ? endpoint : state.activeEndpoint,
+        schemaHistory: endpoint.schemaVersions,
         isUpdating: false,
       }));
     } catch (error) {

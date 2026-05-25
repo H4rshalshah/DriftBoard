@@ -118,6 +118,8 @@ const monitoringDurations = [
   { label: '7 days', value: '7d' },
 ];
 
+const RESTART_COOLDOWN_MS = 10000;
+
 function buildLastSevenDaysActivity(timestamps: string[]): ActivityBucket[] {
   const today = new Date();
   const buckets = Array.from({ length: 7 }, (_, index) => {
@@ -180,6 +182,8 @@ function formatRelativeTime(dateString: string): string {
 
 export default function DashboardPage() {
   const graphSectionRef = useRef<HTMLDivElement>(null);
+  const monitoringActionRef = useRef(0);
+  const restartCooldownTargetRef = useRef<number | null>(null);
   const { user } = useAuthStore();
   const { currentProject, fetchProject, resumeMonitoring, startMonitoring, stopMonitoring } = useProjectStore();
   const { driftEvents, isLoading: driftLoading } = useDriftStore();
@@ -191,6 +195,7 @@ export default function DashboardPage() {
   const [activityTimestamps, setActivityTimestamps] = useState<string[]>([]);
   const [monitoringDuration, setMonitoringDuration] = useState('all');
   const [isUpdatingMonitoring, setIsUpdatingMonitoring] = useState(false);
+  const [restartSecondsRemaining, setRestartSecondsRemaining] = useState(0);
   const reportUrlRef = useRef<string | null>(null);
   const reportFileName = 'driftboard-demo-report.json';
 
@@ -339,6 +344,7 @@ export default function DashboardPage() {
   const isProjectConnected = Boolean(
     currentProject?.id && ['active', 'connected', 'monitoring'].includes(currentProject.monitoringStatus || '')
   );
+  const isRestartCoolingDown = !isProjectConnected && restartSecondsRemaining > 0;
   const selectedDurationLabel = monitoringDurations.find((item) => item.value === monitoringDuration)?.label || 'All time';
   const monitoringEndsAt = currentProject?.monitoringEndsAt ? new Date(currentProject.monitoringEndsAt) : null;
   const canRunScans = hasProjectPermission(currentProject?.currentUserRole, 'scan:run');
@@ -349,6 +355,8 @@ export default function DashboardPage() {
     ? monitoringEndsAt
       ? `Monitoring until ${monitoringEndsAt.toLocaleString()}`
       : 'Continuous monitoring is active'
+    : isRestartCoolingDown
+    ? `You can restart monitoring in ${restartSecondsRemaining}s.`
     : 'Disconnected. Ready to resume when you are.';
 
   const maxChanges = Math.max(1, ...activityData.map((d) => d.changes));
@@ -389,30 +397,87 @@ export default function DashboardPage() {
   const startProjectMonitoring = async () => {
     if (!currentProject?.id) return;
     if (!canRunScans) return;
-      setIsUpdatingMonitoring(true);
-    try {
-      if (isProjectConnected) {
-        await startMonitoring(currentProject.id, monitoringDuration);
-      } else {
-        await resumeMonitoring(currentProject.id, monitoringDuration);
+    if (isUpdatingMonitoring) return;
+    if (!isProjectConnected && isRestartCoolingDown) return;
+    const projectId = currentProject.id;
+    const actionId = monitoringActionRef.current + 1;
+    monitoringActionRef.current = actionId;
+    restartCooldownTargetRef.current = null;
+    setRestartSecondsRemaining(0);
+    setIsUpdatingMonitoring(true);
+
+    const request = isProjectConnected
+      ? startMonitoring(projectId, monitoringDuration)
+      : resumeMonitoring(projectId, monitoringDuration);
+
+    window.setTimeout(() => {
+      if (monitoringActionRef.current === actionId) {
+        setIsUpdatingMonitoring(false);
       }
-      await fetchEndpoints(currentProject.id);
-    } finally {
-      setIsUpdatingMonitoring(false);
-    }
+    }, 180);
+
+    request
+      .then(() => {
+        void fetchEndpoints(projectId);
+      })
+      .catch(() => {
+        if (monitoringActionRef.current === actionId) {
+          setIsUpdatingMonitoring(false);
+        }
+      });
   };
 
   const stopProjectMonitoring = async () => {
     if (!currentProject?.id) return;
     if (!canRunScans) return;
+    if (isUpdatingMonitoring) return;
+    const projectId = currentProject.id;
+    const actionId = monitoringActionRef.current + 1;
+    monitoringActionRef.current = actionId;
+    restartCooldownTargetRef.current = Date.now() + RESTART_COOLDOWN_MS;
+    setRestartSecondsRemaining(Math.ceil(RESTART_COOLDOWN_MS / 1000));
     setIsUpdatingMonitoring(true);
-    try {
-      await stopMonitoring(currentProject.id);
-      await fetchEndpoints(currentProject.id);
-    } finally {
-      setIsUpdatingMonitoring(false);
-    }
+
+    const request = stopMonitoring(projectId);
+
+    window.setTimeout(() => {
+      if (monitoringActionRef.current === actionId) {
+        setIsUpdatingMonitoring(false);
+      }
+    }, 180);
+
+    request
+      .then(() => {
+        void fetchEndpoints(projectId);
+      })
+      .catch(() => {
+        restartCooldownTargetRef.current = null;
+        setRestartSecondsRemaining(0);
+        if (monitoringActionRef.current === actionId) {
+          setIsUpdatingMonitoring(false);
+        }
+      });
   };
+
+  useEffect(() => {
+    if (!restartCooldownTargetRef.current) return;
+    const intervalId = window.setInterval(() => {
+      const target = restartCooldownTargetRef.current;
+      if (!target) {
+        window.clearInterval(intervalId);
+        return;
+      }
+      const remaining = Math.max(0, Math.ceil((target - Date.now()) / 1000));
+      setRestartSecondsRemaining(remaining);
+      if (remaining <= 0) {
+        restartCooldownTargetRef.current = null;
+        setIsUpdatingMonitoring(false);
+        window.clearInterval(intervalId);
+      }
+    }, 200);
+
+    return () => window.clearInterval(intervalId);
+  }, [restartSecondsRemaining]);
 
   useEffect(() => {
     return () => {
@@ -443,15 +508,15 @@ export default function DashboardPage() {
               : 'Connect a project to start monitoring endpoint drift.'}
           </p>
         </div>
-        <div className="flex flex-wrap items-center gap-3">
-          <div className="dashboard-monitoring-controls flex w-full flex-wrap items-center gap-2 rounded-lg border border-white/10 bg-white/5 p-1.5 lg:w-auto">
-            <div className="grid flex-1 grid-cols-3 overflow-hidden rounded-md border border-white/10 sm:flex sm:flex-none">
+        <div className="flex w-full flex-col gap-3 xl:w-auto xl:flex-row xl:flex-wrap xl:items-center xl:justify-end">
+          <div className="dashboard-monitoring-controls flex w-full flex-col gap-2 rounded-lg border border-white/10 bg-white/5 p-2 xl:w-auto xl:flex-row xl:items-center">
+            <div className="grid w-full grid-cols-2 overflow-hidden rounded-md border border-white/10 sm:grid-cols-3 xl:flex xl:w-auto xl:flex-none">
               {monitoringDurations.map((duration) => (
                 <button
                   key={duration.value}
                   type="button"
                   onClick={() => setMonitoringDuration(duration.value)}
-                  className={`h-8 min-w-[76px] px-3 text-xs font-medium transition-colors ${
+                  className={`h-9 min-w-0 px-3 text-xs font-medium transition-colors xl:h-8 xl:min-w-[76px] ${
                     monitoringDuration === duration.value
                       ? 'bg-primary-500/30 text-white'
                       : 'text-white/60 hover:bg-white/10 hover:text-white'
@@ -461,37 +526,43 @@ export default function DashboardPage() {
                 </button>
               ))}
             </div>
-            <Button
-              size="sm"
-              className="min-w-[174px]"
-              leftIcon={<Play className="h-4 w-4" />}
-              loading={isUpdatingMonitoring && !isProjectConnected}
-              disabled={!currentProject?.id || !canRunScans}
-              onClick={() => void startProjectMonitoring()}
-            >
-              {isProjectConnected ? `Restart ${selectedDurationLabel}` : 'Resume Monitoring'}
-            </Button>
-            <div className="w-[86px]">
-            {isProjectConnected ? (
+            <div className="grid w-full grid-cols-1 gap-2 sm:grid-cols-[minmax(0,1fr)_86px] xl:w-auto xl:grid-cols-[minmax(174px,auto)_86px]">
+              <Button
+                size="sm"
+                className="w-full whitespace-nowrap xl:min-w-[174px]"
+                leftIcon={<Play className="h-4 w-4" />}
+                loading={isUpdatingMonitoring}
+                disabled={!currentProject?.id || !canRunScans || isUpdatingMonitoring || isRestartCoolingDown}
+                onClick={() => void startProjectMonitoring()}
+              >
+                {isProjectConnected
+                  ? `Restart ${selectedDurationLabel}`
+                  : isRestartCoolingDown
+                  ? `Resume in ${restartSecondsRemaining}s`
+                  : 'Resume Monitoring'}
+              </Button>
+              {isProjectConnected ? (
               <Button
                 variant="secondary"
                 size="sm"
                 fullWidth
+                className="whitespace-nowrap"
                 leftIcon={<Pause className="h-4 w-4" />}
                 loading={isUpdatingMonitoring}
-                disabled={!canRunScans}
+                disabled={!canRunScans || isUpdatingMonitoring}
                 onClick={() => void stopProjectMonitoring()}
               >
                 Stop
               </Button>
-            ) : (
-              <span className="block h-8" aria-hidden="true" />
-            )}
+              ) : (
+                <span className="hidden h-8 sm:block" aria-hidden="true" />
+              )}
             </div>
           </div>
           <Button
             variant="secondary"
             size="sm"
+            className="w-full xl:w-auto"
             leftIcon={<LineChart className="w-4 h-4" />}
             onClick={viewGraph}
           >
@@ -500,6 +571,7 @@ export default function DashboardPage() {
           <Button
             variant="secondary"
             size="sm"
+            className="w-full xl:w-auto"
             leftIcon={<FileText className="w-4 h-4" />}
             onClick={generateReport}
           >
@@ -513,11 +585,15 @@ export default function DashboardPage() {
           <div className="dashboard-alert-danger md:col-span-2 lg:col-span-4 rounded-lg border p-4">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <p className="font-semibold">Ready to resume</p>
-                <p className="mt-1 text-sm">Your saved project data is still here. Resume monitoring when you want endpoint checks to run again.</p>
+                <p className="font-semibold">{isRestartCoolingDown ? 'Restart cooling down' : 'Ready to resume'}</p>
+                <p className="mt-1 text-sm">
+                  {isRestartCoolingDown
+                    ? `You can restart monitoring in ${restartSecondsRemaining} second${restartSecondsRemaining === 1 ? '' : 's'}.`
+                    : 'Your saved project data is still here. Resume monitoring when you want endpoint checks to run again.'}
+                </p>
               </div>
-              <Button size="sm" className="min-w-[132px]" leftIcon={<Play className="h-4 w-4" />} loading={isUpdatingMonitoring} disabled={!canRunScans} onClick={() => void startProjectMonitoring()}>
-                Resume Monitoring
+              <Button size="sm" className="min-w-[132px]" leftIcon={<Play className="h-4 w-4" />} loading={isUpdatingMonitoring} disabled={!canRunScans || isUpdatingMonitoring || isRestartCoolingDown} onClick={() => void startProjectMonitoring()}>
+                {isRestartCoolingDown ? `Resume in ${restartSecondsRemaining}s` : 'Resume Monitoring'}
               </Button>
             </div>
           </div>
@@ -625,14 +701,14 @@ export default function DashboardPage() {
               <div className="relative h-40 rounded-lg border border-white/10 bg-black/10 px-3 pb-3 pt-8">
                 <div className="absolute inset-x-3 top-1/2 h-px bg-white/10" />
                 <div className="absolute inset-x-3 top-8 h-px bg-white/5" />
-                <div className="flex h-full items-end justify-between gap-2">
+                <div className="grid h-full grid-cols-7 items-end gap-2">
                   {activityData.map((data, index) => {
                     const active = data.changes > 0;
                     const isToday = data.date === todayKey;
                     const barHeight = active ? Math.max(18, (data.changes / maxChanges) * 100) : 6;
 
                     return (
-                      <div key={data.date || data.day} className="flex h-full flex-1 flex-col items-center justify-end gap-2">
+                      <div key={data.date || data.day} className="flex h-full min-w-0 flex-col items-center justify-end gap-2">
                         <motion.div
                           initial={{ height: 0, opacity: 0.45 }}
                           animate={{ height: `${barHeight}%`, opacity: active ? 1 : 0.35 }}
@@ -652,9 +728,9 @@ export default function DashboardPage() {
                   })}
                 </div>
               </div>
-              <div className="mt-3 flex justify-between">
+              <div className="mt-3 grid grid-cols-7 gap-2">
                 {activityData.map((data) => (
-                  <span key={data.date || data.day} className={`text-xs ${data.date === todayKey ? 'font-semibold text-indigo-200' : 'text-white/40'}`}>
+                  <span key={data.date || data.day} className={`min-w-0 text-center text-xs ${data.date === todayKey ? 'font-semibold text-indigo-200' : 'text-white/40'}`}>
                     {data.day}
                   </span>
                 ))}

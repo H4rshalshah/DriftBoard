@@ -62,7 +62,7 @@ export default function Layout() {
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -20 }}
           transition={{ duration: 0.3 }}
-          className="pt-16 min-h-screen"
+          className="min-h-[calc(100vh-4rem)] pt-16"
         >
           <div className="relative z-10 p-4 sm:p-6">
             <Outlet />
