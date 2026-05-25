@@ -1,0 +1,13 @@
+.env
+.env.*
+backend/.env
+backend/.env.*
+backend/data
+node_modules
+dist
+frontend/dist
+backend/dist
+sdk/dist
+coverage
+logs
+*.log

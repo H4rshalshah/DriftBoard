@@ -4949,134 +4949,140 @@ io.on('connection', (socket) => {
   socket.on('project:leave', ({ projectId }) => socket.leave(`project:${projectId}`));
 });
 
-const monitoringTimer = setInterval(() => {
-  endpoints
-    .filter((endpoint) => endpoint.monitoringEnabled !== false)
-    .filter((endpoint) => {
-      const project = projects.find((item) => item.id === endpoint.projectId);
-      return project && ['active', 'connected', 'monitoring'].includes(project.monitoringStatus);
-    })
-    .forEach((endpoint) => {
-      const interval = frequencyToMs(endpoint.frequency);
-      const lastRun = lastAutoRefreshAt.get(endpoint.id) || 0;
-      if (Date.now() - lastRun < interval) return;
-      lastAutoRefreshAt.set(endpoint.id, Date.now());
+function startMonitoringLoop() {
+  return setInterval(() => {
+    endpoints
+      .filter((endpoint) => endpoint.monitoringEnabled !== false)
+      .filter((endpoint) => {
+        const project = projects.find((item) => item.id === endpoint.projectId);
+        return project && ['active', 'connected', 'monitoring'].includes(project.monitoringStatus);
+      })
+      .forEach((endpoint) => {
+        const interval = frequencyToMs(endpoint.frequency);
+        const lastRun = lastAutoRefreshAt.get(endpoint.id) || 0;
+        if (Date.now() - lastRun < interval) return;
+        lastAutoRefreshAt.set(endpoint.id, Date.now());
 
-      void (async () => {
-        try {
-          const response = await fetchEndpointResponse(endpoint);
-          const log = addMonitoringLog(endpoint, response.statusCode, response.responseTime, response.ok, response.ok ? undefined : `Endpoint returned ${response.statusCode}`);
-          endpoint.responseTime = response.responseTime;
-          endpoint.lastCheckedAt = now();
-          endpoint.updatedAt = endpoint.lastCheckedAt;
+        void (async () => {
+          try {
+            const response = await fetchEndpointResponse(endpoint);
+            const log = addMonitoringLog(endpoint, response.statusCode, response.responseTime, response.ok, response.ok ? undefined : `Endpoint returned ${response.statusCode}`);
+            endpoint.responseTime = response.responseTime;
+            endpoint.lastCheckedAt = now();
+            endpoint.updatedAt = endpoint.lastCheckedAt;
 
-          if (!response.ok) {
-            endpoint.status = 'failed';
-            endpoint.health = 15;
-            const notification = createEndpointFailureIncident(endpoint, `Endpoint returned HTTP ${response.statusCode}`);
-            io.emit('endpoint:checked', { endpoint, log, notification, changed: false, failure: true });
-            return;
-          }
+            if (!response.ok) {
+              endpoint.status = 'failed';
+              endpoint.health = 15;
+              const notification = createEndpointFailureIncident(endpoint, `Endpoint returned HTTP ${response.statusCode}`);
+              io.emit('endpoint:checked', { endpoint, log, notification, changed: false, failure: true });
+              return;
+            }
 
-          resolveEndpointFailureIncident(endpoint);
-          const latestSchema = schemaFromEndpointResponse(response);
-          if (endpoint.currentSchemaVersion < 1 || endpoint.schemaVersions.length === 0) {
+            resolveEndpointFailureIncident(endpoint);
+            const latestSchema = schemaFromEndpointResponse(response);
+            if (endpoint.currentSchemaVersion < 1 || endpoint.schemaVersions.length === 0) {
+              const schemaVersion = {
+                id: uuidv4(),
+                endpointId: endpoint.id,
+                version: 1,
+                schema: latestSchema,
+                createdAt: now(),
+                createdBy: 'Monitoring engine',
+                changelog: 'Baseline schema captured from first successful response',
+              };
+              endpoint.schemaVersions.push(schemaVersion);
+              endpoint.currentSchema = latestSchema;
+              endpoint.currentSchemaVersion = 1;
+              endpoint.status = 'healthy';
+              endpoint.health = Math.max(90, 100 - Math.floor(response.responseTime / 80));
+              const notification = createNotification(endpoint.projectId, 'schema', 'Baseline Schema Captured', `${endpoint.name} first successful response was saved as Version 1.`, false, { endpoint, severity: 'low' });
+              io.emit('endpoint:checked', { endpoint, log, schemaVersion, notification, changed: false });
+              return;
+            }
+
+            const comparison = compareSchemas(endpoint.currentSchema, latestSchema);
+            if (!comparison.changes.length) {
+              endpoint.status = endpoint.status === 'drifted' ? 'drifted' : 'healthy';
+              endpoint.health = Math.max(90, 100 - Math.floor(response.responseTime / 80));
+              io.emit('endpoint:checked', { endpoint, log, changed: false });
+              return;
+            }
+
+            const version = endpoint.currentSchemaVersion + 1;
             const schemaVersion = {
               id: uuidv4(),
               endpointId: endpoint.id,
-              version: 1,
+              version,
               schema: latestSchema,
               createdAt: now(),
               createdBy: 'Monitoring engine',
-              changelog: 'Baseline schema captured from first successful response',
+              changelog: comparison.changes.map(formatSchemaChange).join(', '),
             };
             endpoint.schemaVersions.push(schemaVersion);
             endpoint.currentSchema = latestSchema;
-            endpoint.currentSchemaVersion = 1;
-            endpoint.status = 'healthy';
-            endpoint.health = Math.max(90, 100 - Math.floor(response.responseTime / 80));
-            const notification = createNotification(endpoint.projectId, 'schema', 'Baseline Schema Captured', `${endpoint.name} first successful response was saved as Version 1.`, false, { endpoint, severity: 'low' });
-            io.emit('endpoint:checked', { endpoint, log, schemaVersion, notification, changed: false });
-            return;
+            endpoint.currentSchemaVersion = version;
+            endpoint.status = 'drifted';
+            endpoint.health = comparison.severity === 'breaking' ? 62 : 78;
+            endpoint.lastDriftAt = now();
+
+            const event: DriftEvent = {
+              id: uuidv4(),
+              endpointId: endpoint.id,
+              endpointName: endpoint.name,
+              projectId: endpoint.projectId,
+              projectName: projects.find((project) => project.id === endpoint.projectId)?.name || 'Project',
+              severity: comparison.severity,
+              status: 'new',
+              detectedAt: now(),
+              message: `${endpoint.name} changed: ${comparison.changes.map(formatSchemaChange).join(', ')}`,
+              changes: comparison.changes,
+            };
+            driftEvents.unshift(event);
+            const previousSchema = endpoint.schemaVersions.find((item) => item.version === version - 1)?.schema;
+            const notification = createNotification(endpoint.projectId, 'drift', 'API Drift Detected', event.message, true, {
+              endpoint,
+              driftEvent: event,
+              changes: event.changes,
+              severity: event.severity,
+              previousResponse: previousSchema,
+              currentResponse: latestSchema,
+              statusCode: response.statusCode,
+            });
+            createNotification(endpoint.projectId, 'schema', `Schema Version ${version} created`, `${endpoint.name} changed to Version ${version}.`, false, { endpoint, driftEvent: event, changes: event.changes, severity: event.severity });
+            io.emit('drift:new', event);
+            io.emit('endpoint:checked', { endpoint, log, schemaVersion, event, notification, changed: true });
+          } catch (error) {
+            const message = error instanceof Error ? error.message : 'Endpoint fetch failed';
+            endpoint.status = 'failed';
+            endpoint.health = 10;
+            endpoint.lastCheckedAt = now();
+            endpoint.updatedAt = endpoint.lastCheckedAt;
+            const log = addMonitoringLog(endpoint, 0, 0, false, message);
+            const notification = createEndpointFailureIncident(endpoint, message);
+            io.emit('endpoint:checked', { endpoint, log, notification, changed: false, failure: true });
+          } finally {
+            saveAppState();
           }
+        })();
+      });
+  }, 1000);
+}
 
-          const comparison = compareSchemas(endpoint.currentSchema, latestSchema);
-          if (!comparison.changes.length) {
-            endpoint.status = endpoint.status === 'drifted' ? 'drifted' : 'healthy';
-            endpoint.health = Math.max(90, 100 - Math.floor(response.responseTime / 80));
-            io.emit('endpoint:checked', { endpoint, log, changed: false });
-            return;
-          }
-
-          const version = endpoint.currentSchemaVersion + 1;
-          const schemaVersion = {
-            id: uuidv4(),
-            endpointId: endpoint.id,
-            version,
-            schema: latestSchema,
-            createdAt: now(),
-            createdBy: 'Monitoring engine',
-            changelog: comparison.changes.map(formatSchemaChange).join(', '),
-          };
-          endpoint.schemaVersions.push(schemaVersion);
-          endpoint.currentSchema = latestSchema;
-          endpoint.currentSchemaVersion = version;
-          endpoint.status = 'drifted';
-          endpoint.health = comparison.severity === 'breaking' ? 62 : 78;
-          endpoint.lastDriftAt = now();
-
-          const event: DriftEvent = {
-            id: uuidv4(),
-            endpointId: endpoint.id,
-            endpointName: endpoint.name,
-            projectId: endpoint.projectId,
-            projectName: projects.find((project) => project.id === endpoint.projectId)?.name || 'Project',
-            severity: comparison.severity,
-            status: 'new',
-            detectedAt: now(),
-            message: `${endpoint.name} changed: ${comparison.changes.map(formatSchemaChange).join(', ')}`,
-            changes: comparison.changes,
-          };
-          driftEvents.unshift(event);
-          const previousSchema = endpoint.schemaVersions.find((item) => item.version === version - 1)?.schema;
-          const notification = createNotification(endpoint.projectId, 'drift', 'API Drift Detected', event.message, true, {
-            endpoint,
-            driftEvent: event,
-            changes: event.changes,
-            severity: event.severity,
-            previousResponse: previousSchema,
-            currentResponse: latestSchema,
-            statusCode: response.statusCode,
-          });
-          createNotification(endpoint.projectId, 'schema', `Schema Version ${version} created`, `${endpoint.name} changed to Version ${version}.`, false, { endpoint, driftEvent: event, changes: event.changes, severity: event.severity });
-          io.emit('drift:new', event);
-          io.emit('endpoint:checked', { endpoint, log, schemaVersion, event, notification, changed: true });
-        } catch (error) {
-          const message = error instanceof Error ? error.message : 'Endpoint fetch failed';
-          endpoint.status = 'failed';
-          endpoint.health = 10;
-          endpoint.lastCheckedAt = now();
-          endpoint.updatedAt = endpoint.lastCheckedAt;
-          const log = addMonitoringLog(endpoint, 0, 0, false, message);
-          const notification = createEndpointFailureIncident(endpoint, message);
-          io.emit('endpoint:checked', { endpoint, log, notification, changed: false, failure: true });
-        } finally {
-          saveAppState();
-        }
-      })();
-    });
-}, 1000);
+const monitoringTimer = process.env.VERCEL ? undefined : startMonitoringLoop();
 
 app.use((_req, res) => {
   res.status(404).json({ message: 'Route not found' });
 });
 
-httpServer.listen(PORT, () => {
-  console.log(`DriftBoard backend running on http://localhost:${PORT}`);
-});
+if (!process.env.VERCEL) {
+  httpServer.listen(PORT, () => {
+    console.log(`DriftBoard backend running on http://localhost:${PORT}`);
+  });
+}
 
 function shutdownBackend(signal: NodeJS.Signals) {
-  clearInterval(monitoringTimer);
+  if (monitoringTimer) clearInterval(monitoringTimer);
   saveAppState();
   httpServer.close(() => {
     process.kill(process.pid, signal);
@@ -5086,3 +5092,5 @@ function shutdownBackend(signal: NodeJS.Signals) {
 process.once('SIGUSR2', () => shutdownBackend('SIGUSR2'));
 process.once('SIGINT', () => shutdownBackend('SIGINT'));
 process.once('SIGTERM', () => shutdownBackend('SIGTERM'));
+
+export default app;
