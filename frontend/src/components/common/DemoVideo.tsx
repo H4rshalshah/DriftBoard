@@ -40,9 +40,9 @@ const scrollItemVariants = {
 
 function Workflow3DSignal() {
   return (
-    <div className="relative my-6 h-[150px] max-w-[320px] overflow-hidden [perspective:700px] sm:mb-8 sm:mt-8 sm:h-[240px] sm:max-w-[520px] sm:[perspective:900px]" aria-hidden="true">
+    <div className="relative mx-auto my-8 h-[250px] w-full max-w-[420px] overflow-hidden [perspective:760px] sm:mb-8 sm:mt-8 sm:h-[240px] sm:max-w-[520px] sm:[perspective:900px] lg:mx-0" aria-hidden="true">
       <svg
-        className="absolute inset-0 z-[2] hidden h-full w-full overflow-visible sm:block"
+        className="absolute inset-0 z-[2] h-full w-full overflow-visible opacity-55 sm:opacity-100"
         viewBox="0 0 520 240"
         preserveAspectRatio="none"
       >
@@ -51,9 +51,9 @@ function Workflow3DSignal() {
         <line className="tech-signal-line tech-signal-line-alert" x1="182" y1="198" x2="244" y2="156" />
       </svg>
 
-      <div className="absolute left-1/2 top-[66%] z-[1] h-24 w-24 rounded-[18px] border border-indigo-500/24 bg-indigo-500/5 shadow-[0_22px_42px_rgba(67,56,202,0.12)] [transform:translate(-50%,-50%)_rotateX(64deg)_rotateZ(-38deg)] dark:border-indigo-300/28 dark:bg-indigo-300/10 dark:shadow-[0_22px_48px_rgba(79,70,229,0.2)] sm:h-40 sm:w-40 sm:rounded-[26px] sm:shadow-[0_34px_70px_rgba(67,56,202,0.12)] sm:dark:shadow-[0_34px_78px_rgba(79,70,229,0.18)]" />
+      <div className="absolute left-1/2 top-[68%] z-[1] h-36 w-36 rounded-[24px] border border-indigo-400/30 bg-indigo-400/10 shadow-[0_28px_72px_rgba(99,102,241,0.24)] [transform:translate(-50%,-50%)_rotateX(64deg)_rotateZ(-38deg)] dark:border-indigo-300/34 dark:bg-indigo-300/12 dark:shadow-[0_30px_82px_rgba(99,102,241,0.28)] sm:h-40 sm:w-40 sm:rounded-[26px] sm:shadow-[0_34px_80px_rgba(99,102,241,0.22)] sm:dark:shadow-[0_34px_88px_rgba(99,102,241,0.24)]" />
 
-      <div className="tech-contract-cube absolute left-1/2 top-[38%] z-[4] h-14 w-14 [--cube-depth:28px] sm:h-20 sm:w-20 sm:[--cube-depth:40px]">
+      <div className="tech-contract-cube absolute left-1/2 top-[42%] z-[4] h-24 w-24 [--cube-depth:46px] sm:h-24 sm:w-24 sm:[--cube-depth:46px]">
         <span className="tech-contract-face tech-contract-face-front" />
         <span className="tech-contract-face tech-contract-face-back" />
         <span className="tech-contract-face tech-contract-face-right" />
@@ -62,9 +62,9 @@ function Workflow3DSignal() {
         <span className="tech-contract-face tech-contract-face-bottom" />
       </div>
 
-      <div className="tech-data-chip left-4 top-12 z-[5] hidden sm:block">schema:v4</div>
-      <div className="tech-data-chip right-5 top-16 z-[5] hidden sm:block animation-delay-200">drift:live</div>
-      <div className="tech-data-chip left-16 top-[178px] z-[5] hidden sm:block animation-delay-500">alert:sent</div>
+      <div className="tech-data-chip left-0 top-8 z-[5] scale-75 sm:left-4 sm:top-12 sm:scale-100">schema:v4</div>
+      <div className="tech-data-chip right-0 top-14 z-[5] scale-75 animation-delay-200 sm:right-5 sm:top-16 sm:scale-100">drift:live</div>
+      <div className="tech-data-chip left-10 top-[190px] z-[5] scale-75 animation-delay-500 sm:left-16 sm:top-[178px] sm:scale-100">alert:sent</div>
     </div>
   );
 }
@@ -106,9 +106,9 @@ export function DemoVideo() {
             <span className="hidden text-sm text-white/50 sm:inline">driftboard-demo.web</span>
           </div>
 
-          <div className="relative min-h-[300px] p-4 md:min-h-[360px] md:p-5">
+          <div className="p-4 md:p-5">
             <motion.div
-              className="absolute inset-x-4 top-4 rounded-lg border border-indigo-400/20 bg-indigo-500/10 p-3 md:inset-x-5 md:top-5 md:rounded-xl md:p-4"
+              className="rounded-lg border border-indigo-400/20 bg-indigo-500/10 p-3 md:rounded-xl md:p-4"
               animate={{ y: [0, 8, 0] }}
               transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
             >
@@ -121,7 +121,7 @@ export function DemoVideo() {
               </div>
             </motion.div>
 
-            <div className="mt-24 grid gap-3 md:mt-28">
+            <div className="mt-6 grid gap-3 md:mt-7">
               {demoRows.map((row, index) => (
                 <motion.div
                   key={row.path}
