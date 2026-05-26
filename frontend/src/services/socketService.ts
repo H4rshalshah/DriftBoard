@@ -1,6 +1,7 @@
 import { io, Socket } from 'socket.io-client';
 import type { DriftEvent } from '../store/driftStore';
 import type { Endpoint } from '../store/endpointStore';
+import { getSocketBaseUrl } from './runtimeConfig';
 
 export interface SocketConfig {
   url?: string;
@@ -36,7 +37,7 @@ class SocketService {
 
   constructor() {
     this.config = {
-      url: import.meta.env.VITE_SOCKET_URL || window.location.origin,
+      url: getSocketBaseUrl(),
       autoConnect: false,
       reconnection: true,
       reconnectionAttempts: 5,

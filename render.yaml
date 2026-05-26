@@ -3,23 +3,27 @@ services:
     runtime: node
     name: driftboard-api
     rootDir: backend
-    plan: starter
+    plan: free
     region: oregon
     buildCommand: npm install --include=dev && npm run build
     startCommand: npm start
     healthCheckPath: /api/health
     autoDeployTrigger: commit
-    disk:
-      name: driftboard-data
-      mountPath: /var/data
-      sizeGB: 1
     envVars:
       - key: NODE_ENV
         value: production
       - key: DATA_DIR
-        value: /var/data
+        value: /tmp/driftboard-data
+      - key: PERSISTENCE_DRIVER
+        value: mongodb
+      - key: MONGODB_URI
+        sync: false
       - key: FRONTEND_URL
         value: https://driftboard-three.vercel.app
+      - key: ALLOWED_ORIGINS
+        value: https://driftboard-three.vercel.app
+      - key: ALLOW_VERCEL_PREVIEWS
+        value: true
       - key: PUBLIC_APP_URL
         value: https://driftboard-three.vercel.app
       - key: NEXT_PUBLIC_APP_URL
@@ -36,6 +40,8 @@ services:
         value: 587
       - key: SMTP_SECURE
         value: false
+      - key: REDIS_URL
+        sync: false
       - key: JWT_SECRET
         generateValue: true
       - key: JWT_REFRESH_SECRET

@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { useAuthStore } from './authStore';
+import { getApiBaseUrl } from '../services/runtimeConfig';
 
 export type ConnectionStatus = 'disconnected' | 'connecting' | 'connected' | 'error';
 
@@ -58,7 +59,7 @@ export const useSocketStore = create<SocketState>((set, get) => ({
     set({ status: 'connecting', error: null });
 
     const token = useAuthStore.getState().token;
-    const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || `${window.location.origin}/api`;
+    const apiBaseUrl = getApiBaseUrl();
     const baseUrl = apiBaseUrl.replace(/\/api\/?$/, '').replace(/^http/, 'ws');
     const wsUrl = `${baseUrl}/ws${token ? `?token=${token}` : ''}`;
 

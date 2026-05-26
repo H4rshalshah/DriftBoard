@@ -434,18 +434,114 @@ npm run build
 - **Database**: MongoDB Atlas
 - **Cache**: Redis Cloud
 
-### Vercel + Render
+### Production: Vercel + Render + MongoDB Atlas
 
-This repo includes a root `render.yaml` for deploying the Express backend as a Render web service named `driftboard-api`. The service stores uploaded project files under `DATA_DIR=/var/data`, backed by a Render persistent disk.
+Recommended production split:
 
-After the Render backend is live, connect the Vercel frontend to it with:
+- Frontend: Vercel static build from `frontend/dist`
+- Backend: Render web service from `backend`
+- Database: MongoDB Atlas
+- Realtime: Socket.io on the Render web service
+- Background monitoring: Render process, not Vercel serverless
+
+The root `vercel.json` is frontend-only. API traffic should go directly to the Render backend by using `VITE_API_BASE_URL` and `VITE_SOCKET_URL`.
+
+#### 1. Create MongoDB Atlas
+
+1. Create an Atlas cluster.
+2. Create a database user.
+3. Add Render outbound access. For a quick first deploy you can allow `0.0.0.0/0`, then restrict it later.
+4. Copy the connection string, for example:
+
+```env
+MONGODB_URI=mongodb+srv://USER:PASSWORD@cluster.mongodb.net/driftboard?retryWrites=true&w=majority
+```
+
+#### 2. Deploy Backend On Render
+
+Create a Render Blueprint from this repository or create a Web Service manually.
+
+Render settings:
+
+```text
+Name: driftboard-api
+Root Directory: backend
+Runtime: Node
+Build Command: npm install --include=dev && npm run build
+Start Command: npm start
+Health Check Path: /api/health
+```
+
+Required Render environment variables:
+
+```env
+NODE_ENV=production
+PERSISTENCE_DRIVER=mongodb
+MONGODB_URI=<your MongoDB Atlas connection string>
+JWT_SECRET=<strong random secret>
+JWT_REFRESH_SECRET=<strong random secret>
+FRONTEND_URL=https://driftboard-three.vercel.app
+ALLOWED_ORIGINS=https://driftboard-three.vercel.app
+ALLOW_VERCEL_PREVIEWS=true
+PUBLIC_APP_URL=https://driftboard-three.vercel.app
+NEXT_PUBLIC_APP_URL=https://driftboard-three.vercel.app
+EMAIL_MOCK_MODE=false
+CONTACT_ADMIN_EMAIL=h4rshal.workspace@gmail.com
+ALERT_REPLY_TO=h4rshal.workspace@gmail.com
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_SECURE=false
+SMTP_USER=<smtp username>
+SMTP_PASS=<smtp password or app password>
+EMAIL_FROM=DriftBoard <alerts@your-domain.com>
+ALERT_FROM_EMAIL=alerts@your-domain.com
+```
+
+Optional:
+
+```env
+REDIS_URL=<Render/Railway Redis URL>
+RESEND_API_KEY=<Resend API key if using Resend instead of SMTP>
+```
+
+The backend supports Discord alerts through the app settings UI by saving a Discord webhook URL.
+
+#### 3. Deploy Frontend On Vercel
+
+Vercel settings:
+
+```text
+Build Command: npm run build --workspace=frontend
+Output Directory: frontend/dist
+Install Command: npm install --include=dev
+```
+
+Required Vercel environment variables:
 
 ```env
 VITE_API_BASE_URL=https://driftboard-api.onrender.com/api
 VITE_SOCKET_URL=https://driftboard-api.onrender.com
+VITE_API_TIMEOUT=30000
 ```
 
-If Render gives your service a different URL, use that URL instead.
+If Render gives a different backend URL, replace `https://driftboard-api.onrender.com`.
+
+#### 4. Verify Production
+
+Check these URLs after deployment:
+
+```text
+https://driftboard-three.vercel.app
+https://driftboard-api.onrender.com/api/health
+```
+
+The backend health response should show `database: "mongodb"` when Atlas is connected. If it shows `mongodb-missing-uri` or `mongodb-error`, fix `MONGODB_URI` in Render and redeploy.
+
+#### 5. Notes On Uploads And Persistence
+
+User, project, endpoint, drift, team, notification, and alert configuration state can persist in MongoDB Atlas when `PERSISTENCE_DRIVER=mongodb`.
+
+Uploaded source files are currently stored on the backend filesystem under `DATA_DIR`. On Render free instances this storage is temporary. For durable uploads, either upgrade the Render backend to a paid instance with a persistent disk or add S3/Cloudinary storage before relying on uploaded file retention.
 
 ---
 

@@ -14,6 +14,7 @@ import bcrypt from 'bcryptjs';
 import axios from 'axios';
 import nodemailer from 'nodemailer';
 import { Resend } from 'resend';
+import mongoose, { Schema } from 'mongoose';
 
 [
   path.resolve(process.cwd(), '.env'),
@@ -28,10 +29,18 @@ import { Resend } from 'resend';
 
 const PORT = Number(process.env.PORT || 5000);
 const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:3000';
+const ALLOWED_ORIGINS = [
+  FRONTEND_URL,
+  ...(process.env.ALLOWED_ORIGINS || '')
+    .split(',')
+    .map((origin) => origin.trim())
+    .filter(Boolean),
+];
 const PUBLIC_APP_URL = process.env.NEXT_PUBLIC_APP_URL || process.env.PUBLIC_APP_URL || FRONTEND_URL;
 const BACKEND_URL = process.env.BACKEND_URL || process.env.RENDER_EXTERNAL_URL || `http://localhost:${PORT}`;
 const JWT_SECRET = process.env.JWT_SECRET || 'driftboard-local-demo-secret';
 const EMAIL_MOCK_MODE = process.env.EMAIL_MOCK_MODE === 'true';
+const PERSISTENCE_DRIVER = process.env.PERSISTENCE_DRIVER || (process.env.MONGODB_URI ? 'mongodb' : 'filesystem');
 const TEST_EMAIL_WINDOW_MS = Number(process.env.TEST_EMAIL_WINDOW_MS || 10 * 60 * 1000);
 const TEST_EMAIL_MAX_REQUESTS = Number(process.env.TEST_EMAIL_MAX_REQUESTS || 3);
 const OWNER_EMAIL = 'h4rshal.workspace@gmail.com';
@@ -295,6 +304,27 @@ const userDataPath = path.join(dataRoot, 'users.json');
 const appDataPath = path.join(dataRoot, 'app-state.json');
 const uploadsRoot = path.join(dataRoot, 'uploads');
 
+type PersistedStateDocument = {
+  key: 'users' | 'app-state';
+  value: unknown;
+  updatedAt: Date;
+};
+
+const persistedStateSchema = new Schema<PersistedStateDocument>(
+  {
+    key: { type: String, required: true, unique: true },
+    value: { type: Schema.Types.Mixed, required: true },
+    updatedAt: { type: Date, default: Date.now },
+  },
+  { collection: 'app_state', versionKey: false }
+);
+
+const PersistedState = mongoose.models.PersistedState || mongoose.model<PersistedStateDocument>('PersistedState', persistedStateSchema);
+
+let mongoPersistenceReady = false;
+let persistenceStatus = PERSISTENCE_DRIVER === 'mongodb' ? 'mongodb-pending' : 'filesystem';
+let persistenceSaveQueue = Promise.resolve();
+
 let demoUser: User = {
   id: 'user_demo',
   email: 'demo@driftboard.dev',
@@ -327,6 +357,32 @@ function withUsername(user: User) {
   };
 }
 
+function saveJsonFile(filePath: string, value: unknown) {
+  fs.mkdirSync(path.dirname(filePath), { recursive: true });
+  fs.writeFileSync(filePath, JSON.stringify(value, null, 2));
+}
+
+function persistValue(key: PersistedStateDocument['key'], value: unknown, fallbackPath: string) {
+  if (!mongoPersistenceReady) {
+    saveJsonFile(fallbackPath, value);
+    return;
+  }
+
+  persistenceSaveQueue = persistenceSaveQueue
+    .then(() =>
+      PersistedState.findOneAndUpdate(
+        { key },
+        { key, value, updatedAt: new Date() },
+        { upsert: true, new: true }
+      ).exec()
+    )
+    .then(() => undefined)
+    .catch((error) => {
+      persistenceStatus = 'mongodb-save-error';
+      console.warn(`Could not save ${key} to MongoDB.`, error instanceof Error ? error.message : error);
+    });
+}
+
 function loadUsers() {
   try {
     if (!fs.existsSync(userDataPath)) return [demoUser];
@@ -342,8 +398,7 @@ function loadUsers() {
 
 function saveUsers() {
   try {
-    fs.mkdirSync(path.dirname(userDataPath), { recursive: true });
-    fs.writeFileSync(userDataPath, JSON.stringify(users.map(withUsername), null, 2));
+    persistValue('users', users.map(withUsername), userDataPath);
   } catch (error) {
     console.warn('Could not save users.', error instanceof Error ? error.message : error);
   }
@@ -623,6 +678,26 @@ function ensureDemoProjectData() {
   }
 }
 
+function applyPersistedAppState(parsed: PersistedAppState) {
+  replaceArray(projects, parsed.projects);
+  replaceArray(endpoints, parsed.endpoints);
+  replaceArray(driftEvents, parsed.driftEvents);
+  replaceArray(notifications, parsed.notifications);
+  replaceArray(apiKeys, parsed.apiKeys);
+  replaceArray(monitoringLogs, parsed.monitoringLogs);
+  replaceArray(emailOutbox, parsed.emailOutbox);
+  replaceArray(contactMessages, parsed.contactMessages);
+  replaceArray(teamMembers, parsed.teamMembers);
+  teamMembers.splice(0, teamMembers.length, ...teamMembers.map(normalizeTeamMember));
+  replaceArray(teamInvites, parsed.teamInvites);
+  replaceArray(uploadedFiles, parsed.uploadedFiles);
+  if (parsed.notificationChannels) {
+    notificationChannels.discord = parsed.notificationChannels.discord || notificationChannels.discord;
+    notificationChannels.email = parsed.notificationChannels.email || notificationChannels.email;
+  }
+  ensureDemoProjectData();
+}
+
 function loadAppState() {
   try {
     if (!fs.existsSync(appDataPath)) {
@@ -630,23 +705,7 @@ function loadAppState() {
       return;
     }
     const parsed = JSON.parse(fs.readFileSync(appDataPath, 'utf8')) as PersistedAppState;
-    replaceArray(projects, parsed.projects);
-    replaceArray(endpoints, parsed.endpoints);
-    replaceArray(driftEvents, parsed.driftEvents);
-    replaceArray(notifications, parsed.notifications);
-    replaceArray(apiKeys, parsed.apiKeys);
-    replaceArray(monitoringLogs, parsed.monitoringLogs);
-    replaceArray(emailOutbox, parsed.emailOutbox);
-    replaceArray(contactMessages, parsed.contactMessages);
-    replaceArray(teamMembers, parsed.teamMembers);
-    teamMembers.splice(0, teamMembers.length, ...teamMembers.map(normalizeTeamMember));
-    replaceArray(teamInvites, parsed.teamInvites);
-    replaceArray(uploadedFiles, parsed.uploadedFiles);
-    if (parsed.notificationChannels) {
-      notificationChannels.discord = parsed.notificationChannels.discord || notificationChannels.discord;
-      notificationChannels.email = parsed.notificationChannels.email || notificationChannels.email;
-    }
-    ensureDemoProjectData();
+    applyPersistedAppState(parsed);
   } catch (error) {
     console.warn('Could not load saved app state. Falling back to demo state.', error instanceof Error ? error.message : error);
     ensureDemoProjectData();
@@ -655,8 +714,7 @@ function loadAppState() {
 
 function saveAppState() {
   try {
-    fs.mkdirSync(path.dirname(appDataPath), { recursive: true });
-    fs.writeFileSync(appDataPath, JSON.stringify({
+    persistValue('app-state', {
       projects,
       endpoints,
       driftEvents,
@@ -669,7 +727,7 @@ function saveAppState() {
       teamInvites,
       uploadedFiles,
       notificationChannels,
-    } satisfies PersistedAppState, null, 2));
+    } satisfies PersistedAppState, appDataPath);
   } catch (error) {
     console.warn('Could not save app state.', error instanceof Error ? error.message : error);
   }
@@ -677,6 +735,48 @@ function saveAppState() {
 
 loadAppState();
 saveAppState();
+
+async function initializeMongoPersistence() {
+  if (PERSISTENCE_DRIVER !== 'mongodb') {
+    persistenceStatus = 'filesystem';
+    return;
+  }
+
+  if (!process.env.MONGODB_URI) {
+    persistenceStatus = 'mongodb-missing-uri';
+    console.warn('PERSISTENCE_DRIVER=mongodb but MONGODB_URI is missing. Falling back to filesystem persistence.');
+    return;
+  }
+
+  try {
+    await mongoose.connect(process.env.MONGODB_URI, {
+      maxPoolSize: 10,
+      serverSelectionTimeoutMS: 8000,
+      socketTimeoutMS: 45000,
+    });
+    mongoPersistenceReady = true;
+    persistenceStatus = 'mongodb-connected';
+
+    const persistedUsers = await PersistedState.findOne({ key: 'users' }).exec();
+    const persistedUsersValue = persistedUsers?.value;
+    if (Array.isArray(persistedUsersValue)) {
+      users.splice(0, users.length, ...persistedUsersValue.map((user: unknown) => withUsername(user as User)));
+      demoUser = users.find((user) => user.email.toLowerCase() === demoUser.email.toLowerCase()) || users[0] || demoUser;
+    }
+
+    const persistedAppState = await PersistedState.findOne({ key: 'app-state' }).exec();
+    const persistedAppStateValue = persistedAppState?.value;
+    if (persistedAppStateValue && typeof persistedAppStateValue === 'object') {
+      applyPersistedAppState(persistedAppStateValue as PersistedAppState);
+    }
+
+    saveUsers();
+    saveAppState();
+  } catch (error) {
+    persistenceStatus = 'mongodb-error';
+    console.warn('Could not initialize MongoDB persistence. Falling back to filesystem persistence.', error instanceof Error ? error.message : error);
+  }
+}
 
 type AlertDelivery = {
   channel: 'discord' | 'email';
@@ -1415,6 +1515,13 @@ async function deliverConfiguredAlert(title: string, message: string, projectId:
   }
 }
 
+function isAllowedOrigin(origin?: string) {
+  if (!origin) return true;
+  if (ALLOWED_ORIGINS.includes(origin)) return true;
+  if (process.env.NODE_ENV !== 'production' && /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)) return true;
+  return Boolean(process.env.ALLOW_VERCEL_PREVIEWS === 'true' && /^https:\/\/[a-z0-9-]+\.vercel\.app$/i.test(origin));
+}
+
 const app = express();
 if (process.env.NODE_ENV === 'production' || process.env.VERCEL || process.env.RENDER_EXTERNAL_URL) {
   app.set('trust proxy', 1);
@@ -1422,13 +1529,13 @@ if (process.env.NODE_ENV === 'production' || process.env.VERCEL || process.env.R
 const httpServer = createServer(app);
 const io = new Server(httpServer, {
   cors: {
-    origin: FRONTEND_URL,
+    origin: (origin, callback) => callback(null, isAllowedOrigin(origin)),
     credentials: true,
   },
 });
 
 app.use(helmet());
-app.use(cors({ origin: FRONTEND_URL, credentials: true }));
+app.use(cors({ origin: (origin, callback) => callback(null, isAllowedOrigin(origin)), credentials: true }));
 app.use(express.json({ limit: '2mb' }));
 app.use(
   '/api',
@@ -2709,7 +2816,13 @@ app.get('/health', (_req, res) => {
 });
 
 app.get('/api/health', (_req, res) => {
-  res.json({ status: 'healthy', database: 'demo-memory', redis: 'demo-memory', timestamp: now() });
+  const database = mongoPersistenceReady ? 'mongodb' : persistenceStatus;
+  res.json({
+    status: database === 'mongodb-error' ? 'degraded' : 'healthy',
+    database,
+    redis: process.env.REDIS_URL || process.env.REDIS_HOST ? 'configured' : 'not-configured',
+    timestamp: now(),
+  });
 });
 
 app.post('/api/contact', contactLimiter, async (req, res) => {
@@ -5065,17 +5178,24 @@ function startMonitoringLoop() {
   }, 1000);
 }
 
-const monitoringTimer = process.env.VERCEL ? undefined : startMonitoringLoop();
+let monitoringTimer: ReturnType<typeof setInterval> | undefined;
 
 app.use((_req, res) => {
   res.status(404).json({ message: 'Route not found' });
 });
 
-if (!process.env.VERCEL) {
-  httpServer.listen(PORT, () => {
-    console.log(`DriftBoard backend running on http://localhost:${PORT}`);
-  });
+async function startBackend() {
+  await initializeMongoPersistence();
+
+  if (!process.env.VERCEL) {
+    monitoringTimer = startMonitoringLoop();
+    httpServer.listen(PORT, () => {
+      console.log(`DriftBoard backend running on http://localhost:${PORT}`);
+    });
+  }
 }
+
+void startBackend();
 
 function shutdownBackend(signal: NodeJS.Signals) {
   if (monitoringTimer) clearInterval(monitoringTimer);
