@@ -39,7 +39,9 @@ const ALLOWED_ORIGINS = [
 const PUBLIC_APP_URL = process.env.NEXT_PUBLIC_APP_URL || process.env.PUBLIC_APP_URL || FRONTEND_URL;
 const BACKEND_URL = process.env.BACKEND_URL || process.env.RENDER_EXTERNAL_URL || `http://localhost:${PORT}`;
 const JWT_SECRET = process.env.JWT_SECRET || 'driftboard-local-demo-secret';
-const EMAIL_MOCK_MODE = process.env.EMAIL_MOCK_MODE !== 'false';
+const HAS_EMAIL_PROVIDER = Boolean(process.env.RESEND_API_KEY)
+  || Boolean(process.env.SMTP_HOST && process.env.SMTP_PORT && process.env.SMTP_USER && process.env.SMTP_PASS && (process.env.EMAIL_FROM || process.env.ALERT_FROM_EMAIL));
+const EMAIL_MOCK_MODE = process.env.EMAIL_MOCK_MODE !== 'false' || !HAS_EMAIL_PROVIDER;
 const configuredPersistenceDriver = String(process.env.PERSISTENCE_DRIVER || '').trim().toLowerCase();
 const PERSISTENCE_DRIVER = process.env.MONGODB_URI
   ? 'mongodb'
