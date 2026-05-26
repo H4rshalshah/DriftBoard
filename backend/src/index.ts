@@ -40,7 +40,12 @@ const PUBLIC_APP_URL = process.env.NEXT_PUBLIC_APP_URL || process.env.PUBLIC_APP
 const BACKEND_URL = process.env.BACKEND_URL || process.env.RENDER_EXTERNAL_URL || `http://localhost:${PORT}`;
 const JWT_SECRET = process.env.JWT_SECRET || 'driftboard-local-demo-secret';
 const EMAIL_MOCK_MODE = process.env.EMAIL_MOCK_MODE === 'true';
-const PERSISTENCE_DRIVER = process.env.PERSISTENCE_DRIVER || (process.env.MONGODB_URI ? 'mongodb' : 'filesystem');
+const configuredPersistenceDriver = String(process.env.PERSISTENCE_DRIVER || '').trim().toLowerCase();
+const PERSISTENCE_DRIVER = process.env.MONGODB_URI
+  ? 'mongodb'
+  : configuredPersistenceDriver === 'mongo' || configuredPersistenceDriver === 'mongodb'
+    ? 'mongodb'
+    : 'filesystem';
 const TEST_EMAIL_WINDOW_MS = Number(process.env.TEST_EMAIL_WINDOW_MS || 10 * 60 * 1000);
 const TEST_EMAIL_MAX_REQUESTS = Number(process.env.TEST_EMAIL_MAX_REQUESTS || 3);
 const OWNER_EMAIL = 'h4rshal.workspace@gmail.com';
