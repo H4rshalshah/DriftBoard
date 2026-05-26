@@ -1538,7 +1538,7 @@ const io = new Server(httpServer, {
 
 app.use(helmet());
 app.use(cors({ origin: (origin, callback) => callback(null, isAllowedOrigin(origin)), credentials: true }));
-app.use(express.json({ limit: '2mb' }));
+app.use(express.json({ limit: process.env.JSON_BODY_LIMIT || '5mb' }));
 app.use(
   '/api',
   rateLimit({
@@ -2187,7 +2187,41 @@ function pushDetectedEndpoint(candidates: DetectedEndpoint[], method: string, ra
   });
 }
 
-function objectSchemaFromOpenApi(operation: unknown): Record<string, unknown> | undefined {
+function resolveOpenApiRef(ref: string, root: unknown, seen: Set<string>) {
+  if (!ref.startsWith('#/') || seen.has(ref)) return undefined;
+  seen.add(ref);
+  return ref
+    .slice(2)
+    .split('/')
+    .reduce<unknown>((node, key) => {
+      if (!node || typeof node !== 'object') return undefined;
+      return (node as Record<string, unknown>)[key.replace(/~1/g, '/').replace(/~0/g, '~')];
+    }, root);
+}
+
+function contractFromOpenApiSchema(schema: unknown, root: unknown, seen = new Set<string>()): unknown {
+  if (!schema || typeof schema !== 'object') return undefined;
+  const node = schema as Record<string, unknown>;
+  if (typeof node.$ref === 'string') {
+    return contractFromOpenApiSchema(resolveOpenApiRef(node.$ref, root, seen), root, seen);
+  }
+  if (node.type === 'array') {
+    return { type: 'array', items: contractFromOpenApiSchema(node.items, root, seen) || 'unknown' };
+  }
+  if (node.type === 'object' || node.properties && typeof node.properties === 'object') {
+    return Object.entries(node.properties as Record<string, unknown>).reduce<Record<string, unknown>>((schemaMap, [key, value]) => {
+      schemaMap[key] = contractFromOpenApiSchema(value, root, new Set(seen)) || 'unknown';
+      return schemaMap;
+    }, {});
+  }
+  if (Array.isArray(node.oneOf) || Array.isArray(node.anyOf)) {
+    const variants = (node.oneOf || node.anyOf) as unknown[];
+    return contractFromOpenApiSchema(variants[0], root, seen);
+  }
+  return typeof node.type === 'string' ? node.type : 'unknown';
+}
+
+function objectSchemaFromOpenApi(operation: unknown, root: unknown): Record<string, unknown> | undefined {
   if (!operation || typeof operation !== 'object') return undefined;
   const responses = (operation as { responses?: Record<string, unknown> }).responses;
   if (!responses || typeof responses !== 'object') return undefined;
@@ -2195,7 +2229,8 @@ function objectSchemaFromOpenApi(operation: unknown): Record<string, unknown> | 
   if (!response || typeof response !== 'object') return undefined;
   const content = (response as { content?: Record<string, { schema?: unknown }> }).content;
   const schema = content?.['application/json']?.schema || (response as { schema?: unknown }).schema;
-  return schema && typeof schema === 'object' && !Array.isArray(schema) ? schema as Record<string, unknown> : undefined;
+  const contract = contractFromOpenApiSchema(schema, root);
+  return contract && typeof contract === 'object' && !Array.isArray(contract) ? contract as Record<string, unknown> : undefined;
 }
 
 function detectEndpointsFromOpenApiJson(parsed: unknown, sourceFile?: string) {
@@ -2207,10 +2242,93 @@ function detectEndpointsFromOpenApiJson(parsed: unknown, sourceFile?: string) {
     if (!definition || typeof definition !== 'object') return;
     HTTP_METHODS.forEach((method) => {
       const operation = (definition as Record<string, unknown>)[method.toLowerCase()];
-      if (operation) pushDetectedEndpoint(detected, method, pathName, sourceFile, objectSchemaFromOpenApi(operation));
+      if (operation) pushDetectedEndpoint(detected, method, pathName, sourceFile, objectSchemaFromOpenApi(operation, parsed));
     });
   });
 
+  return detected;
+}
+
+function schemaFromEndpointDescriptor(item: Record<string, unknown>) {
+  const directSchema = item.currentSchema || item.responseSchema || item.schema;
+  if (isPlainSchemaObject(directSchema)) return directSchema;
+  const example = item.exampleResponse || item.responseExample || item.response || item.body || item.data;
+  if (example !== undefined) return inferSchema(example);
+  return undefined;
+}
+
+function stringFromJsonUrl(value: unknown) {
+  if (typeof value === 'string') return value;
+  if (!value || typeof value !== 'object') return '';
+  const item = value as Record<string, unknown>;
+  if (typeof item.raw === 'string') return item.raw;
+  if (Array.isArray(item.path)) return `/${item.path.map(String).join('/')}`;
+  if (typeof item.path === 'string') return item.path;
+  return '';
+}
+
+function responseSchemaFromPostmanItem(item: Record<string, unknown>) {
+  const responses = Array.isArray(item.response) ? item.response as Array<Record<string, unknown>> : [];
+  for (const response of responses) {
+    if (typeof response.body !== 'string') continue;
+    try {
+      return inferSchema(JSON.parse(response.body));
+    } catch {
+      continue;
+    }
+  }
+  return undefined;
+}
+
+function detectEndpointsFromGenericJson(parsed: unknown, sourceFile?: string) {
+  const detected: DetectedEndpoint[] = [];
+  const visit = (node: unknown, depth = 0) => {
+    if (depth > 8 || detected.length >= 250) return;
+    if (Array.isArray(node)) {
+      node.forEach((item) => visit(item, depth + 1));
+      return;
+    }
+    if (!node || typeof node !== 'object') return;
+
+    const item = node as Record<string, unknown>;
+    const request = item.request && typeof item.request === 'object' ? item.request as Record<string, unknown> : undefined;
+    const method = String(item.method || request?.method || '').toUpperCase();
+    const rawPath = stringFromJsonUrl(item.url || item.path || item.route || item.endpoint || request?.url);
+    if (method && rawPath) {
+      pushDetectedEndpoint(
+        detected,
+        method,
+        rawPath,
+        sourceFile,
+        schemaFromEndpointDescriptor(item) || responseSchemaFromPostmanItem(item)
+      );
+    }
+
+    Object.entries(item).forEach(([key, value]) => {
+      if (/^(GET|POST|PUT|PATCH|DELETE)\s+/i.test(key)) {
+        const [keyMethod, ...pathParts] = key.split(/\s+/);
+        pushDetectedEndpoint(detected, keyMethod, pathParts.join(' '), sourceFile, isPlainSchemaObject(value) ? value : undefined);
+        return;
+      }
+      if (/^\/[A-Za-z0-9_./:{}-]+$/.test(key) && value && typeof value === 'object') {
+        HTTP_METHODS.forEach((candidateMethod) => {
+          const methodDefinition = (value as Record<string, unknown>)[candidateMethod.toLowerCase()] || (value as Record<string, unknown>)[candidateMethod];
+          if (methodDefinition) {
+            pushDetectedEndpoint(
+              detected,
+              candidateMethod,
+              key,
+              sourceFile,
+              isPlainSchemaObject(methodDefinition) ? schemaFromEndpointDescriptor(methodDefinition as Record<string, unknown>) : undefined
+            );
+          }
+        });
+      }
+      visit(value, depth + 1);
+    });
+  };
+
+  visit(parsed);
   return detected;
 }
 
@@ -2250,6 +2368,8 @@ function detectEndpointsFromFileContent(content: string, sourceFile?: string) {
     const parsed = JSON.parse(content);
     const detected = detectEndpointsFromOpenApiJson(parsed, sourceFile);
     if (detected.length > 0) return detected;
+    const genericDetected = detectEndpointsFromGenericJson(parsed, sourceFile);
+    if (genericDetected.length > 0) return genericDetected;
   } catch {
     // Non-JSON source files are handled with route regexes below.
   }
@@ -2622,6 +2742,21 @@ function validateFullHttpUrl(value: string) {
   }
 }
 
+function isPrivateOrLocalUrl(value: string) {
+  try {
+    const { hostname } = new URL(value);
+    const normalized = hostname.toLowerCase().replace(/^\[|\]$/g, '');
+    if (['localhost', '127.0.0.1', '0.0.0.0', '::1'].includes(normalized)) return true;
+    if (/^127\./.test(normalized)) return true;
+    if (/^10\./.test(normalized)) return true;
+    if (/^192\.168\./.test(normalized)) return true;
+    if (/^172\.(1[6-9]|2\d|3[0-1])\./.test(normalized)) return true;
+    return false;
+  } catch {
+    return false;
+  }
+}
+
 function isPlainSchemaObject(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
 }
@@ -2643,7 +2778,7 @@ function endpointRequestInit(endpoint: Endpoint): RequestInit {
 }
 
 async function fetchEndpointResponse(endpoint: Endpoint) {
-  if (!validateFullHttpUrl(endpoint.url)) {
+  if (!validateFullHttpUrl(endpoint.url) || isPrivateOrLocalUrl(endpoint.url)) {
     const schema = Object.keys(endpoint.currentSchema || {}).length
       ? endpoint.currentSchema
       : { status: 'string', data: 'object' };

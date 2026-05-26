@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useUIStore, useProjectStore, useAuthStore, useEndpointStore } from '@/store';
+import { api } from '@/services/api';
 import { DriftBoardLogo } from '@/components/common/DriftBoardLogo';
 import { Button } from '@/components/common/Button';
 import { Input } from '@/components/common/Input';
@@ -34,6 +35,22 @@ interface NavItem {
   icon: React.ComponentType<{ className?: string }>;
 }
 
+type DetectedEndpoint = {
+  name?: string;
+  url: string;
+  method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
+  currentSchema?: Record<string, unknown>;
+  sourceFile?: string;
+  monitoringEnabled?: boolean;
+};
+
+type SourceFilePayload = {
+  originalName: string;
+  fileType: string;
+  fileSize: number;
+  content: string;
+};
+
 const navItems: NavItem[] = [
   { path: '/app/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { path: '/app/endpoints', label: 'Endpoints', icon: Network },
@@ -47,6 +64,15 @@ const navItems: NavItem[] = [
 
 function cn(...inputs: (string | undefined | null | false)[]) {
   return twMerge(clsx(inputs));
+}
+
+function projectNameFromSourceName(sourceName: string) {
+  return sourceName
+    .replace(/\.[^.]+$/, '')
+    .replace(/[-_]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .replace(/\b\w/g, (char) => char.toUpperCase());
 }
 
 export default function Sidebar() {
@@ -130,6 +156,37 @@ export default function Sidebar() {
     setSourceType('folder');
   };
 
+  const getScannableSourceFiles = (files: File[]) => files
+    .filter((file) => {
+      const path = `${file.webkitRelativePath || file.name}`.toLowerCase();
+      return (
+        /\.(js|jsx|ts|tsx|mjs|cjs|json|yaml|yml|py|php|rb|go|java|kt|cs)$/.test(path) &&
+        !path.includes('/node_modules/') &&
+        !path.includes('/dist/') &&
+        !path.includes('/build/') &&
+        !path.includes('/coverage/') &&
+        file.size <= 1_800_000
+      );
+    })
+    .sort((left, right) => {
+      const score = (file: File) => {
+        const name = `${file.webkitRelativePath || file.name}`.toLowerCase();
+        if (/openapi|swagger|postman|collection|insomnia/.test(name)) return 0;
+        if (/\.(json|yaml|yml)$/.test(name)) return 1;
+        return 2;
+      };
+      return score(left) - score(right);
+    });
+
+  const applySelectedSourceFiles = (files: File[]) => {
+    const sourceName = files[0]?.webkitRelativePath?.split('/')[0] || files[0]?.name || '';
+    setSelectedFileCount(files.length);
+    setSelectedFiles(files);
+    setSelectedSourceName(sourceName);
+    setProjectName((current) => current.trim() || projectNameFromSourceName(sourceName));
+    setSetupError('');
+  };
+
   const detectEndpointsFromFiles = async (files: File[]) => {
     const routeFiles = files.filter((file) => {
       const path = `${file.webkitRelativePath || file.name}`.toLowerCase();
@@ -175,10 +232,47 @@ export default function Sidebar() {
     return Array.from(endpoints.values()).slice(0, 24);
   };
 
+  const readSourceFilesForUpload = async (files: File[]): Promise<SourceFilePayload[]> => {
+    const sourceFiles = getScannableSourceFiles(files).slice(0, 80);
+    const payloads = await Promise.all(
+      sourceFiles.map(async (file) => ({
+        originalName: file.webkitRelativePath || file.name,
+        fileType: file.type || file.name.split('.').pop() || 'file',
+        fileSize: file.size,
+        content: await file.text(),
+      }))
+    );
+
+    return payloads.filter((file) => file.content.trim().length > 0);
+  };
+
+  const uploadSourceFilesForBackendScan = async (projectId: string, files: SourceFilePayload[]) => {
+    const detected = new Map<string, DetectedEndpoint>();
+
+    for (const file of files) {
+      const response = await api.post<{ detectedEndpoints: DetectedEndpoint[] }>(`/projects/${projectId}/files/detect-endpoints`, {
+        file,
+      });
+
+      response.detectedEndpoints.forEach((endpoint) => {
+        const key = `${endpoint.method}:${endpoint.url}`;
+        if (!detected.has(key)) detected.set(key, endpoint);
+      });
+    }
+
+    const detectedEndpoints = Array.from(detected.values());
+    if (detectedEndpoints.length > 0) {
+      await api.post(`/projects/${projectId}/endpoints/import-detected`, {
+        endpoints: detectedEndpoints,
+      });
+    }
+  };
+
   const handleCreateProject = async () => {
     setSetupError('');
+    const effectiveProjectName = projectName.trim() || projectNameFromSourceName(selectedSourceName);
 
-    if (!projectName.trim()) {
+    if (!effectiveProjectName) {
       setSetupError('Project name is required.');
       return;
     }
@@ -201,10 +295,10 @@ export default function Sidebar() {
     const isSameSavedProject =
       savedProject &&
       (savedProject.sourceLabel === sourceLabel ||
-        savedProject.name.trim().toLowerCase() === projectName.trim().toLowerCase());
+        savedProject.name.trim().toLowerCase() === effectiveProjectName.toLowerCase());
     const replaceExisting =
       Boolean(savedProject && !isSameSavedProject) &&
-      window.confirm(`Replace ${savedProject?.name} with ${projectName.trim()} as your live project? Your old live project data will be removed.`);
+      window.confirm(`Replace ${savedProject?.name} with ${effectiveProjectName} as your live project? Your old live project data will be removed.`);
 
     if (savedProject && !isSameSavedProject && !replaceExisting) {
       return;
@@ -213,6 +307,7 @@ export default function Sidebar() {
     try {
       setSetupStatus('Reading project source...');
       const detectedEndpoints = sourceType === 'folder' ? await detectEndpointsFromFiles(selectedFiles) : [];
+      const filesToUpload = sourceType === 'folder' ? await readSourceFilesForUpload(selectedFiles) : [];
       const uploadedFiles = sourceType === 'folder'
         ? selectedFiles.slice(0, 500).map((file) => ({
             originalName: file.webkitRelativePath || file.name,
@@ -223,7 +318,7 @@ export default function Sidebar() {
 
       setSetupStatus('Creating project and starting monitoring...');
       const project = await createProject({
-        name: projectName.trim(),
+        name: effectiveProjectName,
         description: `Monitoring active. Source: ${sourceLabel}. DriftBoard will fetch project details, track endpoints, store schema snapshots, compare new versions, and surface drift errors for this project.`,
         sourceType,
         sourceLabel,
@@ -234,6 +329,10 @@ export default function Sidebar() {
       });
 
       setCurrentProject(project);
+      if (filesToUpload.length > 0) {
+        setSetupStatus('Uploading source files for backend scanning...');
+        await uploadSourceFilesForBackendScan(project.id, filesToUpload);
+      }
       setSetupStatus('Loading monitored endpoints...');
       await fetchEndpoints(project.id);
       closeProjectSetup();
@@ -246,7 +345,7 @@ export default function Sidebar() {
 
   const isDemoProject = currentProject?.name?.toLowerCase().includes('demo');
   const canCreateProject =
-    projectName.trim().length > 0 &&
+    (projectName.trim().length > 0 || (sourceType === 'folder' && selectedSourceName.length > 0)) &&
     (sourceType === 'repository' ? repoUrl.trim().length > 0 : selectedSourceName.length > 0);
 
   return (
@@ -572,14 +671,18 @@ export default function Sidebar() {
                   type="file"
                   multiple
                   className="hidden"
-                onChange={(event) => {
-                    const files = Array.from(event.target.files || []);
-                    setSelectedFileCount(files.length);
-                    setSelectedFiles(files);
-                    setSelectedSourceName(files[0]?.webkitRelativePath?.split('/')[0] || files[0]?.name || '');
-                    setSetupError('');
-                  }}
+                  onChange={(event) => applySelectedSourceFiles(Array.from(event.target.files || []))}
                   {...({ webkitdirectory: '', directory: '' } as Record<string, string>)}
+                />
+              </label>
+              <label className="mt-3 flex cursor-pointer items-center justify-center rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-sm font-medium text-white/75 transition-colors hover:border-primary-400/40 hover:bg-white/10">
+                Choose JSON/OpenAPI files
+                <input
+                  type="file"
+                  multiple
+                  accept=".json,.yaml,.yml,application/json"
+                  className="hidden"
+                  onChange={(event) => applySelectedSourceFiles(Array.from(event.target.files || []))}
                 />
               </label>
             </div>

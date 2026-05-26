@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import { api } from '../services/api';
+import { getApiBaseUrl } from '../services/runtimeConfig';
 import { useProjectStore, type Project } from './projectStore';
 
 export interface User {
@@ -211,7 +212,7 @@ export const useAuthStore = create<AuthState>()(
       },
 
       startOAuthLogin: (provider: 'google' | 'github') => {
-        window.location.href = `/api/auth/oauth/${provider}/start`;
+        window.location.href = `${getApiBaseUrl()}/auth/oauth/${provider}/start`;
       },
 
       completeOAuthLogin: (token: string, user: User) => {

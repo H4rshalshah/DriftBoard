@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useDriftStore, useEndpointStore, useProjectStore } from '@/store';
 import { api } from '@/services/api';
+import { getApiBaseUrl } from '@/services/runtimeConfig';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/common/Card';
 import { Button } from '@/components/common/Button';
 import { Input } from '@/components/common/Input';
@@ -550,7 +551,7 @@ export default function DriftEventsPage() {
     if (dateRange) params.set('dateRange', dateRange);
     if (search.trim()) params.set('search', search.trim());
 
-    fetch(`/api/projects/${currentProject.id}/drift-events/export?${params.toString()}`, {
+    fetch(`${getApiBaseUrl()}/projects/${currentProject.id}/drift-events/export?${params.toString()}`, {
       headers: {
         Authorization: `Bearer ${sessionStorage.getItem('auth_token') || ''}`,
       },

@@ -4,6 +4,14 @@
   "installCommand": "npm install --include=dev",
   "rewrites": [
     {
+      "source": "/api/(.*)",
+      "destination": "https://driftboard-api.onrender.com/api/$1"
+    },
+    {
+      "source": "/socket.io/(.*)",
+      "destination": "https://driftboard-api.onrender.com/socket.io/$1"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }
