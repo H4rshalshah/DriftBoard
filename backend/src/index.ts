@@ -319,7 +319,9 @@ const persistedStateSchema = new Schema<PersistedStateDocument>(
   { collection: 'app_state', versionKey: false }
 );
 
-const PersistedState = mongoose.models.PersistedState || mongoose.model<PersistedStateDocument>('PersistedState', persistedStateSchema);
+const PersistedState: mongoose.Model<PersistedStateDocument> =
+  (mongoose.models.PersistedState as mongoose.Model<PersistedStateDocument> | undefined) ||
+  mongoose.model<PersistedStateDocument>('PersistedState', persistedStateSchema);
 
 let mongoPersistenceReady = false;
 let persistenceStatus = PERSISTENCE_DRIVER === 'mongodb' ? 'mongodb-pending' : 'filesystem';
