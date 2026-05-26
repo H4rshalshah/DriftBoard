@@ -592,6 +592,11 @@ function replaceArray<T>(target: T[], next?: T[]) {
   target.splice(0, target.length, ...next);
 }
 
+function storedApiKey(key: ApiKey): ApiKey {
+  const { fullKey: _fullKey, ...storedKey } = key;
+  return storedKey;
+}
+
 function normalizeTeamMember(member: TeamMember): TeamMember {
   const linkedUser = users.find((user) => user.email.toLowerCase() === member.userEmail.toLowerCase());
   const createdAt = member.createdAt || member.invitedAt || member.joinedAt || now();
@@ -690,7 +695,7 @@ function applyPersistedAppState(parsed: PersistedAppState) {
   replaceArray(endpoints, parsed.endpoints);
   replaceArray(driftEvents, parsed.driftEvents);
   replaceArray(notifications, parsed.notifications);
-  replaceArray(apiKeys, parsed.apiKeys);
+  replaceArray(apiKeys, parsed.apiKeys?.map(storedApiKey));
   replaceArray(monitoringLogs, parsed.monitoringLogs);
   replaceArray(emailOutbox, parsed.emailOutbox);
   replaceArray(contactMessages, parsed.contactMessages);
@@ -726,7 +731,7 @@ function saveAppState() {
       endpoints,
       driftEvents,
       notifications,
-      apiKeys,
+      apiKeys: apiKeys.map(storedApiKey),
       monitoringLogs,
       emailOutbox,
       contactMessages,
@@ -2869,20 +2874,19 @@ function createApiKey(projectId: string, name: string, scopes: string[]) {
     scopes,
     status: 'active',
     createdAt: now(),
-    fullKey,
   };
   apiKeys.unshift(key);
   createNotification(projectId, 'system', 'API key created', `${name} was created for this project.`);
-  return key;
+  return { ...key, fullKey };
 }
 
 function rotatedKeyName(name: string) {
   return `${name.replace(/(\s+rotated)+$/i, '').trim() || 'API Key'} rotated`;
 }
 
-function publicApiKey(key: ApiKey, reveal = false) {
+function publicApiKey(key: ApiKey, reveal = false, revealedFullKey?: string) {
   const { keyHash: _keyHash, fullKey, ...publicKey } = key;
-  return reveal ? { ...publicKey, fullKey } : publicKey;
+  return reveal ? { ...publicKey, fullKey: revealedFullKey || fullKey } : publicKey;
 }
 
 function csvCell(value: unknown) {
@@ -5063,9 +5067,8 @@ app.post('/api/api-keys/:id/rotate', (req, res) => {
   key.status = 'active';
   key.createdAt = now();
   key.revokedAt = undefined;
-  key.fullKey = fullKey;
   createNotification(key.projectId, 'system', 'API key rotated', `${key.name} was rotated.`);
-  res.json(publicApiKey(key, true));
+  res.json(publicApiKey(key, true, fullKey));
 });
 
 app.post('/api/api-keys/:id/revoke', (req, res) => {
