@@ -84,6 +84,7 @@ type NotificationChannels = {
   emailConfig?: {
     configured: boolean;
     mockMode: boolean;
+    provider?: string | null;
     missing: string[];
     message: string;
   };
@@ -243,8 +244,8 @@ export default function SettingsPage() {
       toast.error('You do not have permission to perform this action.');
       return;
     }
-    if (!notificationChannels.discord.enabled || !notificationChannels.email.enabled) {
-      toast.error('Enable both Discord and Email before sending a full test alert.');
+    if (!notificationChannels.discord.enabled && !notificationChannels.email.enabled) {
+      toast.error('Enable Discord or Email before sending a test alert.');
       return;
     }
     if (notificationChannels.discord.enabled && !notificationChannels.discord.webhookUrl.trim()) {
@@ -263,10 +264,11 @@ export default function SettingsPage() {
         email: notificationChannels.email,
       });
       const emailDelivery = result.delivered.find((delivery) => delivery.channel === 'email');
+      const discordDelivery = result.delivered.find((delivery) => delivery.channel === 'discord');
       if (emailDelivery?.status === 'mock_sent') {
-        toast.success(emailDelivery.message || 'Mock test alert completed.');
+        toast.success(discordDelivery ? 'Discord sent. Email is in mock mode until SMTP or Resend is configured.' : emailDelivery.message || 'Mock email test completed.');
       } else {
-        toast.success('Test alert sent.');
+        toast.success(result.delivered.length > 1 ? 'Discord and email test alerts sent.' : 'Test alert sent.');
       }
     } catch (error) {
       toast.error(getErrorMessage(error, 'Test alert failed.'));
@@ -806,7 +808,11 @@ export default function SettingsPage() {
                                 ? 'border-emerald-400/30 bg-emerald-500/15 text-emerald-200'
                                 : 'border-amber-400/30 bg-amber-500/15 text-amber-200'
                             }>
-                              {notificationChannels.emailConfig?.configured ? 'Email notifications active' : 'Email not configured'}
+                              {notificationChannels.emailConfig?.provider === 'mock'
+                                ? 'Mock email only'
+                                : notificationChannels.emailConfig?.configured
+                                ? 'Email notifications active'
+                                : 'Email not configured'}
                             </Badge>
                           </div>
                           <p className="mt-1 text-sm leading-6 text-white/55">
@@ -848,7 +854,11 @@ export default function SettingsPage() {
                         />
                       </div>
                     )}
-                    {!notificationChannels.emailConfig?.configured && (
+                    {notificationChannels.emailConfig?.provider === 'mock' ? (
+                      <div className="mt-4 rounded-lg border border-amber-400/25 bg-amber-400/10 px-3 py-2 text-sm leading-6 text-amber-100">
+                        Email is in mock mode. Add real SMTP credentials or Resend credentials on Render to deliver to inboxes.
+                      </div>
+                    ) : !notificationChannels.emailConfig?.configured && (
                       <div className="mt-4 rounded-lg border border-amber-400/25 bg-amber-400/10 px-3 py-2 text-sm leading-6 text-amber-100">
                         Email notifications are not configured. Add SMTP or Resend credentials on the server.
                       </div>

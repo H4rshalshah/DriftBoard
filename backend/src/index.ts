@@ -1519,6 +1519,30 @@ async function sendEmailAlert(title: string, message: string, projectId: string,
   return sendDriftAlertEmail(to, summary);
 }
 
+async function sendContactDiscordMessage(message: ContactMessage): Promise<AlertDelivery | null> {
+  if (!notificationChannels.discord.enabled || !notificationChannels.discord.webhookUrl) return null;
+  const subjectLabel = contactSubjectLabel(message.subject);
+  await axios.post(notificationChannels.discord.webhookUrl, {
+    username: 'DriftBoard',
+    avatar_url: `${FRONTEND_URL}/driftboard.svg`,
+    embeds: [
+      {
+        title: 'New DriftBoard contact request',
+        description: message.message.slice(0, 1800),
+        color: 0x38bdf8,
+        timestamp: message.createdAt,
+        fields: [
+          { name: 'Name', value: message.name, inline: true },
+          { name: 'Email', value: message.email, inline: true },
+          { name: 'Subject', value: subjectLabel, inline: true },
+          { name: 'Signed-in user', value: message.userEmail || 'Guest form', inline: false },
+        ],
+      },
+    ],
+  });
+  return { channel: 'discord', target: notificationChannels.discord.webhookUrl, status: 'sent' };
+}
+
 async function deliverConfiguredAlert(title: string, message: string, projectId: string, type: AppNotification['type'], alertContext?: AlertContext) {
   const context = alertContext || inferredAlertContext(projectId, type, message);
 
@@ -1530,7 +1554,7 @@ async function deliverConfiguredAlert(title: string, message: string, projectId:
     }
   }
 
-  if (type !== 'drift' && notificationChannels.email.enabled && notificationChannels.email.address) {
+  if (notificationChannels.email.enabled && notificationChannels.email.address) {
     try {
       await sendEmailAlert(title, message, projectId, type, context);
     } catch (error) {
@@ -3063,14 +3087,32 @@ app.post('/api/contact', contactLimiter, async (req, res) => {
 
   contactMessages.unshift(contactMessage);
 
+  const deliveries: AlertDelivery[] = [];
+  const failures: string[] = [];
+
   try {
-    await sendContactAdminEmail(contactMessage);
-    contactMessage.notificationStatus = 'sent';
+    deliveries.push(await sendContactAdminEmail(contactMessage));
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Contact email notification failed.';
-    contactMessage.notificationError = errorMessage;
-    contactMessage.notificationStatus = errorMessage.toLowerCase().includes('configured') ? 'not_configured' : 'failed';
-    console.warn('Contact notification was not delivered.', { error: errorMessage, contactMessageId: contactMessage.id });
+    failures.push(errorMessage);
+    console.warn('Contact email notification was not delivered.', { error: errorMessage, contactMessageId: contactMessage.id });
+  }
+
+  try {
+    const discordDelivery = await sendContactDiscordMessage(contactMessage);
+    if (discordDelivery) deliveries.push(discordDelivery);
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Contact Discord notification failed.';
+    failures.push(errorMessage);
+    console.warn('Contact Discord notification was not delivered.', { error: errorMessage, contactMessageId: contactMessage.id });
+  }
+
+  contactMessage.notificationStatus = deliveries.some((delivery) => delivery.status === 'sent') ? 'sent' : 'not_configured';
+  if (failures.length > 0) {
+    contactMessage.notificationError = failures.join(' | ');
+    if (deliveries.length === 0 && failures.some((item) => !item.toLowerCase().includes('configured'))) {
+      contactMessage.notificationStatus = 'failed';
+    }
   }
 
   saveAppState();
@@ -3078,6 +3120,7 @@ app.post('/api/contact', contactLimiter, async (req, res) => {
     message: 'Thanks, your message has been received. We will get back to you soon.',
     contactId: contactMessage.id,
     notificationStatus: contactMessage.notificationStatus,
+    deliveries,
   });
 });
 
@@ -5030,15 +5073,15 @@ async function sendTestAlertHandler(req: Request, res: Response) {
   };
 
   try {
-    if (!discordWebhookUrl) {
-      res.status(400).json({ message: 'Discord webhook URL is required for a full test alert.' });
+    if ((discordEnabled || discordWebhookUrl) && !discordWebhookUrl) {
+      res.status(400).json({ message: 'Discord webhook URL is required.' });
       return;
     }
-    if (!emailAddress) {
-      res.status(400).json({ message: 'Email address is required for a full test alert.' });
+    if ((emailEnabled || emailAddress) && !emailAddress) {
+      res.status(400).json({ message: 'Email address is required.' });
       return;
     }
-    if (!isValidEmailAddress(emailAddress)) {
+    if (emailAddress && !isValidEmailAddress(emailAddress)) {
       res.status(400).json({ message: 'Enter a valid alert email address.' });
       return;
     }
@@ -5060,7 +5103,7 @@ async function sendTestAlertHandler(req: Request, res: Response) {
     }
 
     if (delivered.length === 0) {
-      res.status(400).json({ message: 'Enable both Discord and Email before sending a full test alert.' });
+      res.status(400).json({ message: 'Enable Discord or Email before sending a test alert.' });
       return;
     }
 

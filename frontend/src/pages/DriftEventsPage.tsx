@@ -509,8 +509,12 @@ export default function DriftEventsPage() {
     setSelectedEvents(newSelected);
   };
 
-  const acknowledgeSelected = () => {
+  const acknowledgeSelected = async () => {
     if (!canUpdateDrifts) return;
+    const ids = Array.from(selectedEvents);
+    if (currentProject?.id) {
+      await api.post('/drift-events/bulk-action', { ids, action: 'acknowledged' });
+    }
     setEvents((current) =>
       current.map((event) =>
         selectedEvents.has(event.id) ? { ...event, acknowledged: true } : event
@@ -519,15 +523,21 @@ export default function DriftEventsPage() {
     setSelectedEvents(new Set());
   };
 
-  const acknowledgeEvent = (id: string) => {
+  const acknowledgeEvent = async (id: string) => {
     if (!canUpdateDrifts) return;
+    if (currentProject?.id) {
+      await api.post(`/drift/${id}/acknowledge`);
+    }
     setEvents((current) =>
       current.map((event) => (event.id === id ? { ...event, acknowledged: true } : event))
     );
   };
 
-  const resolveEvent = (id: string) => {
+  const resolveEvent = async (id: string) => {
     if (!canUpdateDrifts) return;
+    if (currentProject?.id) {
+      await api.post(`/drift/${id}/resolve`);
+    }
     setEvents((current) =>
       current.map((event) =>
         event.id === id ? { ...event, acknowledged: true, resolved: true } : event
@@ -567,9 +577,20 @@ export default function DriftEventsPage() {
       });
   };
 
-  const refreshEvents = () => {
+  const refreshEvents = async () => {
     if (currentProject?.id) {
-      void fetchEndpoints(currentProject.id);
+      const endpointById = new Map(endpoints.filter((endpoint) => endpoint.projectId === currentProject.id).map((endpoint) => [endpoint.id, endpoint]));
+      const result = await api.post<{ checked: number; events: BackendDriftEvent[] }>(`/projects/${currentProject.id}/drift-events/refresh`);
+      await fetchEndpoints(currentProject.id);
+      setEvents(
+        result.events.map((event) => {
+          const endpoint = endpointById.get(event.endpointId);
+          return normalizeBackendEvent(event, endpoint?.url || 'Unknown URL', endpoint?.method || 'GET');
+        })
+      );
+      setLastRefreshedAt(new Date().toISOString());
+      setActiveTab('all');
+      return;
     }
     setLastRefreshedAt(new Date().toISOString());
     setEvents((current) => [
@@ -616,7 +637,7 @@ export default function DriftEventsPage() {
           <Button variant="secondary" leftIcon={<Download className="w-4 h-4" />} onClick={exportEvents}>
             Export CSV
           </Button>
-          <Button variant="secondary" leftIcon={<RefreshCw className="w-4 h-4" />} disabled={!canRunScans} onClick={refreshEvents}>
+          <Button variant="secondary" leftIcon={<RefreshCw className="w-4 h-4" />} disabled={!canRunScans} onClick={() => void refreshEvents()}>
             Refresh
           </Button>
         </div>
@@ -721,7 +742,7 @@ export default function DriftEventsPage() {
               size="sm"
               variant="secondary"
               leftIcon={<CheckCheck className="w-4 h-4" />}
-              onClick={acknowledgeSelected}
+          onClick={() => void acknowledgeSelected()}
               loading={isAcknowledging}
             >
               Acknowledge Selected
@@ -930,7 +951,7 @@ export default function DriftEventsPage() {
                               </div>
                               <div className="flex items-center gap-2 mt-4">
                                 {!event.acknowledged && canUpdateDrifts && (
-                                  <Button size="sm" leftIcon={<Check className="w-4 h-4" />} onClick={() => acknowledgeEvent(event.id)}>
+                                  <Button size="sm" leftIcon={<Check className="w-4 h-4" />} onClick={() => void acknowledgeEvent(event.id)}>
                                     Acknowledge
                                   </Button>
                                 )}
@@ -940,7 +961,7 @@ export default function DriftEventsPage() {
                                   </Button>
                                 )}
                                 {!event.resolved && canUpdateDrifts && (
-                                  <Button size="sm" variant="secondary" onClick={() => resolveEvent(event.id)}>
+                                  <Button size="sm" variant="secondary" onClick={() => void resolveEvent(event.id)}>
                                     Mark Resolved
                                   </Button>
                                 )}

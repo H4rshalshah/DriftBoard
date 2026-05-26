@@ -16,6 +16,7 @@ import {
   ArrowRightLeft,
   Calendar,
   User,
+  Download,
 } from 'lucide-react';
 import { hasProjectPermission } from '@/utils/permissions';
 
@@ -141,6 +142,22 @@ function formatDateTime(dateString: string): string {
   });
 }
 
+function csvCell(value: unknown) {
+  return `"${String(value ?? '').replace(/"/g, '""')}"`;
+}
+
+function downloadTextFile(filename: string, text: string, type = 'text/csv;charset=utf-8') {
+  const blob = new Blob([text], { type });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
 export default function SchemaHistoryPage() {
   const { currentProject } = useProjectStore();
   const { endpoints, isLoading, isUpdating, fetchEndpoints, rollbackSchema } = useEndpointStore();
@@ -236,6 +253,26 @@ export default function SchemaHistoryPage() {
     }
   };
 
+  const exportSchemaCsv = () => {
+    const rows = versions.map((version) => [
+      currentProject?.name || 'DriftBoard Project',
+      currentEndpoint?.name || '',
+      currentEndpoint?.method || '',
+      currentEndpoint?.url || '',
+      version.version,
+      version.version === currentEndpoint?.currentSchemaVersion ? 'current' : 'historical',
+      version.createdAt,
+      version.createdBy,
+      version.changelog || '',
+      JSON.stringify(version.schema),
+    ]);
+    const csv = [
+      ['project', 'endpointName', 'method', 'url', 'schemaVersion', 'status', 'createdAt', 'createdBy', 'changelog', 'schemaJson'],
+      ...rows,
+    ].map((row) => row.map(csvCell).join(',')).join('\n');
+    downloadTextFile(`schema-history-${currentEndpoint?.name || 'endpoint'}.csv`, csv);
+  };
+
   const compareVersions = selectedVersions
     .map((versionId) => versions.find((version) => version.id === versionId))
     .filter((version): version is SchemaVersion => Boolean(version));
@@ -262,13 +299,16 @@ export default function SchemaHistoryPage() {
       animate="visible"
       className="space-y-6"
     >
-      <motion.div variants={itemVariants} className="flex items-center justify-between">
+      <motion.div variants={itemVariants} className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold text-white">Schema History</h1>
           <p className="text-white/60">
             {currentProject?.name ? `View and compare schema versions for ${currentProject.name}.` : 'View and compare schema versions'}
           </p>
         </div>
+        <Button variant="secondary" leftIcon={<Download className="h-4 w-4" />} onClick={exportSchemaCsv} disabled={versions.length === 0}>
+          Export CSV
+        </Button>
       </motion.div>
 
       <motion.div variants={itemVariants}>

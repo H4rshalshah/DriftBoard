@@ -84,6 +84,7 @@ export default function Header() {
     if (notification.actionUrl) return notification.actionUrl;
     if (notification.type === 'drift') return '/app/drift-events';
     if (notification.type === 'schema') return '/app/schema-history';
+    if (notification.type === 'system') return '/app/api-keys';
     if (notification.type === 'team' || notification.type === 'member') return '/app/settings';
     return '/app/notifications';
   };
