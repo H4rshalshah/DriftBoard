@@ -39,7 +39,7 @@ const ALLOWED_ORIGINS = [
 const PUBLIC_APP_URL = process.env.NEXT_PUBLIC_APP_URL || process.env.PUBLIC_APP_URL || FRONTEND_URL;
 const BACKEND_URL = process.env.BACKEND_URL || process.env.RENDER_EXTERNAL_URL || `http://localhost:${PORT}`;
 const JWT_SECRET = process.env.JWT_SECRET || 'driftboard-local-demo-secret';
-const EMAIL_MOCK_MODE = process.env.EMAIL_MOCK_MODE === 'true';
+const EMAIL_MOCK_MODE = process.env.EMAIL_MOCK_MODE !== 'false';
 const configuredPersistenceDriver = String(process.env.PERSISTENCE_DRIVER || '').trim().toLowerCase();
 const PERSISTENCE_DRIVER = process.env.MONGODB_URI
   ? 'mongodb'
@@ -195,7 +195,7 @@ type EmailOutboxMessage = {
   text: string;
   html: string;
   status: 'sent' | 'saved_to_outbox' | 'failed';
-  provider: 'resend' | 'local';
+  provider: 'resend' | 'local' | 'mock';
   createdAt: string;
   errorMessage?: string;
 };
@@ -945,6 +945,26 @@ type SendEmailInput = {
   tag: 'drift_alert' | 'team_invitation' | 'test_alert' | 'contact_message';
 };
 
+function recordEmailOutbox(
+  input: SendEmailInput,
+  status: EmailOutboxMessage['status'],
+  provider: EmailOutboxMessage['provider'],
+  errorMessage?: string,
+) {
+  emailOutbox.unshift({
+    id: uuidv4(),
+    to: input.to.trim().toLowerCase(),
+    subject: input.subject,
+    text: input.text,
+    html: input.html,
+    status,
+    provider,
+    createdAt: now(),
+    errorMessage,
+  });
+  saveAppState();
+}
+
 async function sendEmailWithResend(input: SendEmailInput): Promise<AlertDelivery> {
   const to = input.to.trim().toLowerCase();
   if (!isValidEmailAddress(to)) {
@@ -957,6 +977,7 @@ async function sendEmailWithResend(input: SendEmailInput): Promise<AlertDelivery
     console.warn('Missing email configuration', { missing: status.missing, tag: input.tag });
     if (EMAIL_MOCK_MODE) {
       console.info('Email mock mode enabled', { to, subject: input.subject, tag: input.tag });
+      recordEmailOutbox(input, 'sent', 'mock');
       return {
         channel: 'email',
         target: to,
@@ -1347,6 +1368,7 @@ async function sendEmailWithSmtp(input: SendEmailInput): Promise<AlertDelivery> 
   if (!status.configured) {
     if (EMAIL_MOCK_MODE) {
       console.info('Email mock mode enabled', { to, subject: input.subject, tag: input.tag, provider: 'smtp' });
+      recordEmailOutbox(input, 'sent', 'mock');
       return {
         channel: 'email',
         target: to,
@@ -4651,8 +4673,8 @@ app.post('/api/team/:projectId/invite', async (req, res) => {
       inviteExpiresAt: invite.expiresAt,
     });
   }
-  project.memberCount = teamMembers.filter((item) => item.projectId === project.id && item.status !== 'removed').length;
-  createNotification(project.id, 'team', 'Team member invited', `${invite.userEmail} was invited as ${invite.role}.`);
+  project.memberCount = teamMembers.filter((item) => item.projectId === project.id && ['active', 'joined'].includes(item.status)).length;
+  createNotification(project.id, 'team', 'Invite generated', `${invite.userEmail} has a pending ${invite.role} invite. They will appear as active after accepting it.`);
   let emailDelivery: AlertDelivery | undefined;
   try {
     emailDelivery = await sendInvitationEmail(invite.userEmail, invite, project.name);
@@ -4799,7 +4821,7 @@ app.post('/api/team/invite/:token/accept', (req, res) => {
     };
     teamMembers.push(member);
   }
-  project.memberCount = teamMembers.filter((item) => item.projectId === project.id && item.status !== 'removed').length;
+  project.memberCount = teamMembers.filter((item) => item.projectId === project.id && ['active', 'joined'].includes(item.status)).length;
 
   teamInvites.splice(inviteIndex, 1);
   createNotification(invite.projectId, 'team', 'Team member joined', `${invite.userEmail} joined ${project.name}.`);
@@ -4858,7 +4880,7 @@ app.delete('/api/team/member/:id', (req, res) => {
     teamMembers[index].status = 'removed';
     teamMembers[index].updatedAt = now();
     if (project) {
-      project.memberCount = teamMembers.filter((item) => item.projectId === project.id && item.status !== 'removed').length;
+      project.memberCount = teamMembers.filter((item) => item.projectId === project.id && ['active', 'joined'].includes(item.status)).length;
     }
   }
   res.status(204).send();

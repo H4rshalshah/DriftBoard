@@ -160,6 +160,7 @@ export default function NotificationsPage() {
     try {
       const deleted = await deleteNotifications(selectedIds);
       setSelectedIds([]);
+      await fetchNotifications();
       toast.success(`${deleted} notification${deleted === 1 ? '' : 's'} deleted.`);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Could not delete selected notifications.');
@@ -339,6 +340,7 @@ export default function NotificationsPage() {
                                   try {
                                     const deleted = await deleteNotifications([notification.id]);
                                     setSelectedIds((current) => current.filter((id) => id !== notification.id));
+                                    await fetchNotifications();
                                     toast.success(`${deleted || 1} notification deleted.`);
                                   } catch (error) {
                                     toast.error(error instanceof Error ? error.message : 'Could not delete notification.');
