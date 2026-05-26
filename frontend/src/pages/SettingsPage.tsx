@@ -25,6 +25,7 @@ import {
   Mail,
   MessageCircle,
   ShieldCheck,
+  AlertCircle,
 } from 'lucide-react';
 import type { ProjectRole } from '@/utils/permissions';
 import { hasProjectPermission } from '@/utils/permissions';
@@ -67,6 +68,7 @@ interface TeamInvite {
   inviteLink: string;
   invitePassword: string;
   expiresAt: string;
+  emailDelivery?: AlertDelivery;
 }
 
 const roleColors = {
@@ -132,6 +134,11 @@ function isLocalInviteLink(link?: string) {
   } catch {
     return false;
   }
+}
+
+function inviteEmailWasSent(invite: TeamInvite | null) {
+  const delivery = invite?.emailDelivery;
+  return delivery?.channel === 'email' && delivery.status === 'sent' && delivery.provider !== 'mock';
 }
 
 export default function SettingsPage() {
@@ -297,7 +304,11 @@ export default function SettingsPage() {
       setTeamMembers(members);
       await fetchCurrentProject();
       setInviteRole('member');
-      toast.success('Invite link generated.');
+      if (inviteEmailWasSent(invited)) {
+        toast.success(`Invite email sent to ${invited.userEmail}.`);
+      } else {
+        toast.success('Invite created. Copy or share the link and invite password.');
+      }
     } catch (error) {
       toast.error(getErrorMessage(error, 'Could not invite team member.'));
     } finally {
@@ -326,7 +337,7 @@ export default function SettingsPage() {
       '',
       `*Login code:* ${generatedInvite.invitePassword}`,
       '',
-      'After opening the link, enter the login password to get access.',
+      'After opening the link, choose whether you have an account, then enter the invite password to get access.',
     ].filter((line) => line !== '').join('\n');
 
     if (navigator.share) {
@@ -909,6 +920,19 @@ export default function SettingsPage() {
           </div>
           {generatedInvite?.inviteLink && (
             <div className="space-y-4 rounded-lg border border-primary-400/25 bg-primary-500/10 p-4">
+              {inviteEmailWasSent(generatedInvite) ? (
+                <div className="flex gap-3 rounded-lg border border-emerald-400/25 bg-emerald-400/10 px-3 py-2 text-sm leading-6 text-emerald-100">
+                  <Mail className="mt-0.5 h-4 w-4 flex-none" />
+                  <span>Invite email was sent to {generatedInvite.userEmail}. Share the password separately if needed.</span>
+                </div>
+              ) : (
+                <div className="flex gap-3 rounded-lg border border-amber-400/25 bg-amber-400/10 px-3 py-2 text-sm leading-6 text-amber-100">
+                  <AlertCircle className="mt-0.5 h-4 w-4 flex-none" />
+                  <span>
+                    Real email delivery is not configured on the server yet. This invite is valid, but you must copy or share the link and password manually.
+                  </span>
+                </div>
+              )}
               <div>
                 <p className="mb-1 text-xs font-medium uppercase tracking-normal text-indigo-200">
                   Sent by
@@ -931,14 +955,9 @@ export default function SettingsPage() {
                   Invite link
                 </p>
                 <div className="flex gap-2">
-                  <a
-                    href={generatedInvite.inviteLink}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="min-w-0 flex-1 rounded-lg border border-sky-300/40 bg-sky-400/10 px-3 py-2 text-sm font-semibold leading-6 text-sky-100 shadow-inner shadow-sky-500/10 underline decoration-sky-300/60 underline-offset-4 transition-colors hover:border-sky-200/70 hover:bg-sky-400/15 hover:text-white"
-                  >
+                  <code className="min-w-0 flex-1 rounded-lg border border-sky-300/40 bg-sky-400/10 px-3 py-2 text-sm font-semibold leading-6 text-sky-100 shadow-inner shadow-sky-500/10">
                     <span className="break-all">{generatedInvite.inviteLink}</span>
-                  </a>
+                  </code>
                   <Button
                     variant="secondary"
                     size="sm"
@@ -949,6 +968,9 @@ export default function SettingsPage() {
                     Copy
                   </Button>
                 </div>
+                <p className="mt-2 text-xs leading-5 text-white/45">
+                  Do not open this link from the admin browser while you are logged in. Send it to the invited person; their screen will ask whether they have an account or need to create one.
+                </p>
                 {isLocalInviteLink(generatedInvite.inviteLink) && (
                   <p className="mt-2 rounded-lg border border-amber-400/25 bg-amber-400/10 px-3 py-2 text-xs leading-5 text-amber-100/80">
                     WhatsApp does not make localhost links clickable. Use a public app URL in `PUBLIC_APP_URL` for clickable invite links outside this machine.
@@ -976,7 +998,7 @@ export default function SettingsPage() {
                 </div>
               </div>
               <div className="flex flex-wrap items-center justify-between gap-3">
-                <p className="text-xs text-white/50">Share both details. The link opens on laptop browsers and Android; access activates after the member enters the password.</p>
+                <p className="text-xs text-white/50">Share both details. Access activates only after the member opens the invite, chooses an account option, and enters this password.</p>
                 <Button
                   variant="secondary"
                   size="sm"

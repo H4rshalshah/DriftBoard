@@ -18,6 +18,7 @@ import {
   ChevronDown,
   Square,
   CheckSquare,
+  KeyRound,
 } from 'lucide-react';
 import { hasProjectPermission } from '@/utils/permissions';
 
@@ -47,7 +48,7 @@ interface AppNotification {
 const typeIcons = {
   drift: AlertTriangle,
   schema: GitBranch,
-  system: Bell,
+  system: KeyRound,
   member: Users,
   team: Users,
 };
@@ -75,8 +76,7 @@ const filterOptions: { value: NotificationType | 'all'; label: string }[] = [
   { value: 'all', label: 'All' },
   { value: 'drift', label: 'Drift' },
   { value: 'schema', label: 'Schema' },
-  { value: 'system', label: 'System' },
-  { value: 'team', label: 'Team' },
+  { value: 'system', label: 'API keys' },
 ];
 
 export default function NotificationsPage() {
@@ -127,6 +127,7 @@ export default function NotificationsPage() {
     if (notification.actionUrl) return notification.actionUrl;
     if (notification.type === 'drift') return '/app/drift-events';
     if (notification.type === 'schema') return '/app/schema-history';
+    if (notification.type === 'system' && notification.title.toLowerCase().startsWith('api key')) return '/app/api-keys';
     if (notification.type === 'team' || notification.type === 'member') return '/app/settings';
     return '/app/notifications';
   };

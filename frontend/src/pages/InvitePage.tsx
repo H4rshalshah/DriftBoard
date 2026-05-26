@@ -31,7 +31,7 @@ export default function InvitePage() {
   const { acceptInvite, isLoading } = useAuthStore();
   const [invite, setInvite] = useState<InviteDetails | null>(null);
   const [password, setPassword] = useState('');
-  const [accountMode, setAccountMode] = useState<'existing' | 'new'>('new');
+  const [accountMode, setAccountMode] = useState<'existing' | 'new' | null>(null);
   const [accountPassword, setAccountPassword] = useState('');
   const [name, setName] = useState('');
   const [username, setUsername] = useState('');
@@ -46,7 +46,7 @@ export default function InvitePage() {
     api.get<InviteDetails>(`/team/invite/${token}`)
       .then((details) => {
         setInvite(details);
-        setAccountMode(details.accountStatus);
+        setAccountMode(null);
         setUsername(details.email.split('@')[0] || '');
       })
       .catch((requestError) => setError(getErrorMessage(requestError, 'Invite not found.')))
@@ -59,6 +59,11 @@ export default function InvitePage() {
 
     if (!password.trim()) {
       setError('Enter the invite password.');
+      return;
+    }
+
+    if (!accountMode) {
+      setError('Choose whether you already have a DriftBoard account.');
       return;
     }
 
@@ -119,6 +124,9 @@ export default function InvitePage() {
             <p className="mt-2 text-sm leading-6 text-white/60">
               You were invited as <span className="font-semibold capitalize text-white">{invite.role}</span> to{' '}
               <span className="font-semibold text-white">{invite.projectName}</span>.
+              {invite.accountStatus === 'existing'
+                ? ' We found an existing account for this email.'
+                : ' Create an account for this email to accept access.'}
             </p>
           )}
           {isLoadingInvite && <p className="mt-2 text-sm text-white/50">Checking invite...</p>}
@@ -156,6 +164,11 @@ export default function InvitePage() {
                 Create account
               </button>
             </div>
+            {!accountMode && (
+              <p className="text-xs leading-5 text-white/45">
+                First choose the option that matches the invited email. Then enter the invite password from the email or the admin who invited you.
+              </p>
+            )}
             <Input
               label="Invite password"
               type="password"

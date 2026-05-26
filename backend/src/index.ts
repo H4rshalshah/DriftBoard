@@ -2611,6 +2611,18 @@ function createNotification(projectId: string, type: AppNotification['type'], ti
   return notification;
 }
 
+function isProductNotification(notification: AppNotification) {
+  const title = notification.title.trim().toLowerCase();
+  if (notification.type === 'drift') return true;
+  if (notification.type === 'schema') {
+    return title.includes('schema version') || title.includes('baseline schema') || title.includes('schema created');
+  }
+  if (notification.type === 'system') {
+    return ['api key created', 'api key deleted', 'api key revoked'].includes(title);
+  }
+  return false;
+}
+
 function shouldDeliverExternalNotification(projectId: string, type: AppNotification['type'], title: string) {
   if (projectId === 'project_demo') return false;
   if (type === 'drift') return true;
@@ -4481,14 +4493,18 @@ app.get('/api/notifications', (req, res) => {
   const user = requireRequestUser(req, res);
   if (!user) return;
   const visibleProjectIds = new Set(visibleProjectsForUser(user).map((project) => project.id));
-  res.json(notifications.filter((notification) => notification.userId === user.id || visibleProjectIds.has(notification.projectId)));
+  res.json(notifications.filter((notification) =>
+    isProductNotification(notification) && (notification.userId === user.id || visibleProjectIds.has(notification.projectId))
+  ));
 });
 
 function visibleNotificationIdsForUser(user: User) {
   const visibleProjectIds = new Set(visibleProjectsForUser(user).map((project) => project.id));
   return new Set(
     notifications
-      .filter((notification) => notification.userId === user.id || visibleProjectIds.has(notification.projectId))
+      .filter((notification) =>
+        isProductNotification(notification) && (notification.userId === user.id || visibleProjectIds.has(notification.projectId))
+      )
       .map((notification) => notification.id)
   );
 }
@@ -4500,7 +4516,7 @@ app.get('/api/projects/:projectId/notifications', (req, res) => {
     deny(res);
     return;
   }
-  res.json(notifications.filter((notification) => notification.projectId === req.params.projectId));
+  res.json(notifications.filter((notification) => isProductNotification(notification) && notification.projectId === req.params.projectId));
 });
 
 app.put('/api/notifications/:id/read', (req, res) => {
@@ -4584,7 +4600,11 @@ app.get('/api/notifications/unread-count', (req, res) => {
   const user = requireRequestUser(req, res);
   if (!user) return;
   const visibleProjectIds = new Set(visibleProjectsForUser(user).map((project) => project.id));
-  res.json({ count: notifications.filter((notification) => !notification.read && (notification.userId === user.id || visibleProjectIds.has(notification.projectId))).length });
+  res.json({
+    count: notifications.filter((notification) =>
+      !notification.read && isProductNotification(notification) && (notification.userId === user.id || visibleProjectIds.has(notification.projectId))
+    ).length,
+  });
 });
 
 app.patch('/api/notifications/preferences', (req, res) => {
@@ -5133,11 +5153,16 @@ app.patch('/api/api-keys/:id', (req, res) => {
 
 app.delete('/api/api-keys/:id', (req, res) => {
   const index = apiKeys.findIndex((key) => key.id === req.params.id);
+  let deletedKey: ApiKey | null = null;
   if (index >= 0) {
-    const user = requireProjectPermission(req, res, apiKeys[index].projectId, 'api_key:update');
+    deletedKey = apiKeys[index];
+    const user = requireProjectPermission(req, res, deletedKey.projectId, 'api_key:update');
     if (!user) return;
   }
-  if (index >= 0) apiKeys.splice(index, 1);
+  if (index >= 0 && deletedKey) {
+    apiKeys.splice(index, 1);
+    createNotification(deletedKey.projectId, 'system', 'API key deleted', `${deletedKey.name} was deleted.`);
+  }
   res.status(204).send();
 });
 
