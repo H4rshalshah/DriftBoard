@@ -1416,6 +1416,9 @@ async function deliverConfiguredAlert(title: string, message: string, projectId:
 }
 
 const app = express();
+if (process.env.NODE_ENV === 'production' || process.env.VERCEL || process.env.RENDER_EXTERNAL_URL) {
+  app.set('trust proxy', 1);
+}
 const httpServer = createServer(app);
 const io = new Server(httpServer, {
   cors: {
