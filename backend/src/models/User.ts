@@ -3,7 +3,6 @@ import bcrypt from 'bcrypt';
 import {
   UserRole,
   type ICreateUserDto,
-  type IUpdateUserDto,
 } from '../types/index.js';
 
 export interface IUserDocument extends Document {
@@ -19,6 +18,8 @@ export interface IUserDocument extends Document {
   resetPasswordToken?: string;
   resetPasswordExpires?: Date;
   comparePassword(candidatePassword: string): Promise<boolean>;
+  addTeam(teamId: string | mongoose.Types.ObjectId): Promise<void>;
+  removeTeam(teamId: string | mongoose.Types.ObjectId): Promise<void>;
   toSafeObject(): Record<string, unknown>;
 }
 
@@ -91,6 +92,7 @@ const userSchema = new Schema<IUserDocument>(
 
 userSchema.index({ createdAt: -1 });
 userSchema.index({ email: 1 }, { unique: true });
+userSchema.index({ teamIds: 1 });
 
 userSchema.virtual('isAdmin').get(function () {
   return this.role === UserRole.ADMIN;
@@ -105,6 +107,7 @@ userSchema.pre('save', async function (next) {
     const salt = await bcrypt.genSalt(12);
     this.passwordHash = await bcrypt.hash(this.passwordHash, salt);
   }
+
   next();
 });
 
@@ -112,6 +115,29 @@ userSchema.methods.comparePassword = async function (
   candidatePassword: string,
 ): Promise<boolean> {
   return bcrypt.compare(candidatePassword, this.passwordHash);
+};
+
+userSchema.methods.addTeam = async function (
+  teamId: string | mongoose.Types.ObjectId,
+): Promise<void> {
+  const objectId = typeof teamId === 'string' ? new mongoose.Types.ObjectId(teamId) : teamId;
+
+  if (!this.teamIds.some((id: mongoose.Types.ObjectId) => id.equals(objectId))) {
+    this.teamIds.push(objectId);
+    await this.save();
+  }
+};
+
+userSchema.methods.removeTeam = async function (
+  teamId: string | mongoose.Types.ObjectId,
+): Promise<void> {
+  const objectId = typeof teamId === 'string' ? new mongoose.Types.ObjectId(teamId) : teamId;
+
+  this.teamIds = this.teamIds.filter(
+    (id: mongoose.Types.ObjectId) => !id.equals(objectId),
+  );
+
+  await this.save();
 };
 
 userSchema.methods.toSafeObject = function (): Record<string, unknown> {
@@ -129,14 +155,15 @@ userSchema.methods.toSafeObject = function (): Record<string, unknown> {
   };
 };
 
-userSchema.statics.build = async function (dto: ICreateUserDto): Promise<IUserDocument> {
-  const salt = await bcrypt.genSalt(12);
-  const passwordHash = await bcrypt.hash(dto.password, salt);
-
+userSchema.statics.build = async function (
+  dto: ICreateUserDto,
+): Promise<IUserDocument> {
   const user = new this({
     email: dto.email,
-    passwordHash,
+    passwordHash: dto.password,
     name: dto.name,
+    role: UserRole.MEMBER,
+    teamIds: [],
   });
 
   return user.save();
@@ -145,7 +172,7 @@ userSchema.statics.build = async function (dto: ICreateUserDto): Promise<IUserDo
 userSchema.statics.findByEmail = async function (
   email: string,
 ): Promise<IUserDocument | null> {
-  return this.findOne({ email: email.toLowerCase() }).select('+refreshToken');
+  return this.findOne({ email: email.toLowerCase() }).select('+passwordHash +refreshToken');
 };
 
 export const UserModel = mongoose.model<IUserDocument, IUserModel>('User', userSchema);
