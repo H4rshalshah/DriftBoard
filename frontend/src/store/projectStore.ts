@@ -18,6 +18,7 @@ export interface Project {
   lastDriftAt?: string;
   sourceType?: 'demo' | 'folder' | 'repository' | 'github' | 'upload' | 'manual';
   sourceLabel?: string;
+  apiBaseUrl?: string;
   monitoringStatus?: 'active' | 'pending' | 'connected' | 'monitoring' | 'disconnected' | 'error';
   monitoringStartedAt?: string;
   monitoringEndsAt?: string | null;
@@ -76,6 +77,7 @@ interface ProjectState {
     description: string;
     sourceType?: 'folder' | 'repository' | 'github' | 'upload' | 'manual';
     sourceLabel?: string;
+    apiBaseUrl?: string;
     detectedEndpoints?: DetectedEndpoint[];
     uploadedFiles?: UploadedFileMetadata[];
     fileCount?: number;

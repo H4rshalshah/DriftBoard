@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { api } from '../services/api';
+import { useDriftStore, type DriftEvent } from './driftStore';
 
 export interface SchemaVersion {
   id: string;
@@ -50,7 +51,7 @@ interface EndpointState {
   createEndpoint: (projectId: string, data: Partial<Omit<Endpoint, 'id' | 'projectId' | 'schemaVersions' | 'createdAt' | 'updatedAt'>> & Pick<Endpoint, 'name' | 'url' | 'method'>) => Promise<Endpoint>;
   updateEndpoint: (id: string, data: Partial<Omit<Endpoint, 'id' | 'projectId' | 'schemaVersions' | 'createdAt' | 'updatedAt'>>) => Promise<void>;
   deleteEndpoint: (id: string) => Promise<void>;
-  refreshEndpoint: (id: string) => Promise<{ endpoint: Endpoint; changed?: boolean; failure?: boolean; event?: unknown; notification?: unknown }>;
+  refreshEndpoint: (id: string) => Promise<{ endpoint: Endpoint; changed?: boolean; failure?: boolean; event?: DriftEvent; notification?: unknown }>;
   setActiveEndpoint: (endpoint: Endpoint | null) => void;
   setSelectedProjectId: (id: string | null) => void;
   rollbackSchema: (endpointId: string, versionId: string) => Promise<void>;
@@ -176,13 +177,21 @@ export const useEndpointStore = create<EndpointState>((set, get) => ({
   refreshEndpoint: async (id: string) => {
     set({ isUpdating: true, error: null });
     try {
-      const result = await api.post<{ endpoint: Endpoint; changed?: boolean; failure?: boolean; event?: unknown; notification?: unknown }>(`/endpoints/${id}/refresh`);
+      const result = await api.post<{ endpoint: Endpoint; changed?: boolean; failure?: boolean; event?: DriftEvent; notification?: unknown }>(`/endpoints/${id}/refresh`);
       const refreshedEndpoint = result.endpoint;
       set((state) => ({
         endpoints: state.endpoints.map((endpoint) => (endpoint.id === id ? refreshedEndpoint : endpoint)),
         activeEndpoint: state.activeEndpoint?.id === id ? refreshedEndpoint : state.activeEndpoint,
+        schemaHistory: state.schemaHistory.some((version) => version.endpointId === id) ? refreshedEndpoint.schemaVersions : state.schemaHistory,
         isUpdating: false,
       }));
+      if (result.event) {
+        useDriftStore.setState((state) => ({
+          driftEvents: state.driftEvents.some((event) => event.id === result.event?.id)
+            ? state.driftEvents
+            : [result.event!, ...state.driftEvents],
+        }));
+      }
       return result;
     } catch (error) {
       set({

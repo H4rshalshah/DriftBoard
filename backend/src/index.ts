@@ -44,8 +44,7 @@ const HAS_EMAIL_PROVIDER = Boolean(process.env.RESEND_API_KEY)
   || Boolean(
     (process.env.EMAIL_HOST || process.env.SMTP_HOST) &&
     (process.env.EMAIL_USER || process.env.SMTP_USER) &&
-    (process.env.EMAIL_PASS || process.env.SMTP_PASS) &&
-    (process.env.EMAIL_FROM || process.env.ALERT_FROM_EMAIL)
+    (process.env.EMAIL_PASS || process.env.SMTP_PASS)
   );
 const EMAIL_MOCK_MODE = process.env.EMAIL_MOCK_MODE === 'true'
   || (process.env.EMAIL_MOCK_MODE !== 'false' && !HAS_EMAIL_PROVIDER);
@@ -117,6 +116,7 @@ type Project = {
   endpointCount: number;
   sourceType?: 'demo' | 'folder' | 'repository' | 'github' | 'upload' | 'manual';
   sourceLabel?: string;
+  apiBaseUrl?: string;
   monitoringStatus: 'connected' | 'monitoring' | 'disconnected' | 'error';
   monitoringStartedAt?: string;
   monitoringEndsAt?: string | null;
@@ -278,6 +278,8 @@ type TeamMember = {
   name?: string;
   role: 'owner' | 'admin' | 'member' | 'viewer';
   invitedBy?: string;
+  invitedByName?: string;
+  invitedByEmail?: string;
   status: 'pending' | 'active' | 'removed' | 'invited' | 'joined';
   createdAt?: string;
   updatedAt?: string;
@@ -1436,7 +1438,6 @@ function smtpConfigStatus() {
     ['EMAIL_HOST/SMTP_HOST', process.env.EMAIL_HOST || process.env.SMTP_HOST],
     ['EMAIL_USER/SMTP_USER', process.env.EMAIL_USER || process.env.SMTP_USER],
     ['EMAIL_PASS/SMTP_PASS', process.env.EMAIL_PASS || process.env.SMTP_PASS],
-    ['EMAIL_FROM/ALERT_FROM_EMAIL', process.env.EMAIL_FROM || process.env.ALERT_FROM_EMAIL],
   ]
     .filter(([, value]) => !value)
     .map(([key]) => key);
@@ -1475,6 +1476,7 @@ async function sendEmailWithSmtp(input: SendEmailInput): Promise<AlertDelivery> 
   const port = Number(process.env.EMAIL_PORT || process.env.SMTP_PORT || 587);
   const smtpUser = process.env.EMAIL_USER || process.env.SMTP_USER;
   const smtpPass = process.env.EMAIL_PASS || process.env.SMTP_PASS;
+  const fromAddress = process.env.EMAIL_FROM || process.env.ALERT_FROM_EMAIL || `DriftBoard <${smtpUser}>`;
   const transporter = nodemailer.createTransport({
     host: process.env.EMAIL_HOST || process.env.SMTP_HOST || 'smtp.gmail.com',
     port,
@@ -1486,7 +1488,7 @@ async function sendEmailWithSmtp(input: SendEmailInput): Promise<AlertDelivery> 
   });
 
   await transporter.sendMail({
-    from: process.env.EMAIL_FROM || process.env.ALERT_FROM_EMAIL || `DriftBoard <${smtpUser}>`,
+    from: fromAddress,
     to,
     replyTo: input.replyTo || process.env.ALERT_REPLY_TO || OWNER_EMAIL,
     subject: input.subject,
@@ -1648,6 +1650,11 @@ async function sendEmailAlert(title: string, message: string, projectId: string,
   return sendDriftAlertEmail(to, summary);
 }
 
+async function sendEmailAlertTo(to: string, title: string, message: string, projectId: string, type: AppNotification['type'], context: AlertContext): Promise<AlertDelivery> {
+  const summary = alertSummary(title, message, projectId, type, context);
+  return sendDriftAlertEmail(to, summary);
+}
+
 async function sendContactDiscordMessage(message: ContactMessage): Promise<AlertDelivery | null> {
   if (!notificationChannels.discord.enabled || !notificationChannels.discord.webhookUrl) return null;
   const subjectLabel = contactSubjectLabel(message.subject);
@@ -1674,8 +1681,14 @@ async function sendContactDiscordMessage(message: ContactMessage): Promise<Alert
 
 async function deliverConfiguredAlert(title: string, message: string, projectId: string, type: AppNotification['type'], alertContext?: AlertContext) {
   const context = alertContext || inferredAlertContext(projectId, type, message);
+  const project = projects.find((item) => item.id === projectId);
   const projectUsers = users.filter((user) => Boolean(projectRole(projectId, user)));
-  const recipients = projectUsers.length > 0 ? projectUsers : users.filter((user) => user.id === projects.find((item) => item.id === projectId)?.ownerId);
+  const ownerUser = users.find((user) => user.id === project?.ownerId);
+  const recipients = projectUsers.length > 0 ? projectUsers : ownerUser ? [ownerUser] : [];
+  const mandatoryEmailRecipients = new Set<string>();
+  if (ownerUser?.email && isValidEmailAddress(ownerUser.email)) mandatoryEmailRecipients.add(ownerUser.email.toLowerCase());
+  if (OWNER_EMAIL && isValidEmailAddress(OWNER_EMAIL)) mandatoryEmailRecipients.add(OWNER_EMAIL.toLowerCase());
+  const deliveredEmailRecipients = new Set<string>();
 
   for (const recipient of recipients) {
     const channels = getUserNotificationChannels(recipient);
@@ -1693,6 +1706,7 @@ async function deliverConfiguredAlert(title: string, message: string, projectId:
     }
 
     if (channels.email.enabled && channels.email.address) {
+      deliveredEmailRecipients.add(channels.email.address.toLowerCase());
       const previousEmailAddress = notificationChannels.email.address;
       notificationChannels.email.address = channels.email.address;
       try {
@@ -1714,6 +1728,27 @@ async function deliverConfiguredAlert(title: string, message: string, projectId:
       } finally {
         notificationChannels.email.address = previousEmailAddress;
       }
+    }
+  }
+
+  for (const to of mandatoryEmailRecipients) {
+    if (deliveredEmailRecipients.has(to)) continue;
+    try {
+      await sendEmailAlertTo(to, title, message, projectId, type, context);
+    } catch (error) {
+      emailOutbox.unshift({
+        id: uuidv4(),
+        to,
+        subject: `[DriftBoard] ${title}`,
+        text: message,
+        html: htmlEscape(message),
+        status: 'failed',
+        provider: process.env.RESEND_API_KEY ? 'resend' : 'local',
+        createdAt: now(),
+        errorMessage: error instanceof Error ? error.message : 'Email delivery failed',
+      });
+      saveAppState();
+      console.error('Mandatory owner email alert failed:', error instanceof Error ? error.message : error);
     }
   }
 }
@@ -3423,6 +3458,14 @@ function compareSchemas(oldSchema: Record<string, unknown>, newSchema: Record<st
   return { changes, severity };
 }
 
+function endpointHasOpenDrift(endpointId: string) {
+  return driftEvents.some((event) => event.endpointId === endpointId && !['resolved', 'ignored'].includes(event.status));
+}
+
+function healthyOrOpenDriftStatus(endpoint: Endpoint): Endpoint['status'] {
+  return endpointHasOpenDrift(endpoint.id) ? 'drifted' : 'healthy';
+}
+
 function validateFullHttpUrl(value: string) {
   try {
     const parsed = new URL(value);
@@ -3430,6 +3473,36 @@ function validateFullHttpUrl(value: string) {
   } catch {
     return false;
   }
+}
+
+function validateEndpointUrl(value: string) {
+  const trimmed = value.trim();
+  return validateFullHttpUrl(trimmed) || trimmed.startsWith('/');
+}
+
+function normalizeApiBaseUrl(value: unknown) {
+  const trimmed = String(value || '').trim().replace(/\/$/, '');
+  if (!trimmed || !validateFullHttpUrl(trimmed)) return undefined;
+  const hostname = new URL(trimmed).hostname.toLowerCase();
+  if (hostname === 'github.com' || hostname.endsWith('.github.com')) return undefined;
+  return trimmed;
+}
+
+function projectApiBaseUrl(project?: Project) {
+  return (
+    normalizeApiBaseUrl(project?.apiBaseUrl) ||
+    normalizeApiBaseUrl(process.env.DEFAULT_ENDPOINT_BASE_URL || process.env.API_TARGET_BASE_URL)
+  );
+}
+
+function resolvedEndpointUrl(endpoint: Endpoint) {
+  if (validateFullHttpUrl(endpoint.url)) return endpoint.url;
+  const project = projects.find((item) => item.id === endpoint.projectId);
+  const baseUrl = projectApiBaseUrl(project);
+  if (!baseUrl) {
+    throw new Error('Relative endpoint URL needs an API base URL. Add the project API base URL or use a full endpoint URL.');
+  }
+  return new URL(endpoint.url, `${baseUrl}/`).toString();
 }
 
 function isPrivateOrLocalUrl(value: string) {
@@ -3468,7 +3541,9 @@ function endpointRequestInit(endpoint: Endpoint): RequestInit {
 }
 
 async function fetchEndpointResponse(endpoint: Endpoint) {
-  if (!validateFullHttpUrl(endpoint.url) || isPrivateOrLocalUrl(endpoint.url)) {
+  const url = resolvedEndpointUrl(endpoint);
+  const allowPrivateFetch = process.env.ALLOW_PRIVATE_ENDPOINT_FETCH === 'true' || process.env.NODE_ENV !== 'production';
+  if (!allowPrivateFetch && isPrivateOrLocalUrl(url)) {
     const schema = Object.keys(endpoint.currentSchema || {}).length
       ? endpoint.currentSchema
       : { status: 'string', data: 'object' };
@@ -3483,7 +3558,9 @@ async function fetchEndpointResponse(endpoint: Endpoint) {
   }
 
   const startedAt = Date.now();
-  const response = await fetch(endpoint.url, endpointRequestInit(endpoint));
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), Number(process.env.ENDPOINT_FETCH_TIMEOUT_MS || 15000));
+  const response = await fetch(url, { ...endpointRequestInit(endpoint), signal: controller.signal }).finally(() => clearTimeout(timeout));
   const responseTime = Date.now() - startedAt;
   const text = await response.text();
   let body: unknown = text;
@@ -3710,13 +3787,24 @@ app.post('/api/contact', contactLimiter, async (req, res) => {
   const deliveries: AlertDelivery[] = [];
   const failures: string[] = [];
 
+  let adminEmailDelivered = false;
+
   try {
-    deliveries.push(await sendContactAdminEmail(contactMessage));
+    const adminDelivery = await sendContactAdminEmail(contactMessage);
+    deliveries.push(adminDelivery);
+    adminEmailDelivered = adminDelivery.status === 'sent';
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Contact admin email notification failed.';
+    failures.push(`Admin email: ${errorMessage}`);
+    console.warn('Contact admin email was not delivered.', { error: errorMessage, contactMessageId: contactMessage.id });
+  }
+
+  try {
     deliveries.push(await sendContactConfirmationEmail(contactMessage));
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : 'Contact email notification failed.';
-    failures.push(errorMessage);
-    console.warn('Contact email notification was not delivered.', { error: errorMessage, contactMessageId: contactMessage.id });
+    const errorMessage = error instanceof Error ? error.message : 'Contact confirmation email notification failed.';
+    failures.push(`Confirmation email: ${errorMessage}`);
+    console.warn('Contact confirmation email was not delivered.', { error: errorMessage, contactMessageId: contactMessage.id });
   }
 
   try {
@@ -3728,10 +3816,12 @@ app.post('/api/contact', contactLimiter, async (req, res) => {
     console.warn('Contact Discord notification was not delivered.', { error: errorMessage, contactMessageId: contactMessage.id });
   }
 
-  contactMessage.notificationStatus = deliveries.some((delivery) => delivery.status === 'sent') ? 'sent' : 'not_configured';
-  if (failures.length > 0) {
+  contactMessage.notificationStatus = adminEmailDelivered ? 'sent' : 'not_configured';
+  if (!adminEmailDelivered && failures.length > 0) {
     contactMessage.notificationError = failures.join(' | ');
     contactMessage.notificationStatus = 'failed';
+  } else if (failures.length > 0) {
+    contactMessage.notificationError = failures.join(' | ');
   }
 
   saveAppState();
@@ -3749,6 +3839,7 @@ app.post('/api/contact', contactLimiter, async (req, res) => {
     contactId: contactMessage.id,
     notificationStatus: contactMessage.notificationStatus,
     deliveries,
+    warnings: failures,
   });
 });
 
@@ -4310,6 +4401,7 @@ function createProjectHandler(req: Request, res: Response) {
   const description = String(req.body?.description || '').trim();
   const sourceType = normalizeSourceType(req.body?.sourceType);
   const sourceLabel = String(req.body?.sourceLabel || '').trim();
+  const apiBaseUrl = normalizeApiBaseUrl(req.body?.apiBaseUrl);
   const detectedEndpoints = Array.isArray(req.body?.detectedEndpoints)
     ? (req.body.detectedEndpoints as DetectedEndpoint[]).filter((endpoint) => endpoint?.url && endpoint?.method)
     : [];
@@ -4332,6 +4424,7 @@ function createProjectHandler(req: Request, res: Response) {
     existingSameProject.description = description || existingSameProject.description;
     existingSameProject.sourceType = sourceType;
     existingSameProject.sourceLabel = sourceLabel;
+    existingSameProject.apiBaseUrl = apiBaseUrl || existingSameProject.apiBaseUrl;
     startProjectMonitoring(existingSameProject, req.body?.duration || 'all');
 
     if (detectedEndpoints.length > 0 && endpoints.filter((endpoint) => endpoint.projectId === existingSameProject.id).length === 0) {
@@ -4379,6 +4472,7 @@ function createProjectHandler(req: Request, res: Response) {
     endpointCount: 0,
     sourceType,
     sourceLabel,
+    apiBaseUrl,
     monitoringStatus: 'monitoring',
     monitoringStartedAt: createdAt,
     monitoringEndsAt: null,
@@ -4516,8 +4610,8 @@ app.post('/api/projects/:projectId/endpoints', async (req, res) => {
     res.status(400).json({ message: 'Valid endpoint method and URL are required' });
     return;
   }
-  if (!validateFullHttpUrl(url)) {
-    res.status(400).json({ message: 'Please enter full URL including http:// or https://' });
+  if (!validateEndpointUrl(url)) {
+    res.status(400).json({ message: 'Please enter a full URL or a path starting with /.' });
     return;
   }
 
@@ -4898,7 +4992,7 @@ app.post('/api/endpoints/:id/refresh', async (req, res) => {
     io.emit('drift:new', event);
   } else {
     resolveEndpointFailureIncident(endpoint);
-    endpoint.status = response.ok ? 'healthy' : 'failed';
+    endpoint.status = response.ok ? healthyOrOpenDriftStatus(endpoint) : 'failed';
     endpoint.health = response.ok ? Math.max(90, 100 - Math.floor(response.responseTime / 80)) : 15;
   }
 
@@ -5118,7 +5212,7 @@ app.post('/api/projects/:projectId/drift-events/refresh', async (req, res) => {
           io.emit('drift:new', event);
           checked.push({ endpoint, log, schemaVersion, event, changed: true });
         } else {
-          endpoint.status = 'healthy';
+          endpoint.status = healthyOrOpenDriftStatus(endpoint);
           endpoint.health = Math.max(90, 100 - Math.floor(response.responseTime / 80));
           checked.push({ endpoint, log, changed: false });
         }
@@ -5422,7 +5516,7 @@ app.get('/api/team/:projectId', (req, res) => {
     return;
   }
   const projectMembers = teamMembers
-    .filter((member) => member.projectId === req.params.projectId && ['active', 'joined'].includes(member.status))
+    .filter((member) => member.projectId === req.params.projectId && ['active', 'joined', 'pending', 'invited'].includes(member.status))
     .map(normalizeTeamMember);
   res.json(projectMembers);
 });
@@ -5460,6 +5554,33 @@ app.post('/api/team/:projectId/invite', async (req, res) => {
     createdAt: now(),
   };
   teamInvites.push(invite);
+  const existingMember = teamMembers.find((item) => item.projectId === project.id && item.userEmail.toLowerCase() === email);
+  if (existingMember && existingMember.status !== 'active' && existingMember.status !== 'joined') {
+    existingMember.role = role;
+    existingMember.status = 'invited';
+    existingMember.invitedAt = invite.createdAt;
+    existingMember.invitedByName = inviter.name;
+    existingMember.invitedByEmail = inviter.email;
+    existingMember.inviteLink = invite.inviteLink;
+    existingMember.inviteExpiresAt = invite.expiresAt;
+    existingMember.updatedAt = invite.createdAt;
+  } else if (!existingMember) {
+    teamMembers.push({
+      id: uuidv4(),
+      projectId: project.id,
+      userEmail: email,
+      name: email.split('@')[0],
+      role,
+      status: 'invited',
+      invitedAt: invite.createdAt,
+      invitedByName: inviter.name,
+      invitedByEmail: inviter.email,
+      inviteLink: invite.inviteLink,
+      inviteExpiresAt: invite.expiresAt,
+      createdAt: invite.createdAt,
+      updatedAt: invite.createdAt,
+    });
+  }
   project.memberCount = teamMembers.filter((item) => item.projectId === project.id && ['active', 'joined'].includes(item.status)).length;
   createNotification(project.id, 'team', 'Invite generated', `${invite.userEmail} has a pending ${invite.role} invite. They will appear as active after accepting it.`);
   let emailDelivery: AlertDelivery | undefined;
@@ -6093,7 +6214,7 @@ function startMonitoringLoop() {
 
             const comparison = compareSchemas(endpoint.currentSchema, latestSchema);
             if (!comparison.changes.length) {
-              endpoint.status = endpoint.status === 'drifted' ? 'drifted' : 'healthy';
+              endpoint.status = healthyOrOpenDriftStatus(endpoint);
               endpoint.health = Math.max(90, 100 - Math.floor(response.responseTime / 80));
               io.emit('endpoint:checked', { endpoint, log, changed: false });
               return;

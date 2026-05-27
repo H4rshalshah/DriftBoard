@@ -16,7 +16,6 @@ import {
   CheckCircle,
   Edit,
   Eye,
-  FileJson,
   Filter,
   History,
   LayoutGrid,
@@ -26,7 +25,6 @@ import {
   RefreshCw,
   Search,
   Trash2,
-  Upload,
 } from 'lucide-react';
 import type { ProjectRole } from '@/utils/permissions';
 import { hasProjectPermission } from '@/utils/permissions';
@@ -60,7 +58,7 @@ const statusLabels: Record<NonNullable<Endpoint['status']>, string> = {
   disabled: 'Disabled',
 };
 
-type ModalMode = 'add' | 'details' | 'edit' | 'history' | 'delete' | 'import' | null;
+type ModalMode = 'add' | 'details' | 'edit' | 'history' | 'delete' | null;
 
 type EndpointForm = {
   name: string;
@@ -80,21 +78,12 @@ type TeamMember = {
   status?: 'pending' | 'active' | 'removed' | 'invited' | 'joined';
 };
 
-type DetectedEndpoint = {
-  name?: string;
-  url: string;
-  method: Endpoint['method'];
-  currentSchema?: Record<string, unknown>;
-  sourceFile?: string;
-  monitoringEnabled?: boolean;
-};
-
 const endpointFormSchema = z.object({
   url: z
     .string()
     .trim()
-    .url('Please enter full URL including http:// or https://')
-    .refine((value) => /^https?:\/\//i.test(value), 'Please enter full URL including http:// or https://'),
+    .min(1, 'URL is required')
+    .refine((value) => /^https?:\/\//i.test(value) || value.startsWith('/'), 'Use a full URL or a path starting with /.'),
   method: z.enum(methods),
 });
 
@@ -220,7 +209,6 @@ export default function EndpointsPage() {
   const [selectedEndpointId, setSelectedEndpointId] = useState<string | null>(null);
   const [form, setForm] = useState<EndpointForm>(() => buildForm());
   const [refreshingId, setRefreshingId] = useState<string | null>(null);
-  const [isImportingContracts, setIsImportingContracts] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [projectRole, setProjectRole] = useState<ProjectRole | null>(currentProject?.currentUserRole || null);
   const endpointsPerPage = 9;
@@ -391,60 +379,6 @@ export default function EndpointsPage() {
     }
   };
 
-  const importApiFiles = async (files: FileList | null) => {
-    if (!currentProject?.id) {
-      toast.error('Connect a project before importing API files.');
-      return;
-    }
-    if (!canEditEndpoints) {
-      toast.error('Viewers can only view this project. Ask an admin for edit access.');
-      return;
-    }
-
-    const selectedFiles = Array.from(files || []).filter((file) =>
-      /\.(py|json|yaml|yml|txt|js|ts|tsx)$/i.test(file.name) && file.size <= 10_000_000
-    );
-    if (selectedFiles.length === 0) {
-      toast.error('Choose FastAPI Python, OpenAPI, Swagger, Postman, or source files under 10 MB each.');
-      return;
-    }
-
-    setIsImportingContracts(true);
-    try {
-      const detected = new Map<string, DetectedEndpoint>();
-      for (const file of selectedFiles.slice(0, 30)) {
-        const response = await api.post<{ detectedEndpoints: DetectedEndpoint[] }>(`/projects/${currentProject.id}/files/detect-endpoints`, {
-          file: {
-            originalName: file.name,
-            fileType: file.type || file.name.split('.').pop() || 'file',
-            fileSize: file.size,
-            content: await file.text(),
-          },
-        });
-        response.detectedEndpoints.forEach((endpoint) => {
-          detected.set(`${endpoint.method}:${endpoint.url}`, endpoint);
-        });
-      }
-
-      const detectedEndpoints = Array.from(detected.values());
-      if (detectedEndpoints.length === 0) {
-        toast.error('No endpoints were found in the selected files.');
-        return;
-      }
-
-      await api.post<Endpoint[]>(`/projects/${currentProject.id}/endpoints/import-detected`, {
-        endpoints: detectedEndpoints,
-      });
-      await Promise.all([fetchEndpoints(currentProject.id), fetchNotifications(), fetchUnreadCount()]);
-      toast.success(`${detectedEndpoints.length} endpoint${detectedEndpoints.length === 1 ? '' : 's'} imported into monitoring. Drift is recorded when schemas change.`);
-      closeModal();
-    } catch (error) {
-      toast.error(getErrorMessage(error, 'Could not import API files.'));
-    } finally {
-      setIsImportingContracts(false);
-    }
-  };
-
   const getActions = (endpoint: Endpoint): DropdownItem[] => [
     { label: 'View Details', value: 'details', icon: <Eye className="w-4 h-4" />, onClick: () => void openModal('details', endpoint) },
     { label: 'Edit', value: 'edit', icon: <Edit className="w-4 h-4" />, disabled: !canEditEndpoints, onClick: () => void openModal('edit', endpoint) },
@@ -524,9 +458,6 @@ export default function EndpointsPage() {
           <p className="text-white/60">Manage and monitor real API endpoints for the active project.</p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Button variant="secondary" leftIcon={<FileJson className="w-4 h-4" />} onClick={() => void openModal('import')} disabled={!canEditEndpoints}>
-            Import API File
-          </Button>
           <Button variant="secondary" leftIcon={<RefreshCw className={`w-4 h-4 ${refreshingId === 'all' ? 'animate-spin' : ''}`} />} onClick={() => void refreshAll()} disabled={!endpoints.length || !canEditEndpoints}>
             Refresh Endpoints
           </Button>
@@ -592,9 +523,6 @@ export default function EndpointsPage() {
           <p className="mb-4 text-white/50">{search || methodFilter || statusFilter ? 'Try adjusting your filters.' : 'Add an endpoint to begin live monitoring.'}</p>
           <Button onClick={() => void openModal('add')} leftIcon={<Plus className="w-4 h-4" />} disabled={!canEditEndpoints}>
             Add Endpoint
-          </Button>
-          <Button variant="secondary" onClick={() => void openModal('import')} leftIcon={<FileJson className="w-4 h-4" />} disabled={!canEditEndpoints}>
-            Import API File
           </Button>
         </motion.div>
       ) : viewMode === 'grid' ? (
@@ -670,38 +598,6 @@ export default function EndpointsPage() {
         <ModalFooter>
           <Button variant="secondary" onClick={closeModal}>Cancel</Button>
           <Button loading={isUpdating} onClick={() => void saveEndpoint()}>Save Changes</Button>
-        </ModalFooter>
-      </Modal>
-
-      <Modal isOpen={modalMode === 'import'} onClose={closeModal} size="lg">
-        <ModalHeader>
-          <h2 className="text-xl font-semibold text-white">Import API Files</h2>
-          <p className="mt-1 text-sm text-white/55">
-            Upload FastAPI Python, OpenAPI, Swagger, Postman, or endpoint JSON/YAML files. Re-upload changed files to create schema versions and drift events.
-          </p>
-        </ModalHeader>
-        <ModalBody className="space-y-4">
-          <label className="flex cursor-pointer flex-col items-center justify-center rounded-lg border border-dashed border-white/15 bg-white/5 px-4 py-8 text-center transition-colors hover:border-indigo-300/50 hover:bg-white/10">
-            <Upload className="mb-3 h-7 w-7 text-indigo-300" />
-            <span className="text-sm font-semibold text-white">Choose API contract or source files</span>
-            <span className="mt-1 max-w-md text-xs leading-5 text-white/45">
-              DriftBoard will detect endpoints, save baseline schemas, and compare changed contracts against existing endpoints.
-            </span>
-            <input
-              type="file"
-              multiple
-              accept=".py,.json,.yaml,.yml,.txt,.js,.ts,.tsx,application/json,text/x-python,text/plain"
-              className="hidden"
-              onChange={(event) => void importApiFiles(event.target.files)}
-            />
-          </label>
-          <div className="rounded-lg border border-white/10 bg-white/5 p-4 text-sm leading-6 text-white/55">
-            Supported imports include FastAPI decorators like `@app.get("/users")`, OpenAPI/Swagger `paths`, Postman collections, arrays with `method` and `url`, source route definitions, and maps like `POST /products`.
-          </div>
-        </ModalBody>
-        <ModalFooter>
-          <Button variant="secondary" onClick={closeModal}>Cancel</Button>
-          {isImportingContracts && <Button loading disabled>Importing...</Button>}
         </ModalFooter>
       </Modal>
 
@@ -796,7 +692,7 @@ function EndpointFormFields({ form, setForm }: { form: EndpointForm; setForm: Re
       <div>
         <Input label="URL" placeholder="http://127.0.0.1:8000/users" value={form.url} onChange={(event) => setForm((current) => ({ ...current, url: event.target.value }))} />
         <p className="mt-2 text-xs font-medium text-white/55">
-          Use full URL, e.g. http://127.0.0.1:8000/users. Relative paths like /users or /api/v1/users cannot be monitored directly.
+          Use a full URL, or use a path like /users when the project has an API base URL.
         </p>
       </div>
       <div>

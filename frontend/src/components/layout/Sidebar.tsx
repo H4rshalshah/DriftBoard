@@ -88,6 +88,7 @@ export default function Sidebar() {
   const [projectName, setProjectName] = useState('');
   const [sourceType, setSourceType] = useState<'folder' | 'repository'>('folder');
   const [repoUrl, setRepoUrl] = useState('');
+  const [apiBaseUrl, setApiBaseUrl] = useState('');
   const [selectedSourceName, setSelectedSourceName] = useState('');
   const [selectedFileCount, setSelectedFileCount] = useState(0);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
@@ -148,6 +149,7 @@ export default function Sidebar() {
     setProjectSetupOpen(false);
     setProjectName('');
     setRepoUrl('');
+    setApiBaseUrl('');
     setSelectedSourceName('');
     setSelectedFileCount(0);
     setSelectedFiles([]);
@@ -322,6 +324,7 @@ export default function Sidebar() {
         description: `Monitoring active. Source: ${sourceLabel}. DriftBoard will fetch project details, track endpoints, store schema snapshots, compare new versions, and surface drift errors for this project.`,
         sourceType,
         sourceLabel,
+        apiBaseUrl: apiBaseUrl.trim() || undefined,
         detectedEndpoints,
         uploadedFiles,
         fileCount: selectedFileCount,
@@ -697,6 +700,16 @@ export default function Sidebar() {
               }}
             />
           )}
+
+          <Input
+            label="API base URL"
+            placeholder="https://api.example.com"
+            value={apiBaseUrl}
+            onChange={(event) => {
+              setApiBaseUrl(event.target.value);
+              setSetupError('');
+            }}
+          />
 
           {setupError && (
             <div className="rounded-lg border border-red-500/25 bg-red-500/10 px-3 py-2 text-xs text-red-300">

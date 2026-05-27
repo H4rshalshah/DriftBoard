@@ -15,18 +15,25 @@ interface EmailConfig {
 export class EmailService {
   private transporter: Transporter;
   private config: EmailConfig;
+  private configured: boolean;
 
   constructor() {
+    const host = process.env.EMAIL_HOST || process.env.SMTP_HOST || 'smtp.gmail.com';
+    const port = parseInt(process.env.EMAIL_PORT || process.env.SMTP_PORT || '587', 10);
+    const user = process.env.EMAIL_USER || process.env.SMTP_USER || '';
+    const pass = process.env.EMAIL_PASS || process.env.SMTP_PASS || '';
+
     this.config = {
-      host: process.env.SMTP_HOST || 'smtp.gmail.com',
-      port: parseInt(process.env.SMTP_PORT || '587'),
-      secure: false,
+      host,
+      port,
+      secure: process.env.EMAIL_SECURE === 'true' || process.env.SMTP_SECURE === 'true' || port === 465,
       auth: {
-        user: process.env.SMTP_USER || 'h4rshal.workspace@gmail.com',
-        pass: process.env.SMTP_PASS || 'mvmm cmsl xrgu ztwl',
+        user,
+        pass,
       },
-      from: process.env.EMAIL_FROM || 'DriftBoard <h4rshal.workspace@gmail.com>',
+      from: process.env.EMAIL_FROM || process.env.ALERT_FROM_EMAIL || (user ? `DriftBoard <${user}>` : 'DriftBoard <no-reply@localhost>'),
     };
+    this.configured = Boolean(host && user && pass);
 
     this.transporter = nodemailer.createTransport({
       host: this.config.host,
@@ -40,6 +47,11 @@ export class EmailService {
   }
 
   async sendEmail(to: string, subject: string, html: string): Promise<boolean> {
+    if (!this.configured) {
+      console.error('Email send skipped: SMTP is not configured. Set SMTP_HOST, SMTP_USER, and SMTP_PASS.');
+      return false;
+    }
+
     try {
       await this.transporter.sendMail({
         from: this.config.from,
