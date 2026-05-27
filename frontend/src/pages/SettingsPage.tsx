@@ -267,7 +267,8 @@ export default function SettingsPage() {
       const emailDelivery = result.delivered.find((delivery) => delivery.channel === 'email');
       const discordDelivery = result.delivered.find((delivery) => delivery.channel === 'discord');
       if (emailDelivery?.status === 'mock_sent') {
-        toast.success(discordDelivery ? 'Discord sent. Email is in mock mode until SMTP or Resend is configured.' : emailDelivery.message || 'Mock email test completed.');
+        const mockMessage = notificationChannels.emailConfig?.message || emailDelivery.message || 'Email is in mock mode until SMTP or Resend is configured.';
+        toast.success(discordDelivery ? `Discord sent. ${mockMessage}` : mockMessage);
       } else {
         toast.success(result.delivered.length > 1 ? 'Discord and email test alerts sent.' : 'Test alert sent.');
       }
@@ -860,11 +861,11 @@ export default function SettingsPage() {
                     )}
                     {notificationChannels.emailConfig?.provider === 'mock' ? (
                       <div className="mt-4 rounded-lg border border-amber-400/25 bg-amber-400/10 px-3 py-2 text-sm leading-6 text-amber-100">
-                        Email is in mock mode. Add real SMTP credentials or Resend credentials on Render to deliver to inboxes.
+                        {notificationChannels.emailConfig.message || 'Email is in mock mode. Add real SMTP credentials or Resend credentials on Render to deliver to inboxes.'}
                       </div>
                     ) : !notificationChannels.emailConfig?.configured && (
                       <div className="mt-4 rounded-lg border border-amber-400/25 bg-amber-400/10 px-3 py-2 text-sm leading-6 text-amber-100">
-                        Email notifications are not configured. Add SMTP or Resend credentials on the server.
+                        {notificationChannels.emailConfig?.message || 'Email notifications are not configured. Add SMTP or Resend credentials on the server.'}
                       </div>
                     )}
                   </div>

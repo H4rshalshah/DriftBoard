@@ -47,7 +47,8 @@ const HAS_EMAIL_PROVIDER = Boolean(process.env.RESEND_API_KEY)
     (process.env.EMAIL_PASS || process.env.SMTP_PASS) &&
     (process.env.EMAIL_FROM || process.env.ALERT_FROM_EMAIL)
   );
-const EMAIL_MOCK_MODE = process.env.EMAIL_MOCK_MODE === 'true' || !HAS_EMAIL_PROVIDER;
+const EMAIL_MOCK_MODE = process.env.EMAIL_MOCK_MODE === 'true'
+  || (process.env.EMAIL_MOCK_MODE !== 'false' && !HAS_EMAIL_PROVIDER);
 const configuredPersistenceDriver = String(process.env.PERSISTENCE_DRIVER || '').trim().toLowerCase();
 const PERSISTENCE_DRIVER = process.env.MONGODB_URI
   ? 'mongodb'
@@ -58,6 +59,8 @@ const TEST_EMAIL_WINDOW_MS = Number(process.env.TEST_EMAIL_WINDOW_MS || 10 * 60 
 const TEST_EMAIL_MAX_REQUESTS = Number(process.env.TEST_EMAIL_MAX_REQUESTS || 3);
 const OWNER_EMAIL = 'h4rshal.workspace@gmail.com';
 const HTTP_METHODS = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'] as const;
+const MAX_UPLOAD_FILE_SIZE_MB = Number(process.env.MAX_UPLOAD_FILE_SIZE_MB || 10);
+const MAX_UPLOAD_FILE_SIZE_BYTES = Math.max(1, MAX_UPLOAD_FILE_SIZE_MB) * 1024 * 1024;
 
 type User = {
   id: string;
@@ -1011,11 +1014,13 @@ function emailConfigStatus() {
   const provider = hasResend ? 'resend' : hasSmtp ? 'smtp' : EMAIL_MOCK_MODE ? 'mock' : null;
 
   return {
-    configured: Boolean(provider),
+    configured: Boolean(provider && provider !== 'mock'),
     mockMode: EMAIL_MOCK_MODE,
     provider,
     missing: hasSmtp ? missingResend : missingSmtp,
-    message: provider
+    message: provider === 'mock'
+      ? `Email mock mode is active. Add ${missingSmtp.join(', ')} for SMTP or ${missingResend.join(', ')} for Resend on Render to deliver to inboxes.`
+      : provider
       ? `Email notifications active via ${provider.toUpperCase()}`
       : `Email notifications are not configured. Missing ${missingSmtp.join(', ')} for SMTP or ${missingResend.join(', ')} for Resend.`,
   };
@@ -4143,8 +4148,8 @@ app.post('/api/projects/:projectId/files/detect-endpoints', (req, res) => {
     res.status(400).json({ message: 'Upload a file with readable text content.' });
     return;
   }
-  if (content.length > 2_000_000) {
-    res.status(413).json({ message: 'File is too large. Upload a source or OpenAPI file under 2 MB.' });
+  if (Buffer.byteLength(content, 'utf8') > MAX_UPLOAD_FILE_SIZE_BYTES) {
+    res.status(413).json({ message: `File is too large. Upload a source or OpenAPI file under ${MAX_UPLOAD_FILE_SIZE_MB} MB.` });
     return;
   }
 

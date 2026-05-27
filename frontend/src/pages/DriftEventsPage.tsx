@@ -288,10 +288,10 @@ function downloadBlob(blob: Blob, filename: string) {
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
   link.href = url;
-  link.download = filename;
+  link.download = filename.replace(/[\\/:*?"<>|]+/g, '-');
   link.style.display = 'none';
   document.body.appendChild(link);
-  link.click();
+  link.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, view: window }));
   link.remove();
   window.setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
@@ -549,7 +549,7 @@ export default function DriftEventsPage() {
     const projectName = currentProject?.name || 'DriftBoard Project';
 
     if (!currentProject?.id) {
-      const csv = buildVisibleEventsCsv(projectName, filteredEvents);
+      const csv = `\uFEFF${buildVisibleEventsCsv(projectName, filteredEvents)}`;
       downloadBlob(new Blob([csv], { type: 'text/csv;charset=utf-8' }), 'drift-events.csv');
       return;
     }
@@ -563,7 +563,7 @@ export default function DriftEventsPage() {
 
     fetch(`${getApiBaseUrl()}/projects/${currentProject.id}/drift-events/export?${params.toString()}`, {
       headers: {
-        Authorization: `Bearer ${sessionStorage.getItem('auth_token') || ''}`,
+        Authorization: `Bearer ${localStorage.getItem('auth_token') || sessionStorage.getItem('auth_token') || ''}`,
       },
     })
       .then((response) => {
@@ -572,7 +572,7 @@ export default function DriftEventsPage() {
       })
       .then((blob) => downloadBlob(blob, 'drift-events.csv'))
       .catch(() => {
-        const csv = buildVisibleEventsCsv(projectName, filteredEvents);
+        const csv = `\uFEFF${buildVisibleEventsCsv(projectName, filteredEvents)}`;
         downloadBlob(new Blob([csv], { type: 'text/csv;charset=utf-8' }), 'drift-events.csv');
       });
   };

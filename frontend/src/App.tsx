@@ -13,7 +13,6 @@ import SettingsPage from '@/pages/SettingsPage';
 import NotificationsPage from '@/pages/NotificationsPage';
 import ApiKeysPage from '@/pages/ApiKeysPage';
 import ContactPage from '@/pages/ContactPage';
-import ContractsPage from '@/pages/ContractsPage';
 import Layout from '@/components/layout/Layout';
 import { ScrollToTop } from '@/components/common/ScrollToTop';
 
@@ -86,7 +85,7 @@ function App() {
           <Route path="endpoints" element={<EndpointsPage />} />
           <Route path="drift-events" element={<DriftEventsPage />} />
           <Route path="schema-history" element={<SchemaHistoryPage />} />
-          <Route path="contracts" element={<ContractsPage />} />
+          <Route path="contracts" element={<Navigate to="/app/endpoints" replace />} />
           <Route path="notifications" element={<NotificationsPage />} />
           <Route path="settings" element={<SettingsPage />} />
           <Route path="api-keys" element={<ApiKeysPage />} />

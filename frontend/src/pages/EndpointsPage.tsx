@@ -391,9 +391,9 @@ export default function EndpointsPage() {
     }
   };
 
-  const importJsonContracts = async (files: FileList | null) => {
+  const importApiFiles = async (files: FileList | null) => {
     if (!currentProject?.id) {
-      toast.error('Connect a project before importing JSON contracts.');
+      toast.error('Connect a project before importing API files.');
       return;
     }
     if (!canEditEndpoints) {
@@ -402,10 +402,10 @@ export default function EndpointsPage() {
     }
 
     const selectedFiles = Array.from(files || []).filter((file) =>
-      /\.(json|yaml|yml)$/i.test(file.name) && file.size <= 1_800_000
+      /\.(py|json|yaml|yml|txt|js|ts|tsx)$/i.test(file.name) && file.size <= 10_000_000
     );
     if (selectedFiles.length === 0) {
-      toast.error('Choose OpenAPI, Swagger, Postman, or endpoint JSON files under 1.8 MB each.');
+      toast.error('Choose FastAPI Python, OpenAPI, Swagger, Postman, or source files under 10 MB each.');
       return;
     }
 
@@ -436,10 +436,10 @@ export default function EndpointsPage() {
         endpoints: detectedEndpoints,
       });
       await Promise.all([fetchEndpoints(currentProject.id), fetchNotifications(), fetchUnreadCount()]);
-      toast.success(`${detectedEndpoints.length} endpoint${detectedEndpoints.length === 1 ? '' : 's'} imported or rescanned. Drift is recorded when schemas change.`);
+      toast.success(`${detectedEndpoints.length} endpoint${detectedEndpoints.length === 1 ? '' : 's'} imported into monitoring. Drift is recorded when schemas change.`);
       closeModal();
     } catch (error) {
-      toast.error(getErrorMessage(error, 'Could not import JSON contracts.'));
+      toast.error(getErrorMessage(error, 'Could not import API files.'));
     } finally {
       setIsImportingContracts(false);
     }
@@ -525,7 +525,7 @@ export default function EndpointsPage() {
         </div>
         <div className="flex flex-wrap gap-2">
           <Button variant="secondary" leftIcon={<FileJson className="w-4 h-4" />} onClick={() => void openModal('import')} disabled={!canEditEndpoints}>
-            Import JSON
+            Import API File
           </Button>
           <Button variant="secondary" leftIcon={<RefreshCw className={`w-4 h-4 ${refreshingId === 'all' ? 'animate-spin' : ''}`} />} onClick={() => void refreshAll()} disabled={!endpoints.length || !canEditEndpoints}>
             Refresh Endpoints
@@ -594,7 +594,7 @@ export default function EndpointsPage() {
             Add Endpoint
           </Button>
           <Button variant="secondary" onClick={() => void openModal('import')} leftIcon={<FileJson className="w-4 h-4" />} disabled={!canEditEndpoints}>
-            Import JSON
+            Import API File
           </Button>
         </motion.div>
       ) : viewMode === 'grid' ? (
@@ -675,28 +675,28 @@ export default function EndpointsPage() {
 
       <Modal isOpen={modalMode === 'import'} onClose={closeModal} size="lg">
         <ModalHeader>
-          <h2 className="text-xl font-semibold text-white">Import JSON Contracts</h2>
+          <h2 className="text-xl font-semibold text-white">Import API Files</h2>
           <p className="mt-1 text-sm text-white/55">
-            Upload OpenAPI, Swagger, Postman, or endpoint JSON files. Re-upload changed files to create schema versions and drift events.
+            Upload FastAPI Python, OpenAPI, Swagger, Postman, or endpoint JSON/YAML files. Re-upload changed files to create schema versions and drift events.
           </p>
         </ModalHeader>
         <ModalBody className="space-y-4">
           <label className="flex cursor-pointer flex-col items-center justify-center rounded-lg border border-dashed border-white/15 bg-white/5 px-4 py-8 text-center transition-colors hover:border-indigo-300/50 hover:bg-white/10">
             <Upload className="mb-3 h-7 w-7 text-indigo-300" />
-            <span className="text-sm font-semibold text-white">Choose JSON/OpenAPI files</span>
+            <span className="text-sm font-semibold text-white">Choose API contract or source files</span>
             <span className="mt-1 max-w-md text-xs leading-5 text-white/45">
               DriftBoard will detect endpoints, save baseline schemas, and compare changed contracts against existing endpoints.
             </span>
             <input
               type="file"
               multiple
-              accept=".json,.yaml,.yml,application/json"
+              accept=".py,.json,.yaml,.yml,.txt,.js,.ts,.tsx,application/json,text/x-python,text/plain"
               className="hidden"
-              onChange={(event) => void importJsonContracts(event.target.files)}
+              onChange={(event) => void importApiFiles(event.target.files)}
             />
           </label>
           <div className="rounded-lg border border-white/10 bg-white/5 p-4 text-sm leading-6 text-white/55">
-            Supported shapes include OpenAPI/Swagger `paths`, Postman collections, arrays with `method` and `url`, and maps like `POST /products`.
+            Supported imports include FastAPI decorators like `@app.get("/users")`, OpenAPI/Swagger `paths`, Postman collections, arrays with `method` and `url`, source route definitions, and maps like `POST /products`.
           </div>
         </ModalBody>
         <ModalFooter>

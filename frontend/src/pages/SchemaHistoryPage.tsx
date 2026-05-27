@@ -147,13 +147,14 @@ function csvCell(value: unknown) {
 }
 
 function downloadTextFile(filename: string, text: string, type = 'text/csv;charset=utf-8') {
-  const blob = new Blob([text], { type });
+  const blob = new Blob([`\uFEFF${text}`], { type });
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
   link.href = url;
-  link.download = filename;
+  link.download = filename.replace(/[\\/:*?"<>|]+/g, '-');
+  link.style.display = 'none';
   document.body.appendChild(link);
-  link.click();
+  link.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, view: window }));
   link.remove();
   window.setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
