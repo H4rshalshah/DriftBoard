@@ -94,7 +94,7 @@ class AuthServiceImpl implements AuthService {
 
   async logout(): Promise<void> {
     try {
-      const refreshToken = sessionStorage.getItem('refresh_token');
+      const refreshToken = localStorage.getItem('refresh_token') || sessionStorage.getItem('refresh_token');
       if (refreshToken) {
         await api.post(`${this.baseUrl}/logout`, { refreshToken });
       }
@@ -108,7 +108,7 @@ class AuthServiceImpl implements AuthService {
 
   async refreshToken(): Promise<{ token: string; expiresAt: string }> {
     try {
-      const refreshToken = sessionStorage.getItem('refresh_token');
+      const refreshToken = localStorage.getItem('refresh_token') || sessionStorage.getItem('refresh_token');
       if (!refreshToken) {
         throw new Error('No refresh token available');
       }
@@ -118,8 +118,8 @@ class AuthServiceImpl implements AuthService {
         { refreshToken }
       );
 
-      sessionStorage.setItem('auth_token', response.token);
-      localStorage.removeItem('auth_token');
+      localStorage.setItem('auth_token', response.token);
+      sessionStorage.removeItem('auth_token');
       return response;
     } catch (error) {
       this.clearTokens();
@@ -156,10 +156,10 @@ class AuthServiceImpl implements AuthService {
   }
 
   private setTokens(token: string, refreshToken: string): void {
-    sessionStorage.setItem('auth_token', token);
-    sessionStorage.setItem('refresh_token', refreshToken);
-    localStorage.removeItem('auth_token');
-    localStorage.removeItem('refresh_token');
+    localStorage.setItem('auth_token', token);
+    localStorage.setItem('refresh_token', refreshToken);
+    sessionStorage.removeItem('auth_token');
+    sessionStorage.removeItem('refresh_token');
   }
 
   private clearTokens(): void {

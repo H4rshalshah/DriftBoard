@@ -155,6 +155,7 @@ export default function SettingsPage() {
   const [inviteModalOpen, setInviteModalOpen] = useState(false);
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviteRole, setInviteRole] = useState<Exclude<ProjectRole, 'owner'>>('member');
+  const [invitePassword, setInvitePassword] = useState('');
   const [generatedInvite, setGeneratedInvite] = useState<TeamInvite | null>(null);
   const [isSavingTeam, setIsSavingTeam] = useState(false);
   const [notificationChannels, setNotificationChannels] = useState<NotificationChannels>(defaultNotificationChannels);
@@ -300,12 +301,14 @@ export default function SettingsPage() {
       const invited = await api.post<TeamInvite>(`/team/${currentProject.id}/invite`, {
         email: inviteEmail.trim(),
         role: inviteRole,
+        invitePassword: invitePassword.trim() || undefined,
       });
       setGeneratedInvite(invited);
       const members = await api.get<TeamMember[]>(`/team/${currentProject.id}`);
       setTeamMembers(members);
       await fetchCurrentProject();
       setInviteRole('member');
+      setInvitePassword('');
       if (inviteEmailWasSent(invited)) {
         toast.success(`Invite email sent to ${invited.userEmail}.`);
       } else {
@@ -647,9 +650,10 @@ export default function SettingsPage() {
                     leftIcon={<Plus className="w-4 h-4" />}
                     disabled={!currentProject?.id}
                     onClick={() => {
-                      setGeneratedInvite(null);
-                      setInviteEmail('');
-                      setInviteRole('member');
+      setGeneratedInvite(null);
+      setInviteEmail('');
+      setInviteRole('member');
+      setInvitePassword('');
                       setInviteModalOpen(true);
                     }}
                   >
@@ -928,6 +932,14 @@ export default function SettingsPage() {
               ))}
             </div>
           </div>
+          <Input
+            label="Invite password (optional)"
+            type="password"
+            value={invitePassword}
+            onChange={(event) => setInvitePassword(event.target.value)}
+            placeholder="Leave blank to auto-generate"
+            disabled={Boolean(generatedInvite)}
+          />
           {generatedInvite?.inviteLink && (
             <div className="space-y-4 rounded-lg border border-primary-400/25 bg-primary-500/10 p-4">
               {inviteEmailWasSent(generatedInvite) ? (
@@ -939,7 +951,7 @@ export default function SettingsPage() {
                 <div className="flex gap-3 rounded-lg border border-amber-400/25 bg-amber-400/10 px-3 py-2 text-sm leading-6 text-amber-100">
                   <AlertCircle className="mt-0.5 h-4 w-4 flex-none" />
                   <span>
-                    Real email delivery is not configured on the server yet. This invite is valid, but you must copy or share the link and password manually.
+                    Invite email was not delivered. This invite is valid, but you must copy or share the link and password manually.
                   </span>
                 </div>
               )}
@@ -1027,6 +1039,7 @@ export default function SettingsPage() {
             setGeneratedInvite(null);
             setInviteEmail('');
             setInviteRole('member');
+            setInvitePassword('');
           }}>
             {generatedInvite ? 'Done' : 'Cancel'}
           </Button>

@@ -23,6 +23,8 @@ export type ProjectPermission =
   | 'api_key:update'
   | 'schema:view'
   | 'schema:update'
+  | 'contract:view'
+  | 'contract:upload'
   | 'report:view';
 
 export const projectPermissionRoles: Record<ProjectPermission, ProjectRole[]> = {
@@ -48,6 +50,8 @@ export const projectPermissionRoles: Record<ProjectPermission, ProjectRole[]> = 
   'api_key:update': ['owner', 'admin'],
   'schema:view': ['owner', 'admin', 'member', 'viewer'],
   'schema:update': ['owner', 'admin', 'member'],
+  'contract:view': ['owner', 'admin', 'member', 'viewer'],
+  'contract:upload': ['owner', 'admin', 'member'],
   'report:view': ['owner', 'admin', 'member', 'viewer'],
 };
 

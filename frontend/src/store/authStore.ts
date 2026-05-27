@@ -19,6 +19,7 @@ interface AuthState {
   isAuthenticated: boolean;
   isLoading: boolean;
   error: string | null;
+  rehydrateSession: () => Promise<void>;
   login: (identifier: string, password: string) => Promise<void>;
   register: (email: string, password: string, name: string, username?: string) => Promise<void>;
   forgotPassword: (identifier: string) => Promise<{ message: string; resetToken?: string; expiresAt?: string }>;
@@ -60,11 +61,11 @@ function applyAuthResponse(response: AuthResponse) {
     throw new Error('Authentication token was not returned');
   }
 
-  sessionStorage.setItem('auth_token', token);
-  localStorage.removeItem('auth_token');
+  localStorage.setItem('auth_token', token);
+  sessionStorage.removeItem('auth_token');
   if (refreshToken) {
-    sessionStorage.setItem('refresh_token', refreshToken);
-    localStorage.removeItem('refresh_token');
+    localStorage.setItem('refresh_token', refreshToken);
+    sessionStorage.removeItem('refresh_token');
   }
 
   return {
@@ -83,6 +84,31 @@ export const useAuthStore = create<AuthState>()(
       isAuthenticated: false,
       isLoading: false,
       error: null,
+
+      rehydrateSession: async () => {
+        const token = localStorage.getItem('auth_token') || sessionStorage.getItem('auth_token');
+        if (!token) {
+          set({ user: null, token: null, isAuthenticated: false, isLoading: false });
+          return;
+        }
+        set({ isLoading: true, error: null, token, isAuthenticated: true });
+        try {
+          const user = await api.get<User>('/auth/me');
+          set({ user, token, isAuthenticated: true, isLoading: false });
+        } catch (error) {
+          localStorage.removeItem('auth_token');
+          localStorage.removeItem('refresh_token');
+          sessionStorage.removeItem('auth_token');
+          sessionStorage.removeItem('refresh_token');
+          set({
+            user: null,
+            token: null,
+            isAuthenticated: false,
+            isLoading: false,
+            error: error instanceof Error ? error.message : 'Session expired',
+          });
+        }
+      },
 
       login: async (identifier: string, password: string) => {
         set({ isLoading: true, error: null });
@@ -216,8 +242,8 @@ export const useAuthStore = create<AuthState>()(
       },
 
       completeOAuthLogin: (token: string, user: User) => {
-        sessionStorage.setItem('auth_token', token);
-        localStorage.removeItem('auth_token');
+        localStorage.setItem('auth_token', token);
+        sessionStorage.removeItem('auth_token');
         set({
           token,
           user,
@@ -278,8 +304,8 @@ export const useAuthStore = create<AuthState>()(
     }),
     {
       name: 'auth-storage',
-      storage: createJSONStorage(() => sessionStorage),
-      version: 2,
+      storage: createJSONStorage(() => localStorage),
+      version: 3,
       partialize: (state) => ({
         token: state.token,
         user: state.user,

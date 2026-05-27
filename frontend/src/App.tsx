@@ -13,11 +13,16 @@ import SettingsPage from '@/pages/SettingsPage';
 import NotificationsPage from '@/pages/NotificationsPage';
 import ApiKeysPage from '@/pages/ApiKeysPage';
 import ContactPage from '@/pages/ContactPage';
+import ContractsPage from '@/pages/ContractsPage';
 import Layout from '@/components/layout/Layout';
 import { ScrollToTop } from '@/components/common/ScrollToTop';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { isAuthenticated } = useAuthStore();
+  const { isAuthenticated, isLoading } = useAuthStore();
+
+  if (isLoading) {
+    return null;
+  }
   
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
@@ -29,6 +34,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 function App() {
   const theme = useUIStore((state) => state.theme);
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+  const rehydrateSession = useAuthStore((state) => state.rehydrateSession);
   const fetchCurrentProject = useProjectStore((state) => state.fetchCurrentProject);
 
   useEffect(() => {
@@ -48,6 +54,10 @@ function App() {
   }, [theme]);
 
   useEffect(() => {
+    void rehydrateSession();
+  }, [rehydrateSession]);
+
+  useEffect(() => {
     if (isAuthenticated) {
       void fetchCurrentProject();
     }
@@ -60,6 +70,7 @@ function App() {
         <Route path="/" element={<LandingPage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
+        <Route path="/invite" element={<InvitePage />} />
         <Route path="/invite/:token" element={<InvitePage />} />
         <Route path="/contact" element={<ContactPage />} />
         <Route
@@ -75,6 +86,7 @@ function App() {
           <Route path="endpoints" element={<EndpointsPage />} />
           <Route path="drift-events" element={<DriftEventsPage />} />
           <Route path="schema-history" element={<SchemaHistoryPage />} />
+          <Route path="contracts" element={<ContractsPage />} />
           <Route path="notifications" element={<NotificationsPage />} />
           <Route path="settings" element={<SettingsPage />} />
           <Route path="api-keys" element={<ApiKeysPage />} />

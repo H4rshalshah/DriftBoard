@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { KeyRound, Link2 } from 'lucide-react';
@@ -27,6 +27,8 @@ function getErrorMessage(error: unknown, fallback: string) {
 
 export default function InvitePage() {
   const { token = '' } = useParams();
+  const [searchParams] = useSearchParams();
+  const inviteToken = token || searchParams.get('token') || '';
   const navigate = useNavigate();
   const { acceptInvite, isLoading } = useAuthStore();
   const [invite, setInvite] = useState<InviteDetails | null>(null);
@@ -41,9 +43,9 @@ export default function InvitePage() {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    if (!token) return;
+    if (!inviteToken) return;
     setIsLoadingInvite(true);
-    api.get<InviteDetails>(`/team/invite/${token}`)
+    api.get<InviteDetails>(`/team/invite/${inviteToken}`)
       .then((details) => {
         setInvite(details);
         setAccountMode(null);
@@ -51,7 +53,7 @@ export default function InvitePage() {
       })
       .catch((requestError) => setError(getErrorMessage(requestError, 'Invite not found.')))
       .finally(() => setIsLoadingInvite(false));
-  }, [token]);
+  }, [inviteToken]);
 
   const submitInvite = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -88,7 +90,7 @@ export default function InvitePage() {
     }
 
     try {
-      await acceptInvite(token, {
+      await acceptInvite(inviteToken, {
         password: password.trim(),
         accountMode,
         accountPassword,

@@ -15,6 +15,7 @@ import axios from 'axios';
 import nodemailer from 'nodemailer';
 import { Resend } from 'resend';
 import mongoose, { Schema } from 'mongoose';
+import { parse as parseYaml } from 'yaml';
 
 [
   path.resolve(process.cwd(), '.env'),
@@ -40,8 +41,13 @@ const PUBLIC_APP_URL = process.env.NEXT_PUBLIC_APP_URL || process.env.PUBLIC_APP
 const BACKEND_URL = process.env.BACKEND_URL || process.env.RENDER_EXTERNAL_URL || `http://localhost:${PORT}`;
 const JWT_SECRET = process.env.JWT_SECRET || 'driftboard-local-demo-secret';
 const HAS_EMAIL_PROVIDER = Boolean(process.env.RESEND_API_KEY)
-  || Boolean(process.env.SMTP_HOST && process.env.SMTP_PORT && process.env.SMTP_USER && process.env.SMTP_PASS && (process.env.EMAIL_FROM || process.env.ALERT_FROM_EMAIL));
-const EMAIL_MOCK_MODE = process.env.EMAIL_MOCK_MODE !== 'false' || !HAS_EMAIL_PROVIDER;
+  || Boolean(
+    (process.env.EMAIL_HOST || process.env.SMTP_HOST) &&
+    (process.env.EMAIL_USER || process.env.SMTP_USER) &&
+    (process.env.EMAIL_PASS || process.env.SMTP_PASS) &&
+    (process.env.EMAIL_FROM || process.env.ALERT_FROM_EMAIL)
+  );
+const EMAIL_MOCK_MODE = process.env.EMAIL_MOCK_MODE === 'true' || !HAS_EMAIL_PROVIDER;
 const configuredPersistenceDriver = String(process.env.PERSISTENCE_DRIVER || '').trim().toLowerCase();
 const PERSISTENCE_DRIVER = process.env.MONGODB_URI
   ? 'mongodb'
@@ -64,6 +70,7 @@ type User = {
   authProvider?: 'password' | 'google' | 'github';
   resetToken?: string;
   resetTokenExpiresAt?: string;
+  notificationChannels?: NotificationChannels;
 };
 
 type Endpoint = {
@@ -155,7 +162,7 @@ type AppNotification = {
   id: string;
   userId: string;
   projectId: string;
-  type: 'drift' | 'schema' | 'system' | 'team';
+  type: 'drift' | 'schema' | 'schema_drift' | 'system' | 'team';
   title: string;
   message: string;
   read: boolean;
@@ -176,6 +183,64 @@ type ApiKey = {
   lastUsedAt?: string;
   revokedAt?: string;
   fullKey?: string;
+};
+
+type ContractEndpoint = {
+  method: string;
+  path: string;
+  operationId: string;
+  summary: string;
+  tags: string[];
+  pathParameters: unknown[];
+  queryParameters: Array<Record<string, unknown>>;
+  requestBody?: any;
+  responseModel?: any;
+  statusCode: string;
+};
+
+type ParsedContract = {
+  endpoints: ContractEndpoint[];
+  schemas: Record<string, any>;
+};
+
+type ContractVersion = ParsedContract & {
+  version: number;
+  uploadedAt: string;
+  uploadedBy: string;
+  rawFileHash: string;
+};
+
+type ApiContract = {
+  id: string;
+  projectId: string;
+  uploadedBy: string;
+  contractName: string;
+  sourceType: 'fastapi_python' | 'openapi3' | 'swagger2' | 'postman';
+  currentVersion: number;
+  createdAt: string;
+  updatedAt: string;
+  liveBaseUrl?: string;
+  versions: ContractVersion[];
+};
+
+type ContractDriftEvent = {
+  id: string;
+  projectId: string;
+  contractId: string;
+  contractName: string;
+  fromVersion: number;
+  toVersion: number;
+  driftedAt: string;
+  triggeredBy: string;
+  severity: 'none' | 'low' | 'medium' | 'high' | 'breaking';
+  summary: string;
+  changes: {
+    added: any[];
+    removed: any[];
+    modified: any[];
+    schemaChanges: any[];
+  };
+  notificationSent: boolean;
 };
 
 type MonitoringLog = {
@@ -229,7 +294,10 @@ type TeamInvite = {
   invitedByEmail: string;
   role: TeamMember['role'];
   inviteLink: string;
-  invitePassword: string;
+  invitePassword?: string;
+  invitePasswordHash?: string;
+  usedAt?: string;
+  usedByUserId?: string;
   expiresAt: string;
   createdAt: string;
 };
@@ -278,6 +346,8 @@ type ProjectPermission =
   | 'api_key:update'
   | 'schema:view'
   | 'schema:update'
+  | 'contract:view'
+  | 'contract:upload'
   | 'report:view';
 
 const projectPermissionRoles: Record<ProjectPermission, ProjectRole[]> = {
@@ -303,6 +373,8 @@ const projectPermissionRoles: Record<ProjectPermission, ProjectRole[]> = {
   'api_key:update': ['owner', 'admin'],
   'schema:view': ['owner', 'admin', 'member', 'viewer'],
   'schema:update': ['owner', 'admin', 'member'],
+  'contract:view': ['owner', 'admin', 'member', 'viewer'],
+  'contract:upload': ['owner', 'admin', 'member'],
   'report:view': ['owner', 'admin', 'member', 'viewer'],
 };
 
@@ -561,6 +633,8 @@ const notifications: AppNotification[] = [
 ];
 
 const apiKeys: ApiKey[] = [];
+const contracts: ApiContract[] = [];
+const contractDriftEvents: ContractDriftEvent[] = [];
 const monitoringLogs: MonitoringLog[] = [];
 const emailOutbox: EmailOutboxMessage[] = [];
 const contactMessages: ContactMessage[] = [];
@@ -572,6 +646,7 @@ const notificationChannels = {
   discord: { enabled: false, webhookUrl: '' },
   email: { enabled: false, address: demoUser.email },
 };
+type NotificationChannels = typeof notificationChannels;
 const uploadedFiles: UploadedFile[] = [];
 
 type PersistedAppState = {
@@ -580,6 +655,8 @@ type PersistedAppState = {
   driftEvents?: DriftEvent[];
   notifications?: AppNotification[];
   apiKeys?: ApiKey[];
+  contracts?: ApiContract[];
+  contractDriftEvents?: ContractDriftEvent[];
   monitoringLogs?: MonitoringLog[];
   emailOutbox?: EmailOutboxMessage[];
   contactMessages?: ContactMessage[];
@@ -698,6 +775,8 @@ function applyPersistedAppState(parsed: PersistedAppState) {
   replaceArray(driftEvents, parsed.driftEvents);
   replaceArray(notifications, parsed.notifications);
   replaceArray(apiKeys, parsed.apiKeys?.map(storedApiKey));
+  replaceArray(contracts, parsed.contracts);
+  replaceArray(contractDriftEvents, parsed.contractDriftEvents);
   replaceArray(monitoringLogs, parsed.monitoringLogs);
   replaceArray(emailOutbox, parsed.emailOutbox);
   replaceArray(contactMessages, parsed.contactMessages);
@@ -734,6 +813,8 @@ function saveAppState() {
       driftEvents,
       notifications,
       apiKeys: apiKeys.map(storedApiKey),
+      contracts,
+      contractDriftEvents,
       monitoringLogs,
       emailOutbox,
       contactMessages,
@@ -918,8 +999,10 @@ function emailConfigStatus() {
     .filter(([, value]) => !value)
     .map(([key]) => key);
   const missingSmtp = [
-    ['SMTP_USER', process.env.SMTP_USER],
-    ['SMTP_PASS', process.env.SMTP_PASS],
+    ['EMAIL_HOST/SMTP_HOST', process.env.EMAIL_HOST || process.env.SMTP_HOST],
+    ['EMAIL_USER/SMTP_USER', process.env.EMAIL_USER || process.env.SMTP_USER],
+    ['EMAIL_PASS/SMTP_PASS', process.env.EMAIL_PASS || process.env.SMTP_PASS],
+    ['EMAIL_FROM/ALERT_FROM_EMAIL', process.env.EMAIL_FROM || process.env.ALERT_FROM_EMAIL],
   ]
     .filter(([, value]) => !value)
     .map(([key]) => key);
@@ -1345,8 +1428,10 @@ function contactAdminEmail() {
 
 function smtpConfigStatus() {
   const missing = [
-    ['SMTP_USER', process.env.SMTP_USER],
-    ['SMTP_PASS', process.env.SMTP_PASS],
+    ['EMAIL_HOST/SMTP_HOST', process.env.EMAIL_HOST || process.env.SMTP_HOST],
+    ['EMAIL_USER/SMTP_USER', process.env.EMAIL_USER || process.env.SMTP_USER],
+    ['EMAIL_PASS/SMTP_PASS', process.env.EMAIL_PASS || process.env.SMTP_PASS],
+    ['EMAIL_FROM/ALERT_FROM_EMAIL', process.env.EMAIL_FROM || process.env.ALERT_FROM_EMAIL],
   ]
     .filter(([, value]) => !value)
     .map(([key]) => key);
@@ -1382,19 +1467,21 @@ async function sendEmailWithSmtp(input: SendEmailInput): Promise<AlertDelivery> 
     throw new Error(status.message);
   }
 
-  const port = Number(process.env.SMTP_PORT || 587);
+  const port = Number(process.env.EMAIL_PORT || process.env.SMTP_PORT || 587);
+  const smtpUser = process.env.EMAIL_USER || process.env.SMTP_USER;
+  const smtpPass = process.env.EMAIL_PASS || process.env.SMTP_PASS;
   const transporter = nodemailer.createTransport({
-    host: process.env.SMTP_HOST || 'smtp.gmail.com',
+    host: process.env.EMAIL_HOST || process.env.SMTP_HOST || 'smtp.gmail.com',
     port,
-    secure: process.env.SMTP_SECURE === 'true' || port === 465,
+    secure: process.env.EMAIL_SECURE === 'true' || process.env.SMTP_SECURE === 'true' || port === 465,
     auth: {
-      user: process.env.SMTP_USER,
-      pass: process.env.SMTP_PASS,
+      user: smtpUser,
+      pass: smtpPass,
     },
   });
 
   await transporter.sendMail({
-    from: process.env.EMAIL_FROM || `DriftBoard <${process.env.SMTP_USER}>`,
+    from: process.env.EMAIL_FROM || process.env.ALERT_FROM_EMAIL || `DriftBoard <${smtpUser}>`,
     to,
     replyTo: input.replyTo || process.env.ALERT_REPLY_TO || OWNER_EMAIL,
     subject: input.subject,
@@ -1465,6 +1552,43 @@ async function sendContactAdminEmail(message: ContactMessage) {
   };
 
   return sendEmail(input);
+}
+
+async function sendContactConfirmationEmail(message: ContactMessage) {
+  const subjectLabel = contactSubjectLabel(message.subject);
+  return sendEmail({
+    to: message.email,
+    replyTo: contactAdminEmail(),
+    subject: '[DriftBoard] We received your message',
+    html: emailShell(
+      'We received your message',
+      'Thanks for contacting DriftBoard. Our team will review it and reply soon.',
+      `
+        ${detailRows([
+          ['Name', message.name],
+          ['Email', message.email],
+          ['Subject', subjectLabel],
+          ['Submitted', new Date(message.createdAt).toLocaleString()],
+        ])}
+        <div style="margin-top:18px;padding:16px;border-radius:12px;background:#111827;border:1px solid #253044;">
+          <div style="color:#94a3b8;font-size:13px;font-weight:700;margin-bottom:8px;">Your message</div>
+          <div style="white-space:pre-wrap;color:#e2e8f0;font-size:14px;line-height:1.7;">${htmlEscape(message.message)}</div>
+        </div>
+      `,
+      `${FRONTEND_URL}/contact`,
+      'Visit DriftBoard'
+    ),
+    text: [
+      'We received your DriftBoard message.',
+      '',
+      `Name: ${message.name}`,
+      `Email: ${message.email}`,
+      `Subject: ${subjectLabel}`,
+      '',
+      message.message,
+    ].join('\n'),
+    tag: 'contact_message',
+  });
 }
 
 async function sendDiscordAlert(title: string, message: string, projectId: string, type: AppNotification['type'], context: AlertContext): Promise<AlertDelivery> {
@@ -1545,32 +1669,46 @@ async function sendContactDiscordMessage(message: ContactMessage): Promise<Alert
 
 async function deliverConfiguredAlert(title: string, message: string, projectId: string, type: AppNotification['type'], alertContext?: AlertContext) {
   const context = alertContext || inferredAlertContext(projectId, type, message);
+  const projectUsers = users.filter((user) => Boolean(projectRole(projectId, user)));
+  const recipients = projectUsers.length > 0 ? projectUsers : users.filter((user) => user.id === projects.find((item) => item.id === projectId)?.ownerId);
 
-  if (notificationChannels.discord.enabled && notificationChannels.discord.webhookUrl) {
-    try {
-      await sendDiscordAlert(title, message, projectId, type, context);
-    } catch (error) {
-      console.error('Discord alert failed:', error instanceof Error ? error.message : error);
+  for (const recipient of recipients) {
+    const channels = getUserNotificationChannels(recipient);
+
+    if (channels.discord.enabled && channels.discord.webhookUrl) {
+      const previousWebhookUrl = notificationChannels.discord.webhookUrl;
+      notificationChannels.discord.webhookUrl = channels.discord.webhookUrl;
+      try {
+        await sendDiscordAlert(title, message, projectId, type, context);
+      } catch (error) {
+        console.error('Discord alert failed:', error instanceof Error ? error.message : error);
+      } finally {
+        notificationChannels.discord.webhookUrl = previousWebhookUrl;
+      }
     }
-  }
 
-  if (notificationChannels.email.enabled && notificationChannels.email.address) {
-    try {
-      await sendEmailAlert(title, message, projectId, type, context);
-    } catch (error) {
-      emailOutbox.unshift({
-        id: uuidv4(),
-        to: notificationChannels.email.address,
-        subject: `[DriftBoard] ${title}`,
-        text: message,
-        html: htmlEscape(message),
-        status: 'failed',
-        provider: process.env.RESEND_API_KEY ? 'resend' : 'local',
-        createdAt: now(),
-        errorMessage: error instanceof Error ? error.message : 'Email delivery failed',
-      });
-      saveAppState();
-      console.error('Email alert failed:', error instanceof Error ? error.message : error);
+    if (channels.email.enabled && channels.email.address) {
+      const previousEmailAddress = notificationChannels.email.address;
+      notificationChannels.email.address = channels.email.address;
+      try {
+        await sendEmailAlert(title, message, projectId, type, context);
+      } catch (error) {
+        emailOutbox.unshift({
+          id: uuidv4(),
+          to: channels.email.address,
+          subject: `[DriftBoard] ${title}`,
+          text: message,
+          html: htmlEscape(message),
+          status: 'failed',
+          provider: process.env.RESEND_API_KEY ? 'resend' : 'local',
+          createdAt: now(),
+          errorMessage: error instanceof Error ? error.message : 'Email delivery failed',
+        });
+        saveAppState();
+        console.error('Email alert failed:', error instanceof Error ? error.message : error);
+      } finally {
+        notificationChannels.email.address = previousEmailAddress;
+      }
     }
   }
 }
@@ -1596,6 +1734,57 @@ const io = new Server(httpServer, {
 
 app.use(helmet());
 app.use(cors({ origin: (origin, callback) => callback(null, isAllowedOrigin(origin)), credentials: true }));
+app.post(
+  '/api/contracts/upload',
+  express.raw({
+    type: 'multipart/form-data',
+    limit: `${Number(process.env.MAX_UPLOAD_FILE_SIZE_MB || 10)}mb`,
+  }),
+  (req, res) => {
+    const user = requireRequestUser(req, res);
+    if (!user) return;
+    let fields: Record<string, string>;
+    let file: { filename: string; content: Buffer } | undefined;
+    try {
+      ({ fields, file } = parseMultipartUpload(req));
+    } catch (error) {
+      res.status(400).json({ message: error instanceof Error ? error.message : 'Invalid upload.' });
+      return;
+    }
+    const projectId = fields.projectId;
+    const project = projects.find((item) => item.id === projectId);
+    if (!project) {
+      res.status(404).json({ message: 'Project not found.' });
+      return;
+    }
+    if (!userHasProjectPermission(project.id, user, 'contract:upload')) {
+      deny(res);
+      return;
+    }
+    if (!file) {
+      res.status(400).json({ message: 'Upload a contract file.' });
+      return;
+    }
+    const extension = path.extname(file.filename).toLowerCase();
+    const supported = (process.env.SUPPORTED_UPLOAD_EXTENSIONS || '.py,.json,.yaml,.yml').split(',').map((item) => item.trim().toLowerCase());
+    if (!supported.includes(extension)) {
+      res.status(400).json({ message: `Unsupported contract file type: ${extension}` });
+      return;
+    }
+    try {
+      const result = persistContractUpload({
+        projectId: project.id,
+        user,
+        filename: file.filename,
+        contractName: fields.contractName || file.filename,
+        content: file.content.toString('utf8'),
+      });
+      res.status(result.driftReport ? 201 : 200).json(result);
+    } catch (error) {
+      res.status(400).json({ message: error instanceof Error ? error.message : 'Could not parse contract.' });
+    }
+  }
+);
 app.use(express.json({ limit: process.env.JSON_BODY_LIMIT || '5mb' }));
 app.use(
   '/api',
@@ -1633,6 +1822,27 @@ function issueToken(user: User) {
   return jwt.sign({ sub: user.id, email: user.email, role: user.role }, JWT_SECRET, {
     expiresIn: '7d',
   });
+}
+
+function issueRefreshToken(user: User) {
+  return jwt.sign({ sub: user.id, email: user.email, role: user.role, type: 'refresh' }, JWT_SECRET, {
+    expiresIn: '30d',
+  });
+}
+
+function authPayload(user: User) {
+  const token = issueToken(user);
+  const refreshToken = issueRefreshToken(user);
+  return {
+    user: publicUser(user),
+    token,
+    refreshToken,
+    expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+    tokens: {
+      accessToken: token,
+      refreshToken,
+    },
+  };
 }
 
 function getRequestUser(req: Request, allowFallback = true) {
@@ -1690,10 +1900,29 @@ function isEmailTaken(email: string, userId?: string) {
 
 function setActiveUser(user: User) {
   demoUser = withUsername(user);
-  notificationChannels.email.address = user.email;
+  const channels = getUserNotificationChannels(demoUser);
+  if (!channels.email.address) channels.email.address = user.email;
   syncUserMembership(demoUser);
   saveUsers();
   return demoUser;
+}
+
+function getUserNotificationChannels(user: User): NotificationChannels {
+  if (!user.notificationChannels) {
+    user.notificationChannels = {
+      discord: { enabled: false, webhookUrl: '' },
+      email: { enabled: false, address: user.email },
+    };
+  }
+  return {
+    discord: { ...user.notificationChannels.discord, enabled: user.notificationChannels.discord.enabled, webhookUrl: user.notificationChannels.discord.webhookUrl },
+    email: { ...user.notificationChannels.email, enabled: user.notificationChannels.email.enabled, address: user.notificationChannels.email.address || user.email },
+  };
+}
+
+function updateUserNotificationChannels(user: User, channels: NotificationChannels) {
+  user.notificationChannels = channels;
+  updateUser(user.id, { notificationChannels: channels });
 }
 
 function updateUser(userId: string, nextFields: Partial<User>) {
@@ -1736,7 +1965,7 @@ function sendLoginResponse(req: Request, res: Response) {
   }
 
   setActiveUser(user);
-  res.json({ user: publicUser(user), token: issueToken(user) });
+  res.json(authPayload(user));
 }
 
 function sendRegisterResponse(req: Request, res: Response) {
@@ -1773,7 +2002,7 @@ function sendRegisterResponse(req: Request, res: Response) {
     authProvider: 'password',
   });
   setActiveUser(user);
-  res.status(existingUser ? 200 : 201).json({ user: publicUser(user), token: issueToken(user) });
+  res.status(existingUser ? 200 : 201).json(authPayload(user));
 }
 
 function sendForgotPasswordResponse(req: Request, res: Response) {
@@ -1824,7 +2053,7 @@ function sendResetPasswordResponse(req: Request, res: Response) {
   saveUsers();
   setActiveUser(user);
 
-  res.json({ user: publicUser(user), token: issueToken(user), message: 'Password reset successful' });
+  res.json({ ...authPayload(user), message: 'Password reset successful' });
 }
 
 function sendSocialLoginResponse(req: Request, res: Response) {
@@ -1858,7 +2087,7 @@ function sendSocialLoginResponse(req: Request, res: Response) {
   } as User);
 
   setActiveUser(user);
-  res.json({ user: publicUser(user), token: issueToken(user), message: `Signed in with ${provider}` });
+  res.json({ ...authPayload(user), message: `Signed in with ${provider}` });
 }
 
 type OAuthProvider = 'google' | 'github';
@@ -2014,7 +2243,7 @@ function generateInvitePassword() {
 }
 
 function createInviteLink(token: string) {
-  return `${PUBLIC_APP_URL.replace(/\/$/, '')}/invite/${token}`;
+  return `${PUBLIC_APP_URL.replace(/\/$/, '')}/invite?token=${encodeURIComponent(token)}`;
 }
 
 function ensureProjectAdmin(projectId: string, user = demoUser) {
@@ -2157,6 +2386,391 @@ function schemaVersionProjectId(versionId: string) {
 
 function driftProjectId(driftId: string) {
   return driftEvents.find((event) => event.id === driftId)?.projectId || null;
+}
+
+function sha256(value: Buffer | string) {
+  return `sha256:${crypto.createHash('sha256').update(value).digest('hex')}`;
+}
+
+function cleanString(value: string) {
+  return value.trim().replace(/^['"`]|['"`]$/g, '');
+}
+
+function parseListLiteral(value = '') {
+  const match = value.match(/\[(.*)\]/s);
+  if (!match) return [];
+  return match[1].split(',').map((item) => cleanString(item)).filter(Boolean);
+}
+
+function parseFastApiSource(sourceCode: string): ParsedContract {
+  const schemas: Record<string, any> = {};
+  const classRegex = /class\s+(\w+)\s*\(([^)]*BaseModel[^)]*)\)\s*:\s*([\s\S]*?)(?=\nclass\s+\w+\s*\(|\n(?:async\s+)?def\s+\w+\s*\(|\n\w+\s*=|$)/g;
+  let classMatch: RegExpExecArray | null;
+  while ((classMatch = classRegex.exec(sourceCode))) {
+    const fields: Record<string, any> = {};
+    classMatch[3].split(/\r?\n/).forEach((line) => {
+      const fieldMatch = line.match(/^\s+(\w+)\s*:\s*([^=\n#]+)(?:=\s*([^#\n]+))?/);
+      if (!fieldMatch) return;
+      const defaultValue = fieldMatch[3]?.trim() || null;
+      fields[fieldMatch[1]] = {
+        type: fieldMatch[2].trim(),
+        default: defaultValue,
+        required: defaultValue === null,
+      };
+    });
+    schemas[classMatch[1]] = fields;
+  }
+
+  const endpoints: ContractEndpoint[] = [];
+  const routeRegex = /@(?:\w+\.)?(get|post|put|patch|delete|options|head|trace)\s*\(([\s\S]*?)\)\s*(?:async\s+)?def\s+(\w+)\s*\(([\s\S]*?)\)\s*:/g;
+  let routeMatch: RegExpExecArray | null;
+  while ((routeMatch = routeRegex.exec(sourceCode))) {
+    const [, method, decoratorArgs, functionName, rawArgs] = routeMatch;
+    const pathMatch = decoratorArgs.match(/["'`]([^"'`]+)["'`]/);
+    if (!pathMatch) continue;
+    const pathValue = pathMatch[1];
+    const summary = decoratorArgs.match(/summary\s*=\s*["'`]([^"'`]+)["'`]/)?.[1] || functionName.replace(/_/g, ' ').replace(/\b\w/g, (char) => char.toUpperCase());
+    const tags = parseListLiteral(decoratorArgs.match(/tags\s*=\s*(\[[^\]]*\])/)?.[1]);
+    const responseModel = decoratorArgs.match(/response_model\s*=\s*([^,\)]+)/)?.[1]?.trim() || null;
+    const statusCode = decoratorArgs.match(/status_code\s*=\s*([^,\)]+)/)?.[1]?.trim() || '200';
+    const pathParameters = Array.from(pathValue.matchAll(/\{(\w+)\}/g)).map((match) => match[1]);
+    const queryParameters: Array<Record<string, unknown>> = [];
+    const bodyParams: any[] = [];
+    rawArgs.split(',').map((arg) => arg.trim()).filter(Boolean).forEach((arg) => {
+      const argMatch = arg.match(/^(\w+)\s*(?::\s*([^=]+))?(?:=\s*(.+))?$/);
+      if (!argMatch) return;
+      const [, name, annotationRaw, defaultRaw] = argMatch;
+      if (['self', 'db', 'request', 'response', 'current_user', 'background_tasks'].includes(name) || pathParameters.includes(name)) return;
+      const annotation = annotationRaw?.trim() || 'Any';
+      if (schemas[annotation]) {
+        bodyParams.push({ name, schema: annotation, fields: schemas[annotation] });
+      } else {
+        queryParameters.push({ name, type: annotation, default: defaultRaw?.trim() });
+      }
+    });
+    endpoints.push({
+      method: method.toUpperCase(),
+      path: pathValue,
+      operationId: functionName,
+      summary,
+      tags,
+      pathParameters,
+      queryParameters,
+      requestBody: bodyParams[0] || null,
+      responseModel,
+      statusCode,
+    });
+  }
+  return { endpoints, schemas };
+}
+
+function parseJsonOrYaml(content: string, extension: string): any {
+  if (extension === '.json') return JSON.parse(content);
+  return parseYaml(content);
+}
+
+function parseOpenApi(content: string, extension: string): ParsedContract {
+  const data = parseJsonOrYaml(content, extension);
+  const schemas = data.components?.schemas || data.definitions || {};
+  const endpoints: ContractEndpoint[] = [];
+  Object.entries(data.paths || {}).forEach(([pathValue, methods]) => {
+    Object.entries(methods as Record<string, any>).forEach(([method, operation]) => {
+      if (!['get', 'post', 'put', 'patch', 'delete', 'options', 'head', 'trace'].includes(method.toLowerCase())) return;
+      const requestBody = operation.requestBody?.content?.['application/json']?.schema || null;
+      const responses = Object.keys(operation.responses || {});
+      endpoints.push({
+        method: method.toUpperCase(),
+        path: pathValue,
+        operationId: operation.operationId || `${method}_${pathValue.replace(/\W+/g, '_')}`,
+        summary: operation.summary || '',
+        tags: operation.tags || [],
+        pathParameters: (operation.parameters || []).filter((param: any) => param.in === 'path'),
+        queryParameters: (operation.parameters || []).filter((param: any) => param.in === 'query'),
+        requestBody,
+        responseModel: responses.join(', '),
+        statusCode: responses[0] || '200',
+      });
+    });
+  });
+  return { endpoints, schemas };
+}
+
+function parsePostman(content: string): ParsedContract {
+  const data = JSON.parse(content);
+  const endpoints: ContractEndpoint[] = [];
+  const visit = (items: any[]) => {
+    items.forEach((item) => {
+      if (Array.isArray(item.item)) {
+        visit(item.item);
+        return;
+      }
+      const req = item.request;
+      if (!req) return;
+      const url = req.url || {};
+      const pathValue = typeof url === 'string' ? url : `/${(url.path || []).join('/')}`.replace(/\/+/g, '/');
+      let bodyParsed: any = null;
+      if (req.body?.raw) {
+        try {
+          bodyParsed = JSON.parse(req.body.raw);
+        } catch {
+          bodyParsed = { raw: req.body.raw };
+        }
+      }
+      endpoints.push({
+        method: String(req.method || 'GET').toUpperCase(),
+        path: pathValue,
+        operationId: String(item.name || '').replace(/\s+/g, '_').toLowerCase(),
+        summary: item.name || '',
+        tags: [],
+        pathParameters: Array.isArray(url.variable) ? url.variable : [],
+        queryParameters: Array.isArray(url.query) ? url.query.map((q: any) => ({ name: q.key, type: 'string' })) : [],
+        requestBody: bodyParsed,
+        responseModel: null,
+        statusCode: '200',
+      });
+    });
+  };
+  visit(data.item || []);
+  return { endpoints, schemas: {} };
+}
+
+function detectContractSourceType(filename: string, content: string): ApiContract['sourceType'] {
+  const lower = filename.toLowerCase();
+  if (lower.endsWith('.py')) return 'fastapi_python';
+  if (lower.endsWith('.json')) {
+    const parsed = JSON.parse(content);
+    if (parsed.info?._postman_id || parsed.item) return 'postman';
+    if (String(parsed.swagger || '').startsWith('2.')) return 'swagger2';
+    return 'openapi3';
+  }
+  return content.includes('swagger: "2') || content.includes('swagger: 2') ? 'swagger2' : 'openapi3';
+}
+
+function parseContractFile(filename: string, content: string): { parsed: ParsedContract; sourceType: ApiContract['sourceType'] } {
+  const extension = path.extname(filename).toLowerCase();
+  const sourceType = detectContractSourceType(filename, content);
+  if (sourceType === 'fastapi_python') return { parsed: parseFastApiSource(content), sourceType };
+  if (sourceType === 'postman') return { parsed: parsePostman(content), sourceType };
+  return { parsed: parseOpenApi(content, extension), sourceType };
+}
+
+function endpointParamName(param: any) {
+  return typeof param === 'string' ? param : String(param?.name || '');
+}
+
+function paramMap(params: any[]) {
+  return Object.fromEntries((params || []).map((param) => [endpointParamName(param), param]).filter(([name]) => Boolean(name)));
+}
+
+function fieldsFromBody(body: any) {
+  if (!body) return {};
+  if (body.fields) return body.fields;
+  if (body.properties) {
+    const required = new Set<string>(body.required || []);
+    return Object.fromEntries(Object.entries(body.properties).map(([name, schema]: [string, any]) => [
+      name,
+      { type: schema.type || schema.$ref || JSON.stringify(schema), required: required.has(name) },
+    ]));
+  }
+  return {};
+}
+
+function diffEndpoints(oldEndpoints: ContractEndpoint[], newEndpoints: ContractEndpoint[]) {
+  const oldMap = Object.fromEntries(oldEndpoints.map((endpoint) => [`${endpoint.method}:${endpoint.path}`, endpoint]));
+  const newMap = Object.fromEntries(newEndpoints.map((endpoint) => [`${endpoint.method}:${endpoint.path}`, endpoint]));
+  const added: any[] = [];
+  const removed: any[] = [];
+  const modified: any[] = [];
+
+  Object.entries(newMap).forEach(([key, endpoint]) => {
+    if (!oldMap[key]) added.push({ method: endpoint.method, path: endpoint.path, operationId: endpoint.operationId, summary: endpoint.summary });
+  });
+  Object.entries(oldMap).forEach(([key, endpoint]) => {
+    if (!newMap[key]) removed.push({ method: endpoint.method, path: endpoint.path, operationId: endpoint.operationId, summary: endpoint.summary, impact: 'BREAKING - frontend calls to this endpoint will now 404' });
+  });
+  Object.entries(oldMap).forEach(([key, oldEndpoint]) => {
+    const newEndpoint = newMap[key];
+    if (!newEndpoint) return;
+    const changes: any[] = [];
+    const oldQuery = paramMap(oldEndpoint.queryParameters || []);
+    const newQuery = paramMap(newEndpoint.queryParameters || []);
+    Object.keys(oldQuery).filter((name) => !newQuery[name]).forEach((name) => changes.push({ location: 'queryParameter', field: name, change: 'removed', impact: 'BREAKING - frontend sending this param will be ignored' }));
+    Object.keys(newQuery).filter((name) => !oldQuery[name]).forEach((name) => changes.push({ location: 'queryParameter', field: name, change: 'added', impact: 'INFO - new optional parameter available' }));
+    Object.keys(oldQuery).filter((name) => newQuery[name] && oldQuery[name].type !== newQuery[name].type).forEach((name) => changes.push({ location: 'queryParameter', field: name, change: 'type_changed', from: oldQuery[name].type, to: newQuery[name].type, impact: 'BREAKING - frontend must send correct type' }));
+    const oldPath = new Set((oldEndpoint.pathParameters || []).map(endpointParamName));
+    const newPath = new Set((newEndpoint.pathParameters || []).map(endpointParamName));
+    oldPath.forEach((name) => { if (!newPath.has(name)) changes.push({ location: 'pathParameter', field: name, change: 'removed', impact: 'BREAKING - URL structure changed' }); });
+    newPath.forEach((name) => { if (!oldPath.has(name)) changes.push({ location: 'pathParameter', field: name, change: 'added', impact: 'BREAKING - URL now requires this segment' }); });
+    const oldFields = fieldsFromBody(oldEndpoint.requestBody);
+    const newFields = fieldsFromBody(newEndpoint.requestBody);
+    Object.keys(oldFields).filter((name) => !newFields[name]).forEach((name) => changes.push({ location: 'requestBody.field', field: name, change: 'removed', impact: 'BREAKING - frontend sending this field will be ignored or cause validation error' }));
+    Object.keys(newFields).filter((name) => !oldFields[name]).forEach((name) => changes.push({ location: 'requestBody.field', field: name, change: 'added', impact: newFields[name].required ? 'BREAKING - required field missing from frontend request' : 'INFO - optional new field' }));
+    Object.keys(oldFields).filter((name) => newFields[name] && oldFields[name].type !== newFields[name].type).forEach((name) => changes.push({ location: 'requestBody.field', field: name, change: 'type_changed', from: oldFields[name].type, to: newFields[name].type, impact: 'BREAKING - type mismatch will cause validation errors' }));
+    if (oldEndpoint.responseModel !== newEndpoint.responseModel) changes.push({ location: 'responseModel', change: 'changed', from: oldEndpoint.responseModel, to: newEndpoint.responseModel, impact: 'WARNING - frontend parsing of response may break' });
+    if (oldEndpoint.statusCode !== newEndpoint.statusCode) changes.push({ location: 'statusCode', change: 'changed', from: oldEndpoint.statusCode, to: newEndpoint.statusCode, impact: 'WARNING - frontend status code checks may break' });
+    if (changes.length) modified.push({ method: oldEndpoint.method, path: oldEndpoint.path, operationId: oldEndpoint.operationId, changes });
+  });
+  return { added, removed, modified };
+}
+
+function diffSchemas(oldSchemas: Record<string, any>, newSchemas: Record<string, any>) {
+  const changes: any[] = [];
+  const modelNames = new Set([...Object.keys(oldSchemas || {}), ...Object.keys(newSchemas || {})]);
+  modelNames.forEach((model) => {
+    const oldFields = oldSchemas[model] || {};
+    const newFields = newSchemas[model] || {};
+    Object.keys(oldFields).filter((field) => !newFields[field]).forEach((field) => changes.push({ model, field, change: 'removed', impact: 'BREAKING - frontend expecting this field will get undefined' }));
+    Object.keys(newFields).filter((field) => !oldFields[field]).forEach((field) => changes.push({ model, field, change: 'added', type: newFields[field]?.type, default: newFields[field]?.default, impact: newFields[field]?.required ? 'BREAKING - new required schema field' : 'INFO - optional schema field added' }));
+    Object.keys(oldFields).filter((field) => newFields[field] && oldFields[field]?.type !== newFields[field]?.type).forEach((field) => changes.push({ model, field, change: 'type_changed', from: oldFields[field]?.type, to: newFields[field]?.type, impact: 'BREAKING - schema field type changed' }));
+  });
+  return changes;
+}
+
+function calculateContractSeverity(diff: ContractDriftEvent['changes']): ContractDriftEvent['severity'] {
+  const breaking = diff.removed.length + diff.modified.flatMap((endpoint) => endpoint.changes || []).filter((change) => String(change.impact || '').includes('BREAKING')).length + diff.schemaChanges.filter((change) => String(change.impact || '').includes('BREAKING')).length;
+  if (breaking >= 3) return 'high';
+  if (breaking >= 1) return 'medium';
+  if (diff.added.length || diff.schemaChanges.length) return 'low';
+  return 'none';
+}
+
+function summarizeContractDiff(diff: ContractDriftEvent['changes'], severity: ContractDriftEvent['severity']) {
+  const breaking = diff.removed.length + diff.modified.flatMap((endpoint) => endpoint.changes || []).filter((change) => String(change.impact || '').includes('BREAKING')).length + diff.schemaChanges.filter((change) => String(change.impact || '').includes('BREAKING')).length;
+  return [
+    breaking ? `${breaking} breaking change${breaking === 1 ? '' : 's'}` : '',
+    diff.removed.length ? `${diff.removed.length} endpoint${diff.removed.length === 1 ? '' : 's'} removed` : '',
+    diff.modified.length ? `${diff.modified.length} endpoint${diff.modified.length === 1 ? '' : 's'} modified` : '',
+    diff.added.length ? `${diff.added.length} endpoint${diff.added.length === 1 ? '' : 's'} added` : '',
+    diff.schemaChanges.length ? `${diff.schemaChanges.length} schema change${diff.schemaChanges.length === 1 ? '' : 's'}` : '',
+  ].filter(Boolean).join(' · ') || `No drift detected (${severity})`;
+}
+
+function buildContractDiff(oldVersion: ContractVersion, newVersion: ContractVersion) {
+  const endpointChanges = diffEndpoints(oldVersion.endpoints, newVersion.endpoints);
+  return {
+    ...endpointChanges,
+    schemaChanges: diffSchemas(oldVersion.schemas, newVersion.schemas),
+  };
+}
+
+function parseMultipartUpload(req: Request): { fields: Record<string, string>; file?: { filename: string; content: Buffer } } {
+  const contentType = String(req.headers['content-type'] || '');
+  const boundary = contentType.match(/boundary=(?:"([^"]+)"|([^;]+))/)?.[1] || contentType.match(/boundary=(?:"([^"]+)"|([^;]+))/)?.[2];
+  if (!boundary || !Buffer.isBuffer(req.body)) throw new Error('Invalid multipart upload.');
+  const body = req.body.toString('binary');
+  const fields: Record<string, string> = {};
+  let file: { filename: string; content: Buffer } | undefined;
+  body.split(`--${boundary}`).forEach((part) => {
+    const [rawHeaders, ...rest] = part.split('\r\n\r\n');
+    if (!rawHeaders || rest.length === 0) return;
+    const contentBinary = rest.join('\r\n\r\n').replace(/\r\n$/, '');
+    const name = rawHeaders.match(/name="([^"]+)"/)?.[1];
+    const filename = rawHeaders.match(/filename="([^"]*)"/)?.[1];
+    if (!name) return;
+    if (filename) {
+      file = { filename: path.basename(filename), content: Buffer.from(contentBinary, 'binary') };
+    } else {
+      fields[name] = Buffer.from(contentBinary, 'binary').toString('utf8').trim();
+    }
+  });
+  return { fields, file };
+}
+
+function persistContractUpload(params: {
+  projectId: string;
+  user: User;
+  filename: string;
+  contractName: string;
+  content: string;
+  liveBaseUrl?: string;
+}) {
+  const { parsed, sourceType } = parseContractFile(params.filename, params.content);
+  const rawFileHash = sha256(params.content);
+  let contract = contracts.find((item) => item.projectId === params.projectId && item.contractName.toLowerCase() === params.contractName.toLowerCase());
+  if (!contract) {
+    const version: ContractVersion = {
+      version: 1,
+      uploadedAt: now(),
+      uploadedBy: params.user.id,
+      endpoints: parsed.endpoints,
+      schemas: parsed.schemas,
+      rawFileHash,
+    };
+    contract = {
+      id: uuidv4(),
+      projectId: params.projectId,
+      uploadedBy: params.user.id,
+      contractName: params.contractName,
+      sourceType,
+      currentVersion: 1,
+      createdAt: version.uploadedAt,
+      updatedAt: version.uploadedAt,
+      liveBaseUrl: params.liveBaseUrl,
+      versions: [version],
+    };
+    contracts.unshift(contract);
+    saveAppState();
+    return { contract, version, endpoints: parsed.endpoints, driftReport: null as ContractDriftEvent | null, identical: false };
+  }
+
+  const previousVersion = contract.versions[contract.versions.length - 1];
+  if (previousVersion?.rawFileHash === rawFileHash) {
+    return { contract, version: previousVersion, endpoints: previousVersion.endpoints, driftReport: null as ContractDriftEvent | null, identical: true };
+  }
+
+  const version: ContractVersion = {
+    version: contract.currentVersion + 1,
+    uploadedAt: now(),
+    uploadedBy: params.user.id,
+    endpoints: parsed.endpoints,
+    schemas: parsed.schemas,
+    rawFileHash,
+  };
+  const changes = buildContractDiff(previousVersion, version);
+  const severity = calculateContractSeverity(changes);
+  const driftReport: ContractDriftEvent = {
+    id: uuidv4(),
+    projectId: params.projectId,
+    contractId: contract.id,
+    contractName: contract.contractName,
+    fromVersion: previousVersion.version,
+    toVersion: version.version,
+    driftedAt: version.uploadedAt,
+    triggeredBy: params.user.id,
+    severity,
+    summary: summarizeContractDiff(changes, severity),
+    changes,
+    notificationSent: severity !== 'none',
+  };
+  contract.sourceType = sourceType;
+  contract.currentVersion = version.version;
+  contract.updatedAt = version.uploadedAt;
+  contract.liveBaseUrl = params.liveBaseUrl || contract.liveBaseUrl;
+  contract.versions.push(version);
+  contractDriftEvents.unshift(driftReport);
+  if (severity !== 'none') {
+    createNotification(params.projectId, 'schema_drift', `Schema Drift Detected - ${contract.contractName} v${driftReport.fromVersion} -> v${driftReport.toVersion}`, driftReport.summary, true, {
+      severity: severity === 'high' ? 'breaking' : severity === 'medium' ? 'medium' : 'low',
+      driftEvent: {
+        id: driftReport.id,
+        endpointId: contract.id,
+        endpointName: contract.contractName,
+        projectId: params.projectId,
+        projectName: projects.find((project) => project.id === params.projectId)?.name || 'Project',
+        severity: severity === 'high' ? 'breaking' : severity,
+        status: 'new',
+        detectedAt: driftReport.driftedAt,
+        message: driftReport.summary,
+        changes: [
+          ...changes.removed.map((change) => ({ path: `${change.method} ${change.path}`, field: change.operationId, expected: 'present', actual: 'removed', type: 'removed' as const })),
+          ...changes.added.map((change) => ({ path: `${change.method} ${change.path}`, field: change.operationId, expected: 'absent', actual: 'added', type: 'added' as const })),
+          ...changes.modified.flatMap((endpoint) => (endpoint.changes || []).map((change: any) => ({ path: `${endpoint.method} ${endpoint.path}.${change.field || change.location}`, field: change.field || change.location, expected: change.from, actual: change.to || change.change, type: 'modified' as const }))),
+        ],
+      },
+    });
+  }
+  saveAppState();
+  return { contract, version, endpoints: parsed.endpoints, driftReport, identical: false };
 }
 
 function apiKeyProjectId(apiKeyId: string) {
@@ -2638,6 +3252,7 @@ function createNotification(projectId: string, type: AppNotification['type'], ti
 function isProductNotification(notification: AppNotification) {
   const title = notification.title.trim().toLowerCase();
   if (notification.type === 'drift') return true;
+  if (notification.type === 'schema_drift') return true;
   if (notification.type === 'schema') {
     return title.includes('schema version') || title.includes('baseline schema') || title.includes('schema created');
   }
@@ -3092,6 +3707,7 @@ app.post('/api/contact', contactLimiter, async (req, res) => {
 
   try {
     deliveries.push(await sendContactAdminEmail(contactMessage));
+    deliveries.push(await sendContactConfirmationEmail(contactMessage));
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Contact email notification failed.';
     failures.push(errorMessage);
@@ -3110,12 +3726,19 @@ app.post('/api/contact', contactLimiter, async (req, res) => {
   contactMessage.notificationStatus = deliveries.some((delivery) => delivery.status === 'sent') ? 'sent' : 'not_configured';
   if (failures.length > 0) {
     contactMessage.notificationError = failures.join(' | ');
-    if (deliveries.length === 0 && failures.some((item) => !item.toLowerCase().includes('configured'))) {
-      contactMessage.notificationStatus = 'failed';
-    }
+    contactMessage.notificationStatus = 'failed';
   }
 
   saveAppState();
+  if (contactMessage.notificationStatus !== 'sent') {
+    res.status(502).json({
+      message: 'Your message was saved, but email delivery failed. Please try again later.',
+      contactId: contactMessage.id,
+      notificationStatus: contactMessage.notificationStatus,
+      error: contactMessage.notificationError,
+    });
+    return;
+  }
   res.status(201).json({
     message: 'Thanks, your message has been received. We will get back to you soon.',
     contactId: contactMessage.id,
@@ -3174,8 +3797,27 @@ app.get('/api/auth/oauth/:provider/callback', async (req, res) => {
     redirectWithAuthError(res, error instanceof Error ? error.message : 'Could not complete sign-in.');
   }
 });
-app.post('/api/auth/refresh', (_req, res) => {
-  res.json({ token: issueToken(demoUser) });
+app.post('/api/auth/refresh', (req, res) => {
+  const refreshToken = typeof req.body?.refreshToken === 'string' ? req.body.refreshToken : '';
+  if (!refreshToken) {
+    res.status(401).json({ message: 'Refresh token is required.' });
+    return;
+  }
+  try {
+    const payload = jwt.verify(refreshToken, JWT_SECRET) as { sub?: string; email?: string; type?: string };
+    if (payload.type !== 'refresh') {
+      res.status(401).json({ message: 'Invalid refresh token.' });
+      return;
+    }
+    const user = users.find((item) => item.id === payload.sub || item.email.toLowerCase() === payload.email?.toLowerCase());
+    if (!user) {
+      res.status(401).json({ message: 'User not found.' });
+      return;
+    }
+    res.json(authPayload(user));
+  } catch {
+    res.status(401).json({ message: 'Refresh token expired or invalid.' });
+  }
 });
 app.post('/api/auth/logout', (_req, res) => {
   saveAppState();
@@ -3338,6 +3980,111 @@ app.get('/api/projects/current', (req, res) => {
   refreshMonitoringStatuses();
   const visibleProjects = visibleProjectsForUser(user);
   res.json(visibleProjects.find((project) => project.id !== 'project_demo') || visibleProjects.find((project) => project.id === 'project_demo') || null);
+});
+
+app.get('/api/contracts', (req, res) => {
+  const user = requireRequestUser(req, res);
+  if (!user) return;
+  const projectId = String(req.query.projectId || '');
+  if (!projectId) {
+    res.status(400).json({ message: 'Project ID is required.' });
+    return;
+  }
+  if (!userHasProjectPermission(projectId, user, 'contract:view')) {
+    deny(res);
+    return;
+  }
+  res.json(contracts.filter((contract) => contract.projectId === projectId).map((contract) => ({
+    ...contract,
+    versions: contract.versions.map((version) => ({
+      version: version.version,
+      uploadedAt: version.uploadedAt,
+      uploadedBy: version.uploadedBy,
+      rawFileHash: version.rawFileHash,
+      endpointCount: version.endpoints.length,
+      schemaCount: Object.keys(version.schemas || {}).length,
+    })),
+  })));
+});
+
+app.get('/api/contracts/:contractId', (req, res) => {
+  const user = requireRequestUser(req, res);
+  if (!user) return;
+  const contract = contracts.find((item) => item.id === req.params.contractId);
+  if (!contract) {
+    res.status(404).json({ message: 'Contract not found.' });
+    return;
+  }
+  if (!userHasProjectPermission(contract.projectId, user, 'contract:view')) {
+    deny(res);
+    return;
+  }
+  res.json(contract);
+});
+
+app.get('/api/contracts/:contractId/drift', (req, res) => {
+  const user = requireRequestUser(req, res);
+  if (!user) return;
+  const contract = contracts.find((item) => item.id === req.params.contractId);
+  if (!contract) {
+    res.status(404).json({ message: 'Contract not found.' });
+    return;
+  }
+  if (!userHasProjectPermission(contract.projectId, user, 'contract:view')) {
+    deny(res);
+    return;
+  }
+  res.json(contractDriftEvents.filter((event) => event.contractId === contract.id));
+});
+
+app.get('/api/contracts/:contractId/drift/:driftEventId', (req, res) => {
+  const user = requireRequestUser(req, res);
+  if (!user) return;
+  const driftReport = contractDriftEvents.find((event) => event.id === req.params.driftEventId && event.contractId === req.params.contractId);
+  if (!driftReport) {
+    res.status(404).json({ message: 'Drift report not found.' });
+    return;
+  }
+  if (!userHasProjectPermission(driftReport.projectId, user, 'contract:view')) {
+    deny(res);
+    return;
+  }
+  res.json(driftReport);
+});
+
+app.post('/api/contracts/import-live', async (req, res) => {
+  const user = requireRequestUser(req, res);
+  if (!user) return;
+  const projectId = String(req.body?.projectId || '');
+  const baseUrl = String(req.body?.baseUrl || '').trim().replace(/\/$/, '');
+  const project = projects.find((item) => item.id === projectId);
+  if (!project) {
+    res.status(404).json({ message: 'Project not found.' });
+    return;
+  }
+  if (!userHasProjectPermission(project.id, user, 'contract:upload')) {
+    deny(res);
+    return;
+  }
+  if (!/^https?:\/\//i.test(baseUrl)) {
+    res.status(400).json({ message: 'Enter a valid FastAPI base URL.' });
+    return;
+  }
+  try {
+    const response = await axios.get(`${baseUrl}/openapi.json`, { timeout: 15000 });
+    const content = JSON.stringify(response.data);
+    const result = persistContractUpload({
+      projectId: project.id,
+      user,
+      filename: 'openapi.json',
+      contractName: `${new URL(baseUrl).hostname}-openapi.json`,
+      content,
+      liveBaseUrl: baseUrl,
+    });
+    res.status(result.driftReport ? 201 : 200).json(result);
+  } catch (error) {
+    res.status(502).json({ message: error instanceof Error ? error.message : 'Could not import live OpenAPI document.' });
+  }
 });
 
 app.get('/api/projects/:projectId/state', (req, res) => {
@@ -4670,7 +5417,7 @@ app.get('/api/team/:projectId', (req, res) => {
     return;
   }
   const projectMembers = teamMembers
-    .filter((member) => member.projectId === req.params.projectId && member.status !== 'removed')
+    .filter((member) => member.projectId === req.params.projectId && ['active', 'joined'].includes(member.status))
     .map(normalizeTeamMember);
   res.json(projectMembers);
 });
@@ -4691,7 +5438,9 @@ app.post('/api/team/:projectId/invite', async (req, res) => {
     return;
   }
   const token = crypto.randomBytes(16).toString('hex');
-  const invitePassword = generateInvitePassword();
+  const invitePassword = typeof req.body?.invitePassword === 'string' && req.body.invitePassword.trim()
+    ? req.body.invitePassword.trim()
+    : generateInvitePassword();
   const invite: TeamInvite = {
     id: uuidv4(),
     token,
@@ -4701,48 +5450,17 @@ app.post('/api/team/:projectId/invite', async (req, res) => {
     invitedByEmail: inviter.email,
     role,
     inviteLink: createInviteLink(token),
-    invitePassword,
+    invitePasswordHash: bcrypt.hashSync(invitePassword, 10),
     expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
     createdAt: now(),
   };
   teamInvites.push(invite);
-  const existingMember = teamMembers.find(
-    (member) => member.projectId === project.id && member.userEmail.toLowerCase() === email
-  );
-  if (existingMember) {
-    existingMember.userId = userForEmail(email)?.id || existingMember.userId;
-    existingMember.role = role;
-    existingMember.status = existingMember.status === 'active' || existingMember.status === 'joined' ? 'active' : 'pending';
-    existingMember.invitedBy = inviter.id;
-    existingMember.invitedAt = now();
-    existingMember.updatedAt = now();
-    existingMember.inviteLink = invite.inviteLink;
-    existingMember.invitePassword = invite.invitePassword;
-    existingMember.inviteExpiresAt = invite.expiresAt;
-  } else {
-    const timestamp = now();
-    teamMembers.push({
-      id: uuidv4(),
-      userId: userForEmail(email)?.id,
-      projectId: project.id,
-      userEmail: email,
-      name: email.split('@')[0],
-      role,
-      invitedBy: inviter.id,
-      status: 'pending',
-      createdAt: timestamp,
-      updatedAt: timestamp,
-      invitedAt: timestamp,
-      inviteLink: invite.inviteLink,
-      invitePassword: invite.invitePassword,
-      inviteExpiresAt: invite.expiresAt,
-    });
-  }
   project.memberCount = teamMembers.filter((item) => item.projectId === project.id && ['active', 'joined'].includes(item.status)).length;
   createNotification(project.id, 'team', 'Invite generated', `${invite.userEmail} has a pending ${invite.role} invite. They will appear as active after accepting it.`);
   let emailDelivery: AlertDelivery | undefined;
+  const inviteForDelivery = { ...invite, invitePassword };
   try {
-    emailDelivery = await sendInvitationEmail(invite.userEmail, invite, project.name);
+    emailDelivery = await sendInvitationEmail(invite.userEmail, inviteForDelivery, project.name);
   } catch (error) {
     console.error('Invitation email failed', {
       to: invite.userEmail,
@@ -4750,12 +5468,12 @@ app.post('/api/team/:projectId/invite', async (req, res) => {
       error: error instanceof Error ? error.message : error,
     });
   }
-  res.status(201).json({ ...invite, emailDelivery });
+  res.status(201).json({ ...invite, invitePassword, invitePasswordHash: undefined, emailDelivery });
 });
 
 app.get('/api/team/invite/:token', (req, res) => {
   const invite = teamInvites.find((item) => item.token === req.params.token);
-  if (!invite) {
+  if (!invite || invite.usedAt) {
     res.status(404).json({ message: 'Invite not found or already used' });
     return;
   }
@@ -4777,7 +5495,7 @@ app.get('/api/team/invite/:token', (req, res) => {
 app.post('/api/team/invite/:token/accept', (req, res) => {
   const inviteIndex = teamInvites.findIndex((item) => item.token === req.params.token);
   const invite = teamInvites[inviteIndex];
-  if (!invite) {
+  if (!invite || invite.usedAt) {
     res.status(404).json({ message: 'Invite not found or already used' });
     return;
   }
@@ -4786,7 +5504,11 @@ app.post('/api/team/invite/:token/accept', (req, res) => {
     res.status(410).json({ message: 'Invite has expired' });
     return;
   }
-  if (String(req.body?.password || '').trim().toUpperCase() !== invite.invitePassword) {
+  const suppliedInvitePassword = String(req.body?.password || req.body?.invitePassword || '').trim();
+  const invitePasswordValid = invite.invitePasswordHash
+    ? bcrypt.compareSync(suppliedInvitePassword, invite.invitePasswordHash)
+    : suppliedInvitePassword.toUpperCase() === String(invite.invitePassword || '').trim().toUpperCase();
+  if (!invitePasswordValid) {
     res.status(400).json({ message: 'Invite password is incorrect' });
     return;
   }
@@ -4888,9 +5610,11 @@ app.post('/api/team/invite/:token/accept', (req, res) => {
   }
   project.memberCount = teamMembers.filter((item) => item.projectId === project.id && ['active', 'joined'].includes(item.status)).length;
 
-  teamInvites.splice(inviteIndex, 1);
+  invite.usedAt = now();
+  invite.usedByUserId = invitedUser.id;
+  invite.invitePassword = undefined;
   createNotification(invite.projectId, 'team', 'Team member joined', `${invite.userEmail} joined ${project.name}.`);
-  res.json({ user: publicUser(invitedUser), token: issueToken(invitedUser), project: projectForUser(project, invitedUser) });
+  res.json({ ...authPayload(invitedUser), project: projectForUser(project, invitedUser) });
 });
 
 app.put('/api/team/member/:id', (req, res) => {
@@ -4975,14 +5699,16 @@ app.post('/api/team/invite-link', (req, res) => {
 app.get('/api/settings/notification-channels', (req, res) => {
   const user = requireRequestUser(req, res);
   if (!user) return;
-  res.json({ ...notificationChannels, emailConfig: emailConfigStatus() });
+  res.json({ ...getUserNotificationChannels(user), emailConfig: emailConfigStatus() });
 });
 
 app.put('/api/settings/notification-channels', (req, res) => {
+  let currentUser: User | null = null;
   const projectId = String(req.body?.projectId || '');
   if (projectId) {
     const user = requireProjectPermission(req, res, projectId, 'notification:update');
     if (!user) return;
+    currentUser = user;
   } else {
     const user = requireRequestUser(req, res);
     if (!user) return;
@@ -4990,34 +5716,46 @@ app.put('/api/settings/notification-channels', (req, res) => {
       deny(res);
       return;
     }
+    currentUser = user;
   }
   const discord = req.body?.discord || {};
   const email = req.body?.email || {};
-  const nextEmailAddress = typeof email.address === 'string' && email.address.trim() ? email.address.trim().toLowerCase() : demoUser.email;
+  if (!currentUser) {
+    res.status(401).json({ message: 'Please sign in again.' });
+    return;
+  }
+  const currentChannels = getUserNotificationChannels(currentUser);
+  const nextEmailAddress = typeof email.address === 'string' && email.address.trim() ? email.address.trim().toLowerCase() : currentUser.email;
   if (Boolean(email.enabled) && !isValidEmailAddress(nextEmailAddress)) {
     console.warn('Invalid recipient', { email: nextEmailAddress });
     res.status(400).json({ message: 'Enter a valid alert email address.' });
     return;
   }
-  notificationChannels.discord = {
-    enabled: Boolean(discord.enabled),
-    webhookUrl: typeof discord.webhookUrl === 'string' ? discord.webhookUrl.trim() : notificationChannels.discord.webhookUrl,
+  const nextChannels: NotificationChannels = {
+    discord: {
+      enabled: Boolean(discord.enabled),
+      webhookUrl: typeof discord.webhookUrl === 'string' ? discord.webhookUrl.trim() : currentChannels.discord.webhookUrl,
+    },
+    email: {
+      enabled: Boolean(email.enabled),
+      address: nextEmailAddress,
+    },
   };
-  notificationChannels.email = {
-    enabled: Boolean(email.enabled),
-    address: nextEmailAddress,
-  };
-  res.json({ ...notificationChannels, emailConfig: emailConfigStatus() });
+  updateUserNotificationChannels(currentUser, nextChannels);
+  res.json({ ...nextChannels, emailConfig: emailConfigStatus() });
 });
 
 async function sendTestAlertHandler(req: Request, res: Response) {
+  let requestUser: User | null = null;
   const project = projects.find((item) => item.id === req.body?.projectId);
   if (project) {
     const user = requireProjectPermission(req, res, project.id, 'scan:run');
     if (!user) return;
+    requestUser = user;
   } else {
     const user = requireRequestUser(req, res);
     if (!user) return;
+    requestUser = user;
   }
   const endpoint = endpoints.find((item) => item.projectId === project?.id);
   const driftEvent: DriftEvent = {
@@ -5040,12 +5778,13 @@ async function sendTestAlertHandler(req: Request, res: Response) {
   const delivered: AlertDelivery[] = [];
   const requestedDiscord = req.body?.discord || {};
   const requestedEmail = req.body?.email || {};
-  const discordEnabled = typeof requestedDiscord.enabled === 'boolean' ? requestedDiscord.enabled : notificationChannels.discord.enabled;
-  const discordWebhookUrl = typeof requestedDiscord.webhookUrl === 'string' ? requestedDiscord.webhookUrl.trim() : notificationChannels.discord.webhookUrl;
-  const emailEnabled = typeof requestedEmail.enabled === 'boolean' ? requestedEmail.enabled : notificationChannels.email.enabled;
+  const savedChannels = getUserNotificationChannels(requestUser);
+  const discordEnabled = typeof requestedDiscord.enabled === 'boolean' ? requestedDiscord.enabled : savedChannels.discord.enabled;
+  const discordWebhookUrl = typeof requestedDiscord.webhookUrl === 'string' ? requestedDiscord.webhookUrl.trim() : savedChannels.discord.webhookUrl;
+  const emailEnabled = typeof requestedEmail.enabled === 'boolean' ? requestedEmail.enabled : savedChannels.email.enabled;
   const emailAddress = typeof requestedEmail.address === 'string' && requestedEmail.address.trim()
     ? requestedEmail.address.trim().toLowerCase()
-    : notificationChannels.email.address;
+    : savedChannels.email.address;
   const context: AlertContext = {
     endpoint,
     driftEvent,
