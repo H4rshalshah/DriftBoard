@@ -48,7 +48,7 @@ class ApiClient {
   private setupRequestInterceptor(): void {
     this.client.interceptors.request.use(
       (config: InternalAxiosRequestConfig) => {
-        const token = localStorage.getItem('auth_token') || sessionStorage.getItem('auth_token');
+        const token = sessionStorage.getItem('auth_token') || localStorage.getItem('auth_token');
         if (token && config.headers) {
           config.headers.Authorization = `Bearer ${token}`;
         }
@@ -76,7 +76,7 @@ class ApiClient {
           originalRequest._retry = true;
 
           try {
-            const refreshToken = localStorage.getItem('refresh_token') || sessionStorage.getItem('refresh_token');
+            const refreshToken = sessionStorage.getItem('refresh_token') || localStorage.getItem('refresh_token');
             if (refreshToken) {
               const response = await axios.post<{
                 token?: string;
@@ -90,11 +90,11 @@ class ApiClient {
               if (!token) {
                 throw new Error('Authentication token was not returned');
               }
-              localStorage.setItem('auth_token', token);
-              sessionStorage.removeItem('auth_token');
+              sessionStorage.setItem('auth_token', token);
+              localStorage.removeItem('auth_token');
               if (newRefreshToken) {
-                localStorage.setItem('refresh_token', newRefreshToken);
-                sessionStorage.removeItem('refresh_token');
+                sessionStorage.setItem('refresh_token', newRefreshToken);
+                localStorage.removeItem('refresh_token');
               }
 
               if (originalRequest.headers) {

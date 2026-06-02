@@ -161,7 +161,7 @@ export default function ContractsPage() {
     if (contractName.trim()) formData.append('contractName', contractName.trim());
     setIsUploading(true);
     try {
-      const token = localStorage.getItem('auth_token') || sessionStorage.getItem('auth_token');
+      const token = sessionStorage.getItem('auth_token') || localStorage.getItem('auth_token');
       const response = await fetch(`${getApiBaseUrl()}/contracts/upload`, {
         method: 'POST',
         headers: token ? { Authorization: `Bearer ${token}` } : undefined,

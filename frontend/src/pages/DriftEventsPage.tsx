@@ -563,7 +563,7 @@ export default function DriftEventsPage() {
 
     fetch(`${getApiBaseUrl()}/projects/${currentProject.id}/drift-events/export?${params.toString()}`, {
       headers: {
-        Authorization: `Bearer ${localStorage.getItem('auth_token') || sessionStorage.getItem('auth_token') || ''}`,
+        Authorization: `Bearer ${sessionStorage.getItem('auth_token') || localStorage.getItem('auth_token') || ''}`,
       },
     })
       .then((response) => {

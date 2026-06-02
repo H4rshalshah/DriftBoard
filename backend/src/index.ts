@@ -1428,7 +1428,6 @@ function contactAdminEmail() {
   return (
     process.env.CONTACT_ADMIN_EMAIL ||
     process.env.SUPPORT_EMAIL ||
-    process.env.ALERT_TO_EMAIL ||
     OWNER_EMAIL
   ).trim().toLowerCase();
 }
@@ -1514,7 +1513,7 @@ async function sendEmailWithSmtp(input: SendEmailInput): Promise<AlertDelivery> 
 async function sendContactAdminEmail(message: ContactMessage) {
   const to = contactAdminEmail();
   if (!to || !isValidEmailAddress(to)) {
-    throw new Error('Contact admin email is not configured. Set CONTACT_ADMIN_EMAIL, SUPPORT_EMAIL, or ALERT_TO_EMAIL.');
+    throw new Error('Contact admin email is not configured. Set CONTACT_ADMIN_EMAIL or SUPPORT_EMAIL.');
   }
 
   const subjectLabel = contactSubjectLabel(message.subject);
@@ -1650,11 +1649,6 @@ async function sendEmailAlert(title: string, message: string, projectId: string,
   return sendDriftAlertEmail(to, summary);
 }
 
-async function sendEmailAlertTo(to: string, title: string, message: string, projectId: string, type: AppNotification['type'], context: AlertContext): Promise<AlertDelivery> {
-  const summary = alertSummary(title, message, projectId, type, context);
-  return sendDriftAlertEmail(to, summary);
-}
-
 async function sendContactDiscordMessage(message: ContactMessage): Promise<AlertDelivery | null> {
   if (!notificationChannels.discord.enabled || !notificationChannels.discord.webhookUrl) return null;
   const subjectLabel = contactSubjectLabel(message.subject);
@@ -1685,10 +1679,6 @@ async function deliverConfiguredAlert(title: string, message: string, projectId:
   const projectUsers = users.filter((user) => Boolean(projectRole(projectId, user)));
   const ownerUser = users.find((user) => user.id === project?.ownerId);
   const recipients = projectUsers.length > 0 ? projectUsers : ownerUser ? [ownerUser] : [];
-  const mandatoryEmailRecipients = new Set<string>();
-  if (ownerUser?.email && isValidEmailAddress(ownerUser.email)) mandatoryEmailRecipients.add(ownerUser.email.toLowerCase());
-  if (OWNER_EMAIL && isValidEmailAddress(OWNER_EMAIL)) mandatoryEmailRecipients.add(OWNER_EMAIL.toLowerCase());
-  const deliveredEmailRecipients = new Set<string>();
 
   for (const recipient of recipients) {
     const channels = getUserNotificationChannels(recipient);
@@ -1706,7 +1696,6 @@ async function deliverConfiguredAlert(title: string, message: string, projectId:
     }
 
     if (channels.email.enabled && channels.email.address) {
-      deliveredEmailRecipients.add(channels.email.address.toLowerCase());
       const previousEmailAddress = notificationChannels.email.address;
       notificationChannels.email.address = channels.email.address;
       try {
@@ -1728,27 +1717,6 @@ async function deliverConfiguredAlert(title: string, message: string, projectId:
       } finally {
         notificationChannels.email.address = previousEmailAddress;
       }
-    }
-  }
-
-  for (const to of mandatoryEmailRecipients) {
-    if (deliveredEmailRecipients.has(to)) continue;
-    try {
-      await sendEmailAlertTo(to, title, message, projectId, type, context);
-    } catch (error) {
-      emailOutbox.unshift({
-        id: uuidv4(),
-        to,
-        subject: `[DriftBoard] ${title}`,
-        text: message,
-        html: htmlEscape(message),
-        status: 'failed',
-        provider: process.env.RESEND_API_KEY ? 'resend' : 'local',
-        createdAt: now(),
-        errorMessage: error instanceof Error ? error.message : 'Email delivery failed',
-      });
-      saveAppState();
-      console.error('Mandatory owner email alert failed:', error instanceof Error ? error.message : error);
     }
   }
 }
@@ -2335,9 +2303,9 @@ function projectMemberForUser(projectId: string, user: User) {
 }
 
 function projectRole(projectId: string, user: User): ProjectRole | null {
-  if (projectId === 'project_demo') return 'viewer';
   const project = projects.find((item) => item.id === projectId);
   if (project?.ownerId === user.id) return 'owner';
+  if (projectId === 'project_demo') return 'viewer';
   const member = projectMemberForUser(projectId, user);
   if (!member || member.status !== 'active') return null;
   return member.role === 'owner' ? 'admin' : member.role;

@@ -61,11 +61,11 @@ function applyAuthResponse(response: AuthResponse) {
     throw new Error('Authentication token was not returned');
   }
 
-  localStorage.setItem('auth_token', token);
-  sessionStorage.removeItem('auth_token');
+  sessionStorage.setItem('auth_token', token);
+  localStorage.removeItem('auth_token');
   if (refreshToken) {
-    localStorage.setItem('refresh_token', refreshToken);
-    sessionStorage.removeItem('refresh_token');
+    sessionStorage.setItem('refresh_token', refreshToken);
+    localStorage.removeItem('refresh_token');
   }
 
   return {
@@ -86,11 +86,18 @@ export const useAuthStore = create<AuthState>()(
       error: null,
 
       rehydrateSession: async () => {
-        const token = localStorage.getItem('auth_token') || sessionStorage.getItem('auth_token');
+        const token = sessionStorage.getItem('auth_token') || localStorage.getItem('auth_token');
         if (!token) {
           set({ user: null, token: null, isAuthenticated: false, isLoading: false });
           return;
         }
+        sessionStorage.setItem('auth_token', token);
+        localStorage.removeItem('auth_token');
+        const legacyRefreshToken = localStorage.getItem('refresh_token');
+        if (legacyRefreshToken && !sessionStorage.getItem('refresh_token')) {
+          sessionStorage.setItem('refresh_token', legacyRefreshToken);
+        }
+        localStorage.removeItem('refresh_token');
         set({ isLoading: true, error: null, token, isAuthenticated: true });
         try {
           const user = await api.get<User>('/auth/me');
@@ -242,8 +249,8 @@ export const useAuthStore = create<AuthState>()(
       },
 
       completeOAuthLogin: (token: string, user: User) => {
-        localStorage.setItem('auth_token', token);
-        sessionStorage.removeItem('auth_token');
+        sessionStorage.setItem('auth_token', token);
+        localStorage.removeItem('auth_token');
         set({
           token,
           user,
@@ -304,7 +311,7 @@ export const useAuthStore = create<AuthState>()(
     }),
     {
       name: 'auth-storage',
-      storage: createJSONStorage(() => localStorage),
+      storage: createJSONStorage(() => sessionStorage),
       version: 3,
       partialize: (state) => ({
         token: state.token,

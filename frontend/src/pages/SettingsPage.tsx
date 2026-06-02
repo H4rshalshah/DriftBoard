@@ -173,7 +173,7 @@ export default function SettingsPage() {
   });
 
   const currentMember = teamMembers.find((member) => member.userEmail.toLowerCase() === user?.email?.toLowerCase());
-  const currentProjectRole = currentProject?.currentUserRole || (currentProject?.ownerId === user?.id ? 'owner' : currentMember?.role) || null;
+  const currentProjectRole = currentProject?.currentUserRole || (currentProject?.ownerId === user?.id || (!currentProject && user?.role === 'owner') ? 'owner' : currentMember?.role) || null;
   const canManageTeam = hasProjectPermission(currentProjectRole, 'team:invite');
   const canUpdateNotificationSettings = hasProjectPermission(currentProjectRole, 'notification:update');
   const canSendTestAlert = hasProjectPermission(currentProjectRole, 'scan:run');
