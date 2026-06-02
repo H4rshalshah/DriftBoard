@@ -28,24 +28,45 @@ class RedisClient {
     this.isConnecting = true;
 
     try {
-      logger.info('Connecting to Redis...', {
-        host: config.redisHost,
-        port: config.redisPort,
-      });
+      if (config.redisUrl) {
+        logger.info('Connecting to Redis via URL...', {
+          url: config.redisUrl.replace(/\/\/[^:]+:[^@]+@/, '//***:***@'),
+        });
 
-      this.client = createClient({
-        socket: {
+        this.client = createClient({
+          url: config.redisUrl,
+          socket: {
+            tls: true,
+            rejectUnauthorized: false,
+            reconnectStrategy: (retries: number) => {
+              if (retries > 10) {
+                logger.error('Max Redis reconnection attempts reached');
+                return new Error('Max reconnection attempts reached');
+              }
+              return Math.min(retries * 100, 3000);
+            },
+          },
+        });
+      } else {
+        logger.info('Connecting to Redis...', {
           host: config.redisHost,
           port: config.redisPort,
-          reconnectStrategy: (retries: number) => {
-            if (retries > 10) {
-              logger.error('Max Redis reconnection attempts reached');
-              return new Error('Max reconnection attempts reached');
-            }
-            return Math.min(retries * 100, 3000);
+        });
+
+        this.client = createClient({
+          socket: {
+            host: config.redisHost,
+            port: config.redisPort,
+            reconnectStrategy: (retries: number) => {
+              if (retries > 10) {
+                logger.error('Max Redis reconnection attempts reached');
+                return new Error('Max reconnection attempts reached');
+              }
+              return Math.min(retries * 100, 3000);
+            },
           },
-        },
-      });
+        });
+      }
 
       this.client.on('error', (err) => {
         logger.error('Redis Client Error:', err);

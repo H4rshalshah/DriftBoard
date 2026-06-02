@@ -29,7 +29,7 @@ services:
       - key: NEXT_PUBLIC_APP_URL
         value: https://driftboard-three.vercel.app
       - key: EMAIL_MOCK_MODE
-        value: true
+        value: false
       - key: CONTACT_ADMIN_EMAIL
         value: h4rshal.workspace@gmail.com
       - key: ALERT_REPLY_TO
@@ -47,10 +47,10 @@ services:
       - key: JWT_REFRESH_SECRET
         generateValue: true
       - key: SMTP_USER
-        sync: false
+        value: h4rshal.workspace@gmail.com
       - key: SMTP_PASS
         sync: false
       - key: EMAIL_FROM
-        sync: false
+        value: DriftBoard <h4rshal.workspace@gmail.com>
       - key: ALERT_FROM_EMAIL
-        sync: false
+        value: h4rshal.workspace@gmail.com

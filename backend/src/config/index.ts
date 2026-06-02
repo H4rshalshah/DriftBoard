@@ -6,6 +6,7 @@ interface Config {
   nodeEnv: string;
   port: number;
   mongodbUri: string;
+  redisUrl?: string;
   redisHost: string;
   redisPort: number;
   jwtSecret: string;
@@ -18,12 +19,13 @@ interface Config {
   rateLimitMaxRequests: number;
 }
 
+const hasRedisUrl = Boolean(process.env.REDIS_URL);
+
 const requiredEnvVars = [
   'NODE_ENV',
   'PORT',
   'MONGODB_URI',
-  'REDIS_HOST',
-  'REDIS_PORT',
+  ...(hasRedisUrl ? [] : ['REDIS_HOST', 'REDIS_PORT']),
   'JWT_SECRET',
   'JWT_REFRESH_SECRET',
   'FRONTEND_URL',
@@ -39,6 +41,7 @@ const config: Config = {
   nodeEnv: process.env.NODE_ENV || 'development',
   port: parseInt(process.env.PORT || '5000', 10),
   mongodbUri: process.env.MONGODB_URI || 'mongodb://localhost:27017/driftboard',
+  redisUrl: process.env.REDIS_URL || undefined,
   redisHost: process.env.REDIS_HOST || 'localhost',
   redisPort: parseInt(process.env.REDIS_PORT || '6379', 10),
   jwtSecret: process.env.JWT_SECRET || '',

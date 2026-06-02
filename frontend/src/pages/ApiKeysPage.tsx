@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+ import { useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Check, Copy, Edit, Key, Plus, RotateCcw, ShieldCheck, Trash2, X } from 'lucide-react';
 import { Badge } from '@/components/common/Badge';
