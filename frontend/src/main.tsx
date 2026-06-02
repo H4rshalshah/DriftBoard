@@ -1,15 +1,13 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import { BrowserRouter, HashRouter } from 'react-router-dom';
+import { BrowserRouter } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import App from './App';
 import './index.css';
 
-const Router = import.meta.env.PROD ? HashRouter : BrowserRouter;
-
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
-    <Router>
+    <BrowserRouter>
       <App />
       <Toaster
         position="top-right"
@@ -36,6 +34,6 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
           },
         }}
       />
-    </Router>
+    </BrowserRouter>
   </React.StrictMode>
 );

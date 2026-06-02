@@ -109,6 +109,15 @@ type StatTrend = {
   positive: boolean;
 };
 
+type DashboardDriftEvent = {
+  id: string;
+  endpointName: string;
+  endpointUrl: string;
+  severity: 'low' | 'medium' | 'breaking';
+  message: string;
+  detectedAt: string;
+};
+
 const monitoringDurations = [
   { label: 'All time', value: 'all' },
   { label: '15 min', value: '15m' },
@@ -167,6 +176,17 @@ function makeTrend(current: number, previous: number, increaseIsPositive = true)
     value,
     positive: increaseIsPositive ? delta >= 0 : delta <= 0,
   };
+}
+
+function endpointPercent(count: number, total: number) {
+  if (total === 0) return 0;
+  return Math.round((count / total) * 100);
+}
+
+function dashboardSeverity(severity: string): DashboardDriftEvent['severity'] {
+  if (severity === 'critical' || severity === 'high' || severity === 'breaking') return 'breaking';
+  if (severity === 'medium') return 'medium';
+  return 'low';
 }
 
 function formatRelativeTime(dateString: string): string {
@@ -289,45 +309,68 @@ export default function DashboardPage() {
     };
   }, [currentProject?.id, endpoints]);
 
-  const detectedProjectEvents = endpoints
-    .filter((endpoint) => endpoint.projectId === currentProject?.id)
-    .map((endpoint, index) => ({
-      id: `detected-${endpoint.id}`,
-      endpointName: endpoint.name,
-      endpointUrl: `${endpoint.method} ${endpoint.url}`,
-      severity: index % 4 === 0 ? 'breaking' as const : index % 3 === 0 ? 'medium' as const : 'low' as const,
-      message:
-        index % 4 === 0
-          ? `Breaking schema drift detected in ${endpoint.name}`
-          : `Schema snapshot monitored for ${endpoint.name}`,
-      detectedAt: endpoint.lastDriftAt || endpoint.lastCheckedAt || endpoint.updatedAt,
-    }));
-
-  const displayEvents = currentProject?.id === 'project_demo' ? demoDriftEvents : detectedProjectEvents;
   const projectEndpoints = currentProject?.id
     ? endpoints.filter((endpoint) => endpoint.projectId === currentProject.id)
     : [];
   const totalEndpoints = projectEndpoints.length;
-  const activeDrifts = displayEvents.filter((event) => event.severity === 'breaking' || event.severity === 'medium').length;
-  const stats = {
-    totalEndpoints,
-    activeDrifts,
-    recentChanges: displayEvents.length,
-    apiHealth: totalEndpoints === 0 ? 100 : Math.max(72, 100 - activeDrifts * 9),
-  };
   const trendNow = Date.now();
   const sevenDays = 7 * 24 * 60 * 60 * 1000;
   const currentWindowStart = trendNow - sevenDays;
+  const projectDriftEvents = currentProject?.id
+    ? driftEvents.filter((event) => event.projectId === currentProject.id)
+    : [];
+  const displayEvents: DashboardDriftEvent[] = currentProject?.id === 'project_demo'
+    ? demoDriftEvents
+    : projectDriftEvents.map((event) => {
+        const endpoint = projectEndpoints.find((item) => item.id === event.endpointId);
+        return {
+          id: event.id,
+          endpointName: event.endpointName || endpoint?.name || 'Endpoint',
+          endpointUrl: `${endpoint?.method || 'API'} ${endpoint?.url || event.endpointName || ''}`.trim(),
+          severity: dashboardSeverity(event.severity),
+          message: event.message || `${event.endpointName || endpoint?.name || 'Endpoint'} changed`,
+          detectedAt: event.detectedAt,
+        };
+      });
+  const activeDriftEvents = projectDriftEvents.filter((event) => !event.resolvedAt);
+  const activeDriftEndpointIds = new Set(activeDriftEvents.map((event) => event.endpointId));
+  const driftedEndpointCount = projectEndpoints.filter(
+    (endpoint) => endpoint.status === 'drifted' || activeDriftEndpointIds.has(endpoint.id)
+  ).length;
+  const monitoredEndpointCount = projectEndpoints.filter((endpoint) => endpoint.monitoringEnabled !== false && endpoint.status !== 'disabled').length;
+  const degradedEndpointCount = projectEndpoints.filter((endpoint) => ['warning', 'drifted', 'failed', 'disabled'].includes(endpoint.status || '')).length;
+  const recentChangeEndpointIds = new Set(
+    projectEndpoints
+      .filter((endpoint) => {
+        const timestamps = [
+          endpoint.updatedAt,
+          endpoint.lastCheckedAt,
+          endpoint.lastDriftAt,
+          ...(endpoint.schemaVersions || []).map((version) => version.createdAt),
+        ];
+        return timestamps.some((timestamp) => {
+          const time = new Date(timestamp || '').getTime();
+          return !Number.isNaN(time) && time >= currentWindowStart && time < trendNow;
+        });
+      })
+      .map((endpoint) => endpoint.id)
+  );
+  const averageHealth = totalEndpoints === 0
+    ? 100
+    : Math.round(
+        projectEndpoints.reduce((total, endpoint) => total + Math.max(0, Math.min(100, Number(endpoint.health ?? 100))), 0) / totalEndpoints
+      );
+  const stats = {
+    totalEndpoints,
+    activeDrifts: currentProject?.id === 'project_demo'
+      ? demoDriftEvents.filter((event) => event.severity === 'breaking' || event.severity === 'medium').length
+      : Math.max(activeDriftEvents.length, driftedEndpointCount),
+    recentChanges: currentProject?.id === 'project_demo' ? demoDriftEvents.length : recentChangeEndpointIds.size,
+    apiHealth: currentProject?.id === 'project_demo' ? 91 : averageHealth,
+  };
   const previousWindowStart = trendNow - sevenDays * 2;
-  const endpointCreatedTimestamps = projectEndpoints.map((endpoint) => endpoint.createdAt);
   const driftTimestamps = displayEvents.map((event) => event.detectedAt);
-  const currentEndpointAdds = countBetween(endpointCreatedTimestamps, currentWindowStart, trendNow);
-  const previousEndpointAdds = countBetween(endpointCreatedTimestamps, previousWindowStart, currentWindowStart);
-  const currentDrifts = countBetween(driftTimestamps, currentWindowStart, trendNow);
-  const previousDrifts = countBetween(driftTimestamps, previousWindowStart, currentWindowStart);
-  const currentChanges = countBetween(activityTimestamps.length > 0 ? activityTimestamps : driftTimestamps, currentWindowStart, trendNow);
   const previousChanges = countBetween(activityTimestamps.length > 0 ? activityTimestamps : driftTimestamps, previousWindowStart, currentWindowStart);
-  const previousHealth = totalEndpoints === 0 ? 100 : Math.max(72, 100 - previousDrifts * 9);
   const statTrends = currentProject?.id === 'project_demo'
     ? {
         totalEndpoints: { direction: 'up' as const, value: 2, positive: true },
@@ -336,10 +379,26 @@ export default function DashboardPage() {
         apiHealth: { direction: 'up' as const, value: 2, positive: true },
       }
     : {
-        totalEndpoints: makeTrend(currentEndpointAdds, previousEndpointAdds),
-        activeDrifts: makeTrend(currentDrifts, previousDrifts, false),
-        recentChanges: makeTrend(currentChanges, previousChanges),
-        apiHealth: makeTrend(stats.apiHealth, previousHealth),
+        totalEndpoints: {
+          direction: monitoredEndpointCount >= totalEndpoints ? 'up' as const : 'down' as const,
+          value: endpointPercent(monitoredEndpointCount, totalEndpoints),
+          positive: totalEndpoints === 0 || monitoredEndpointCount === totalEndpoints,
+        },
+        activeDrifts: {
+          direction: driftedEndpointCount > 0 ? 'up' as const : 'down' as const,
+          value: endpointPercent(driftedEndpointCount, totalEndpoints),
+          positive: driftedEndpointCount === 0,
+        },
+        recentChanges: {
+          direction: recentChangeEndpointIds.size >= previousChanges ? 'up' as const : 'down' as const,
+          value: endpointPercent(recentChangeEndpointIds.size, totalEndpoints),
+          positive: true,
+        },
+        apiHealth: {
+          direction: degradedEndpointCount > 0 ? 'down' as const : 'up' as const,
+          value: endpointPercent(degradedEndpointCount, totalEndpoints),
+          positive: degradedEndpointCount === 0,
+        },
       };
   const isProjectConnected = Boolean(
     currentProject?.id && ['active', 'connected', 'monitoring'].includes(currentProject.monitoringStatus || '')
