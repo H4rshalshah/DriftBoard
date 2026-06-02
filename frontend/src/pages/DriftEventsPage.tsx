@@ -861,7 +861,7 @@ export default function DriftEventsPage() {
                                           `Endpoint: ${event.method} ${event.endpointUrl}`,
                                           `Change: ${changeListSummary(event.changes)}`,
                                           `Severity: ${event.severity}`,
-                                          `Time: ${formatRelativeTime(event.detectedAt)} ago`,
+                                          `Time: ${formatRelativeTime(event.detectedAt)}`,
                                         ].join('\n')
                                       )
                                     }
@@ -879,7 +879,7 @@ export default function DriftEventsPage() {
                                   </p>
                                   <p><span className="text-white">Change:</span> {changeListSummary(event.changes)}</p>
                                   <p><span className="text-white">Severity:</span> {event.severity.charAt(0).toUpperCase() + event.severity.slice(1)}</p>
-                                  <p><span className="text-white">Time:</span> {formatRelativeTime(event.detectedAt)} ago</p>
+                                  <p><span className="text-white">Time:</span> {formatRelativeTime(event.detectedAt)}</p>
                                 </div>
 
                                 <div className="relative rounded-2xl border border-white/10 bg-black/30 p-4">
