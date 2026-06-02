@@ -1441,6 +1441,14 @@ function contactAdminEmail() {
   ).trim().toLowerCase();
 }
 
+function isRealEmailDelivery(delivery: AlertDelivery | undefined) {
+  return delivery?.channel === 'email' && delivery.status === 'sent';
+}
+
+function contactDeliveryFailure(label: string, delivery: AlertDelivery) {
+  return `${label}: ${delivery.message || `Email delivery returned ${delivery.status}.`}`;
+}
+
 function smtpConfigStatus() {
   const missing = [
     ['EMAIL_HOST/SMTP_HOST', process.env.EMAIL_HOST || process.env.SMTP_HOST],
@@ -3776,11 +3784,13 @@ app.post('/api/contact', contactLimiter, async (req, res) => {
   const failures: string[] = [];
 
   let adminEmailDelivered = false;
+  let confirmationEmailDelivered = false;
 
   try {
     const adminDelivery = await sendContactAdminEmail(contactMessage);
     deliveries.push(adminDelivery);
-    adminEmailDelivered = adminDelivery.status === 'sent';
+    adminEmailDelivered = isRealEmailDelivery(adminDelivery);
+    if (!adminEmailDelivered) failures.push(contactDeliveryFailure('Admin email', adminDelivery));
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Contact admin email notification failed.';
     failures.push(`Admin email: ${errorMessage}`);
@@ -3788,7 +3798,10 @@ app.post('/api/contact', contactLimiter, async (req, res) => {
   }
 
   try {
-    deliveries.push(await sendContactConfirmationEmail(contactMessage));
+    const confirmationDelivery = await sendContactConfirmationEmail(contactMessage);
+    deliveries.push(confirmationDelivery);
+    confirmationEmailDelivered = isRealEmailDelivery(confirmationDelivery);
+    if (!confirmationEmailDelivered) failures.push(contactDeliveryFailure('Confirmation email', confirmationDelivery));
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Contact confirmation email notification failed.';
     failures.push(`Confirmation email: ${errorMessage}`);
@@ -3804,10 +3817,13 @@ app.post('/api/contact', contactLimiter, async (req, res) => {
     console.warn('Contact Discord notification was not delivered.', { error: errorMessage, contactMessageId: contactMessage.id });
   }
 
-  contactMessage.notificationStatus = adminEmailDelivered ? 'sent' : 'not_configured';
-  if (!adminEmailDelivered && failures.length > 0) {
+  contactMessage.notificationStatus = confirmationEmailDelivered
+    ? 'sent'
+    : emailConfigStatus().configured
+      ? 'failed'
+      : 'not_configured';
+  if (!confirmationEmailDelivered && failures.length > 0) {
     contactMessage.notificationError = failures.join(' | ');
-    contactMessage.notificationStatus = 'failed';
   } else if (failures.length > 0) {
     contactMessage.notificationError = failures.join(' | ');
   }
@@ -3815,10 +3831,13 @@ app.post('/api/contact', contactLimiter, async (req, res) => {
   saveAppState();
   if (contactMessage.notificationStatus !== 'sent') {
     res.status(502).json({
-      message: 'Your message was saved, but email delivery failed. Please try again later.',
+      message: contactMessage.notificationStatus === 'not_configured'
+        ? 'Your message was saved, but real email delivery is not configured on the server.'
+        : 'Your message was saved, but confirmation email delivery failed. Please try again later.',
       contactId: contactMessage.id,
       notificationStatus: contactMessage.notificationStatus,
       error: contactMessage.notificationError,
+      emailConfig: emailConfigStatus(),
     });
     return;
   }
