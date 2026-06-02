@@ -3686,6 +3686,17 @@ app.get('/health', (_req, res) => {
   res.json({ status: 'ok', service: 'driftboard-backend', timestamp: now() });
 });
 
+app.get('/', (_req, res) => {
+  res.json({
+    service: 'driftboard-backend',
+    status: 'ok',
+    health: '/api/health',
+    apiBase: '/api',
+    frontend: FRONTEND_URL,
+    timestamp: now(),
+  });
+});
+
 app.get('/api/health', (_req, res) => {
   const database = mongoPersistenceReady ? 'mongodb' : persistenceStatus;
   res.json({
@@ -5080,6 +5091,13 @@ app.post('/api/schema-versions/:id/rollback', (req, res) => {
 });
 
 app.get('/api/drift', (req, res) => {
+  const user = requireRequestUser(req, res);
+  if (!user) return;
+  const visibleProjectIds = new Set(visibleProjectsForUser(user).map((project) => project.id));
+  res.json(driftEvents.filter((event) => visibleProjectIds.has(event.projectId)));
+});
+
+app.get(['/events', '/api/events', '/api/drift-events'], (req, res) => {
   const user = requireRequestUser(req, res);
   if (!user) return;
   const visibleProjectIds = new Set(visibleProjectsForUser(user).map((project) => project.id));
