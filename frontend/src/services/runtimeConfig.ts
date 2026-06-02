@@ -1,4 +1,4 @@
-const productionBackendUrl = 'https://driftboard-api.onrender.com';
+const productionBackendUrl = 'https://driftboard-api-q452.onrender.com';
 
 export function getApiBaseUrl() {
   const configured = import.meta.env.VITE_API_BASE_URL;
