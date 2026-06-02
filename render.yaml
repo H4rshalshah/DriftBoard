@@ -19,15 +19,15 @@ services:
       - key: MONGODB_URI
         sync: false
       - key: FRONTEND_URL
-        value: https://drift-board-frontend-niths4603-1139s-projects.vercel.app
+        value: https://drift-board-frontend.vercel.app
       - key: ALLOWED_ORIGINS
-        value: https://drift-board-frontend-niths4603-1139s-projects.vercel.app,https://driftboard-three.vercel.app
+        value: https://drift-board-frontend.vercel.app
       - key: ALLOW_VERCEL_PREVIEWS
         value: true
       - key: PUBLIC_APP_URL
-        value: https://drift-board-frontend-niths4603-1139s-projects.vercel.app
+        value: https://drift-board-frontend.vercel.app
       - key: NEXT_PUBLIC_APP_URL
-        value: https://drift-board-frontend-niths4603-1139s-projects.vercel.app
+        value: https://drift-board-frontend.vercel.app
       - key: EMAIL_MOCK_MODE
         value: false
       - key: CONTACT_ADMIN_EMAIL
