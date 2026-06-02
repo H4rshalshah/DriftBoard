@@ -29,15 +29,24 @@ import { parse as parseYaml } from 'yaml';
 });
 
 const PORT = Number(process.env.PORT || 5000);
-const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:3000';
+const PRODUCTION_FRONTEND_URL = 'https://drift-board-frontend.vercel.app';
+const isProductionRuntime = process.env.NODE_ENV === 'production' || Boolean(process.env.RENDER_EXTERNAL_URL);
+function frontendUrlFrom(value: string | undefined, fallback: string) {
+  const url = String(value || '').trim().replace(/\/$/, '');
+  if (!url) return fallback;
+  if (isProductionRuntime && /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i.test(url)) return fallback;
+  return url;
+}
+const FRONTEND_URL = frontendUrlFrom(process.env.FRONTEND_URL, isProductionRuntime ? PRODUCTION_FRONTEND_URL : 'http://localhost:3000');
 const ALLOWED_ORIGINS = [
   FRONTEND_URL,
+  ...(isProductionRuntime ? [PRODUCTION_FRONTEND_URL] : []),
   ...(process.env.ALLOWED_ORIGINS || '')
     .split(',')
     .map((origin) => origin.trim())
     .filter(Boolean),
 ];
-const PUBLIC_APP_URL = process.env.NEXT_PUBLIC_APP_URL || process.env.PUBLIC_APP_URL || FRONTEND_URL;
+const PUBLIC_APP_URL = frontendUrlFrom(process.env.NEXT_PUBLIC_APP_URL || process.env.PUBLIC_APP_URL, FRONTEND_URL);
 const BACKEND_URL = process.env.BACKEND_URL || process.env.RENDER_EXTERNAL_URL || `http://localhost:${PORT}`;
 const JWT_SECRET = process.env.JWT_SECRET || 'driftboard-local-demo-secret';
 const HAS_EMAIL_PROVIDER = Boolean(process.env.RESEND_API_KEY)
