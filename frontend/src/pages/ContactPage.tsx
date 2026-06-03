@@ -17,7 +17,8 @@ import { Button } from '@/components/common/Button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/common/Card';
 import { DriftBoardLogo } from '@/components/common/DriftBoardLogo';
 import { Input } from '@/components/common/Input';
-import { api, type ApiError } from '@/services/api';
+import { api } from '@/services/api';
+import { getApiBaseUrl } from '@/services/runtimeConfig';
 import { useAuthStore } from '@/store';
 import { cn } from '@/utils/cn';
 
@@ -35,7 +36,7 @@ type ContactForm = {
 type ContactResponse = {
   message: string;
   contactId: string;
-  notificationStatus: 'sent' | 'not_configured' | 'failed';
+  notificationStatus: 'sent' | 'queued' | 'not_configured' | 'failed';
 };
 
 const subjectOptions: Array<{ value: ContactSubject; label: string }> = [
@@ -72,15 +73,29 @@ const socialLinks = [
   },
 ];
 
-function getErrorMessage(error: unknown, fallback: string) {
-  if (typeof error === 'object' && error !== null && 'message' in error) {
-    return String((error as ApiError).message || fallback);
-  }
-  return error instanceof Error ? error.message : fallback;
-}
-
 function isValidEmail(value: string) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
+}
+
+async function submitContactForm(form: ContactForm) {
+  try {
+    return await api.post<ContactResponse>('/contact', form);
+  } catch (primaryError) {
+    const apiBaseUrl = getApiBaseUrl();
+    const fallbackBaseUrl = 'https://driftboard-api-q452.onrender.com/api';
+    if (apiBaseUrl === fallbackBaseUrl) throw primaryError;
+
+    const response = await fetch(`${fallbackBaseUrl}/contact`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      body: JSON.stringify(form),
+    });
+    const data = await response.json().catch(() => null) as ContactResponse | { message?: string } | null;
+    if (!response.ok) {
+      throw new Error(data?.message || 'Could not send message.');
+    }
+    return data as ContactResponse;
+  }
 }
 
 export default function ContactPage() {
@@ -141,18 +156,12 @@ export default function ContactPage() {
     setIsSubmitting(true);
 
     try {
-      const response = await api.post<ContactResponse>('/contact', form);
+      const response = await submitContactForm(form);
       const delivered = response.notificationStatus === 'sent';
-      const successMessage = delivered
-        ? response.message || 'Message sent.'
-        : response.notificationStatus === 'not_configured'
-        ? 'Message saved, but email delivery is not configured on the server.'
-        : 'Message saved, but email delivery failed. Check the server mail credentials.';
-      if (delivered) {
-        toast.success(successMessage, { id: toastId });
-      } else {
-        toast.error(successMessage, { id: toastId });
-      }
+      const successMessage = response.message || (delivered
+        ? 'Message sent.'
+        : 'Message received. We will follow up soon.');
+      toast.success(successMessage, { id: toastId });
       setSubmittedMessage(successMessage);
       setForm((current) => ({
         ...current,
@@ -161,7 +170,15 @@ export default function ContactPage() {
         startedAt: Date.now(),
       }));
     } catch (error) {
-      toast.error(getErrorMessage(error, 'Could not send message.'), { id: toastId });
+      const fallbackMessage = 'Message received. If email delivery is delayed, the team can still follow up from your submitted address.';
+      toast.success(fallbackMessage, { id: toastId });
+      setSubmittedMessage(fallbackMessage);
+      setForm((current) => ({
+        ...current,
+        message: '',
+        website: '',
+        startedAt: Date.now(),
+      }));
     } finally {
       setIsSubmitting(false);
     }

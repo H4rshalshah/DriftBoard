@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useDriftStore, useEndpointStore, useProjectStore } from '@/store';
-import { api, apiClient } from '@/services/api';
+import { api } from '@/services/api';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/common/Card';
 import { Button } from '@/components/common/Button';
 import { Input } from '@/components/common/Input';
@@ -283,6 +283,18 @@ function csvCell(value: unknown) {
   return `"${String(value ?? '').replace(/"/g, '""')}"`;
 }
 
+function excelCell(value: unknown) {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+function safeReportFilename(value: string) {
+  return value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || 'project';
+}
+
 function downloadBlob(blob: Blob, filename: string) {
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
@@ -324,6 +336,108 @@ function buildVisibleEventsCsv(projectName: string, events: DriftEvent[]) {
     ['project', 'generatedAt', 'endpoint', 'report', 'changeSummary', 'severity', 'status', 'detectedAt', 'changeCount', 'addedFields', 'removedFields', 'datatypeChanges'],
     ...rows,
   ].map((row) => row.map(csvCell).join(',')).join('\n');
+}
+
+function buildProjectExcelReport(input: {
+  project: {
+    name: string;
+    description?: string;
+    sourceLabel?: string;
+    apiBaseUrl?: string;
+    monitoringStatus?: string;
+    memberCount?: number;
+    endpointCount?: number;
+    currentUserRole?: string | null;
+    lastDriftAt?: string;
+  };
+  events: DriftEvent[];
+  generatedAt: string;
+  filters: Array<[string, string]>;
+  endpointCount: number;
+}) {
+  const { project, events, generatedAt, filters, endpointCount } = input;
+  const breaking = events.filter((event) => event.severity === 'breaking').length;
+  const medium = events.filter((event) => event.severity === 'medium').length;
+  const low = events.filter((event) => event.severity === 'low').length;
+  const open = events.filter((event) => !event.acknowledged && !event.resolved).length;
+  const acknowledged = events.filter((event) => event.acknowledged && !event.resolved).length;
+  const resolved = events.filter((event) => event.resolved).length;
+
+  const summaryRows: Array<[string, unknown]> = [
+    ['Project', project.name],
+    ['Description', project.description || 'N/A'],
+    ['Generated at', generatedAt],
+    ['Source', project.sourceLabel || 'N/A'],
+    ['API base URL', project.apiBaseUrl || 'N/A'],
+    ['Monitoring status', project.monitoringStatus || 'N/A'],
+    ['Role', project.currentUserRole || 'N/A'],
+    ['Members', project.memberCount ?? 'N/A'],
+    ['Endpoints', project.endpointCount ?? endpointCount],
+    ['Last drift', project.lastDriftAt || 'N/A'],
+    ['Exported events', events.length],
+    ['Open events', open],
+    ['Acknowledged events', acknowledged],
+    ['Resolved events', resolved],
+    ['Breaking events', breaking],
+    ['Medium events', medium],
+    ['Low events', low],
+  ];
+
+  const eventRows = events.map((event) => {
+    const added = event.changes.filter((change) => change.type === 'added').map(fieldLabel).join('; ');
+    const removed = event.changes.filter((change) => change.type === 'removed').map(fieldLabel).join('; ');
+    const datatypeChanges = event.changes
+      .filter((change) => change.type === 'modified')
+      .map((change) => `${fieldLabel(change)}: ${formatChangeValue(change.expected)} -> ${formatChangeValue(change.actual)}`)
+      .join('; ');
+    return [
+      event.endpointName,
+      event.method,
+      event.endpointUrl,
+      event.message,
+      changeListSummary(event.changes),
+      event.severity,
+      event.resolved ? 'resolved' : event.acknowledged ? 'acknowledged' : 'new',
+      event.detectedAt,
+      event.changes.length,
+      added,
+      removed,
+      datatypeChanges,
+    ];
+  });
+
+  const tableRows = (rows: Array<Array<unknown>>) => rows
+    .map((row) => `<tr>${row.map((cell) => `<td>${excelCell(cell)}</td>`).join('')}</tr>`)
+    .join('');
+  const headerRow = (headers: string[]) => `<tr>${headers.map((header) => `<th>${excelCell(header)}</th>`).join('')}</tr>`;
+
+  return `<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <style>
+      body { font-family: Arial, sans-serif; color: #111827; }
+      h1 { font-size: 22px; margin: 0 0 12px; }
+      h2 { font-size: 16px; margin: 22px 0 8px; }
+      table { border-collapse: collapse; margin-bottom: 16px; width: 100%; }
+      th { background: #111827; color: #ffffff; font-weight: 700; }
+      th, td { border: 1px solid #cbd5e1; padding: 8px; vertical-align: top; mso-number-format: "\\@"; }
+      .metric td:first-child { background: #f1f5f9; font-weight: 700; width: 220px; }
+    </style>
+  </head>
+  <body>
+    <h1>${excelCell(project.name)} Drift Report</h1>
+    <h2>Project Summary</h2>
+    <table class="metric">${tableRows(summaryRows)}</table>
+    <h2>Applied Filters</h2>
+    <table class="metric">${tableRows(filters.length ? filters : [['Filters', 'None']])}</table>
+    <h2>Drift Events</h2>
+    <table>
+      ${headerRow(['Endpoint name', 'Method', 'Endpoint URL', 'Report', 'Change summary', 'Severity', 'Status', 'Detected at', 'Change count', 'Added fields', 'Removed fields', 'Datatype changes'])}
+      ${tableRows(eventRows.length ? eventRows : [['No events match the selected filters', '', '', '', '', '', '', '', '', '', '', '']])}
+    </table>
+  </body>
+</html>`;
 }
 
 function openableUrl(url: string) {
@@ -550,32 +664,40 @@ export default function DriftEventsPage() {
   const exportEvents = async () => {
     const projectName = currentProject?.name || 'DriftBoard Project';
     setActionError('');
-
-    if (!currentProject?.id) {
-      const csv = `\uFEFF${buildVisibleEventsCsv(projectName, filteredEvents)}`;
-      downloadBlob(new Blob([csv], { type: 'text/csv;charset=utf-8' }), 'drift-events.csv');
-      return;
-    }
-
-    const params = new URLSearchParams();
     const severity = severityFilter || (activeTab !== 'all' ? activeTab : '');
-    if (severity) params.set('severity', severity);
-    if (statusFilter !== 'all') params.set('status', statusFilter);
-    if (dateRange) params.set('dateRange', dateRange);
-    if (search.trim()) params.set('search', search.trim());
-
     setIsExporting(true);
     try {
-      const response = await apiClient.get<Blob>(
-        `/projects/${currentProject.id}/drift-events/export?${params.toString()}`,
-        { responseType: 'blob' }
+      const filters: Array<[string, string]> = [
+        ['Severity', severity || 'All'],
+        ['Status', statusFilter],
+        ['Date range', dateRange || 'All time'],
+        ['Search', search.trim() || 'None'],
+      ];
+      const report = buildProjectExcelReport({
+        project: {
+          name: projectName,
+          description: currentProject?.description,
+          sourceLabel: currentProject?.sourceLabel,
+          apiBaseUrl: currentProject?.apiBaseUrl,
+          monitoringStatus: currentProject?.monitoringStatus,
+          memberCount: currentProject?.memberCount,
+          endpointCount: currentProject?.endpointCount,
+          currentUserRole: currentProject?.currentUserRole,
+          lastDriftAt: currentProject?.lastDriftAt,
+        },
+        events: filteredEvents,
+        generatedAt: new Date().toISOString(),
+        filters,
+        endpointCount: endpoints.filter((endpoint) => !currentProject?.id || endpoint.projectId === currentProject.id).length,
+      });
+      downloadBlob(
+        new Blob([report], { type: 'application/vnd.ms-excel;charset=utf-8' }),
+        `drift-report-${safeReportFilename(projectName)}.xls`
       );
-      const filename = `drift-events-${projectName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || 'project'}.csv`;
-      downloadBlob(response.data, filename);
     } catch (error) {
       const csv = `\uFEFF${buildVisibleEventsCsv(projectName, filteredEvents)}`;
       downloadBlob(new Blob([csv], { type: 'text/csv;charset=utf-8' }), 'drift-events.csv');
-      setActionError(error instanceof Error ? error.message : 'Live export failed, so the visible rows were exported instead.');
+      setActionError(error instanceof Error ? error.message : 'Excel export failed, so a CSV backup was downloaded.');
     } finally {
       setIsExporting(false);
     }
@@ -650,7 +772,7 @@ export default function DriftEventsPage() {
         </div>
         <div className="flex flex-wrap items-center gap-3">
           <Button variant="secondary" leftIcon={<Download className="w-4 h-4" />} loading={isExporting} onClick={() => void exportEvents()}>
-            {isExporting ? 'Exporting' : 'Export CSV'}
+            {isExporting ? 'Exporting' : 'Export Excel'}
           </Button>
           <Button
             variant="secondary"

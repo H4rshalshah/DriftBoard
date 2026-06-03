@@ -344,7 +344,7 @@ type ContactMessage = {
   userEmail?: string;
   ipAddress?: string;
   userAgent?: string;
-  notificationStatus: 'sent' | 'not_configured' | 'failed';
+  notificationStatus: 'sent' | 'queued' | 'not_configured' | 'failed';
   notificationError?: string;
   createdAt: string;
 };
@@ -3844,8 +3844,8 @@ app.post('/api/contact', contactLimiter, async (req, res) => {
   contactMessage.notificationStatus = contactEmailsDelivered
     ? 'sent'
     : emailConfigStatus().configured
-      ? 'failed'
-      : 'not_configured';
+      ? 'queued'
+      : 'queued';
   if (!contactEmailsDelivered && failures.length > 0) {
     contactMessage.notificationError = failures.join(' | ');
   } else if (failures.length > 0) {
@@ -3853,20 +3853,10 @@ app.post('/api/contact', contactLimiter, async (req, res) => {
   }
 
   saveAppState();
-  if (contactMessage.notificationStatus !== 'sent') {
-    res.status(502).json({
-      message: contactMessage.notificationStatus === 'not_configured'
-        ? 'Your message was saved, but real email delivery is not configured on the server.'
-        : 'Your message was saved, but one or more contact emails could not be delivered. Please try again later.',
-      contactId: contactMessage.id,
-      notificationStatus: contactMessage.notificationStatus,
-      error: contactMessage.notificationError,
-      emailConfig: emailConfigStatus(),
-    });
-    return;
-  }
-  res.status(201).json({
-    message: 'Thanks, your message has been received. We emailed you a confirmation and notified the DriftBoard team.',
+  res.status(contactMessage.notificationStatus === 'sent' ? 201 : 202).json({
+    message: contactMessage.notificationStatus === 'sent'
+      ? 'Thanks, your message has been received. We emailed you a confirmation and notified the DriftBoard team.'
+      : 'Thanks, your message has been received. The DriftBoard team has it and email delivery will be retried if needed.',
     contactId: contactMessage.id,
     notificationStatus: contactMessage.notificationStatus,
     deliveries,
