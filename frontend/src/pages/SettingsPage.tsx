@@ -117,6 +117,19 @@ const defaultNotificationChannels: NotificationChannels = {
   email: { enabled: false, address: '' },
 };
 
+function withAccountEmailFallback(channels: NotificationChannels, accountEmail?: string): NotificationChannels {
+  const fallbackEmail = accountEmail || '';
+  return {
+    ...channels,
+    discord: { ...defaultNotificationChannels.discord, ...channels.discord },
+    email: {
+      ...defaultNotificationChannels.email,
+      ...channels.email,
+      address: channels.email.address || fallbackEmail,
+    },
+  };
+}
+
 const teamRoles: Exclude<ProjectRole, 'owner'>[] = ['admin', 'member', 'viewer'];
 
 function getErrorMessage(error: unknown, fallback: string) {
@@ -206,21 +219,17 @@ export default function SettingsPage() {
 
   useEffect(() => {
     api.get<NotificationChannels>('/settings/notification-channels')
-      .then((channels) => setNotificationChannels({
-        ...defaultNotificationChannels,
-        ...channels,
-        discord: { ...defaultNotificationChannels.discord, ...channels.discord },
-        email: { ...defaultNotificationChannels.email, ...channels.email },
-      }))
+      .then((channels) => setNotificationChannels(withAccountEmailFallback(channels, user?.email)))
       .catch(() => undefined);
-  }, []);
+  }, [user?.email]);
 
   const saveNotificationChannels = async () => {
     if (!canUpdateNotificationSettings) {
       toast.error('You do not have permission to perform this action.');
       return;
     }
-    if (notificationChannels.email.enabled && !isValidEmailAddress(notificationChannels.email.address)) {
+    const emailAddress = notificationChannels.email.address.trim() || user?.email || '';
+    if (notificationChannels.email.enabled && !isValidEmailAddress(emailAddress)) {
       toast.error('Enter a valid alert email address.');
       return;
     }
@@ -228,9 +237,13 @@ export default function SettingsPage() {
     try {
       const saved = await api.put<NotificationChannels>('/settings/notification-channels', {
         ...notificationChannels,
+        email: {
+          ...notificationChannels.email,
+          address: emailAddress,
+        },
         projectId: currentProject?.id,
       });
-      setNotificationChannels(saved);
+      setNotificationChannels(withAccountEmailFallback(saved, user?.email));
       await updatePreferences({ email: saved.email.enabled });
       toast.success('Notification channels saved.');
     } catch (error) {
@@ -253,8 +266,13 @@ export default function SettingsPage() {
       toast.error('Discord webhook URL is required.');
       return;
     }
-    if (notificationChannels.email.enabled && !notificationChannels.email.address.trim()) {
+    const emailAddress = notificationChannels.email.address.trim() || user?.email || '';
+    if (notificationChannels.email.enabled && !emailAddress) {
       toast.error('Email address is required.');
+      return;
+    }
+    if (notificationChannels.email.enabled && !isValidEmailAddress(emailAddress)) {
+      toast.error('Enter a valid alert email address.');
       return;
     }
     setIsSendingAlert(true);
@@ -262,7 +280,7 @@ export default function SettingsPage() {
       const result = await api.post<{ delivered: AlertDelivery[]; message: string }>('/settings/test-alert', {
         projectId: currentProject?.id,
         discord: notificationChannels.discord,
-        email: notificationChannels.email,
+        email: { ...notificationChannels.email, address: emailAddress },
       });
       const emailDelivery = result.delivered.find((delivery) => delivery.channel === 'email');
       const discordDelivery = result.delivered.find((delivery) => delivery.channel === 'discord');
@@ -829,7 +847,7 @@ export default function SettingsPage() {
                         disabled={!canUpdateNotificationSettings}
                         onClick={() => {
                           const email = !notificationChannels.email.enabled;
-                          setNotificationChannels((current) => ({ ...current, email: { ...current.email, enabled: email } }));
+                          setNotificationChannels((current) => ({ ...current, email: { ...current.email, enabled: email, address: current.email.address || user?.email || '' } }));
                           void updatePreferences({ email });
                         }}
                         className={`h-7 w-14 flex-shrink-0 rounded-full p-1 transition-colors ${
@@ -853,7 +871,7 @@ export default function SettingsPage() {
                           label="Alert email address"
                           type="email"
                           placeholder={user?.email || 'alerts@example.com'}
-                          value={notificationChannels.email.address}
+                          value={notificationChannels.email.address || user?.email || ''}
                           disabled={!canUpdateNotificationSettings}
                           onChange={(event) => setNotificationChannels((current) => ({ ...current, email: { ...current.email, address: event.target.value } }))}
                         />

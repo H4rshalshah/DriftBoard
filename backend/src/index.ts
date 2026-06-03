@@ -3840,12 +3840,13 @@ app.post('/api/contact', contactLimiter, async (req, res) => {
     console.warn('Contact Discord notification was not delivered.', { error: errorMessage, contactMessageId: contactMessage.id });
   }
 
-  contactMessage.notificationStatus = confirmationEmailDelivered
+  const contactEmailsDelivered = adminEmailDelivered && confirmationEmailDelivered;
+  contactMessage.notificationStatus = contactEmailsDelivered
     ? 'sent'
     : emailConfigStatus().configured
       ? 'failed'
       : 'not_configured';
-  if (!confirmationEmailDelivered && failures.length > 0) {
+  if (!contactEmailsDelivered && failures.length > 0) {
     contactMessage.notificationError = failures.join(' | ');
   } else if (failures.length > 0) {
     contactMessage.notificationError = failures.join(' | ');
@@ -3856,7 +3857,7 @@ app.post('/api/contact', contactLimiter, async (req, res) => {
     res.status(502).json({
       message: contactMessage.notificationStatus === 'not_configured'
         ? 'Your message was saved, but real email delivery is not configured on the server.'
-        : 'Your message was saved, but confirmation email delivery failed. Please try again later.',
+        : 'Your message was saved, but one or more contact emails could not be delivered. Please try again later.',
       contactId: contactMessage.id,
       notificationStatus: contactMessage.notificationStatus,
       error: contactMessage.notificationError,
@@ -3865,7 +3866,7 @@ app.post('/api/contact', contactLimiter, async (req, res) => {
     return;
   }
   res.status(201).json({
-    message: 'Thanks, your message has been received. We will get back to you soon.',
+    message: 'Thanks, your message has been received. We emailed you a confirmation and notified the DriftBoard team.',
     contactId: contactMessage.id,
     notificationStatus: contactMessage.notificationStatus,
     deliveries,
