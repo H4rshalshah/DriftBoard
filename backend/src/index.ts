@@ -49,6 +49,7 @@ const ALLOWED_ORIGINS = [
 const PUBLIC_APP_URL = frontendUrlFrom(process.env.NEXT_PUBLIC_APP_URL || process.env.PUBLIC_APP_URL, FRONTEND_URL);
 const BACKEND_URL = process.env.BACKEND_URL || process.env.RENDER_EXTERNAL_URL || `http://localhost:${PORT}`;
 const JWT_SECRET = process.env.JWT_SECRET || 'driftboard-local-demo-secret';
+const OWNER_EMAIL = 'h4rshal.workspace@gmail.com';
 function envValue(...keys: string[]) {
   for (const key of keys) {
     const value = process.env[key]?.trim();
@@ -57,10 +58,18 @@ function envValue(...keys: string[]) {
   return '';
 }
 
+function smtpHostValue() {
+  return envValue('EMAIL_HOST', 'SMTP_HOST') || 'smtp.gmail.com';
+}
+
+function smtpUserValue() {
+  return envValue('EMAIL_USER', 'SMTP_USER', 'CONTACT_ADMIN_EMAIL', 'SUPPORT_EMAIL', 'ALERT_FROM_EMAIL') || OWNER_EMAIL;
+}
+
 const HAS_EMAIL_PROVIDER = Boolean(envValue('RESEND_API_KEY'))
   || Boolean(
-    envValue('EMAIL_HOST', 'SMTP_HOST') &&
-    envValue('EMAIL_USER', 'SMTP_USER') &&
+    smtpHostValue() &&
+    smtpUserValue() &&
     envValue('EMAIL_PASS', 'SMTP_PASS', 'SMTP_PASSWORD')
   );
 const EMAIL_MOCK_MODE = process.env.EMAIL_MOCK_MODE === 'true'
@@ -73,7 +82,6 @@ const PERSISTENCE_DRIVER = process.env.MONGODB_URI
     : 'filesystem';
 const TEST_EMAIL_WINDOW_MS = Number(process.env.TEST_EMAIL_WINDOW_MS || 10 * 60 * 1000);
 const TEST_EMAIL_MAX_REQUESTS = Number(process.env.TEST_EMAIL_MAX_REQUESTS || 3);
-const OWNER_EMAIL = 'h4rshal.workspace@gmail.com';
 const HTTP_METHODS = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'] as const;
 const MAX_UPLOAD_FILE_SIZE_MB = Number(process.env.MAX_UPLOAD_FILE_SIZE_MB || 10);
 const MAX_UPLOAD_FILE_SIZE_BYTES = Math.max(1, MAX_UPLOAD_FILE_SIZE_MB) * 1024 * 1024;
@@ -1016,8 +1024,8 @@ function isValidEmailAddress(value: string) {
 function emailConfigStatus() {
   const resendApiKey = envValue('RESEND_API_KEY');
   const resendFrom = envValue('ALERT_FROM_EMAIL', 'RESEND_FROM_EMAIL', 'EMAIL_FROM');
-  const smtpHost = envValue('EMAIL_HOST', 'SMTP_HOST');
-  const smtpUser = envValue('EMAIL_USER', 'SMTP_USER');
+  const smtpHost = smtpHostValue();
+  const smtpUser = smtpUserValue();
   const smtpPass = envValue('EMAIL_PASS', 'SMTP_PASS', 'SMTP_PASSWORD');
   const missingResend = [
     ['RESEND_API_KEY', resendApiKey],
@@ -1462,8 +1470,8 @@ function contactDeliveryFailure(label: string, delivery: AlertDelivery) {
 }
 
 function smtpConfigStatus() {
-  const host = envValue('EMAIL_HOST', 'SMTP_HOST');
-  const user = envValue('EMAIL_USER', 'SMTP_USER');
+  const host = smtpHostValue();
+  const user = smtpUserValue();
   const pass = envValue('EMAIL_PASS', 'SMTP_PASS', 'SMTP_PASSWORD');
   const missing = [
     ['EMAIL_HOST/SMTP_HOST', host],
@@ -1505,11 +1513,11 @@ async function sendEmailWithSmtp(input: SendEmailInput): Promise<AlertDelivery> 
   }
 
   const port = Number(envValue('EMAIL_PORT', 'SMTP_PORT') || 587);
-  const smtpUser = envValue('EMAIL_USER', 'SMTP_USER');
+  const smtpUser = smtpUserValue();
   const smtpPass = envValue('EMAIL_PASS', 'SMTP_PASS', 'SMTP_PASSWORD');
   const fromAddress = envValue('EMAIL_FROM', 'ALERT_FROM_EMAIL', 'SMTP_FROM') || `DriftBoard <${smtpUser}>`;
   const transporter = nodemailer.createTransport({
-    host: envValue('EMAIL_HOST', 'SMTP_HOST') || 'smtp.gmail.com',
+    host: smtpHostValue(),
     port,
     secure: process.env.EMAIL_SECURE === 'true' || process.env.SMTP_SECURE === 'true' || port === 465,
     auth: {

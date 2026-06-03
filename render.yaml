@@ -34,6 +34,8 @@ services:
         value: h4rshal.workspace@gmail.com
       - key: ALERT_REPLY_TO
         value: h4rshal.workspace@gmail.com
+      - key: RESEND_API_KEY
+        sync: false
       - key: SMTP_HOST
         value: smtp.gmail.com
       - key: SMTP_PORT
