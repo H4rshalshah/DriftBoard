@@ -49,11 +49,19 @@ const ALLOWED_ORIGINS = [
 const PUBLIC_APP_URL = frontendUrlFrom(process.env.NEXT_PUBLIC_APP_URL || process.env.PUBLIC_APP_URL, FRONTEND_URL);
 const BACKEND_URL = process.env.BACKEND_URL || process.env.RENDER_EXTERNAL_URL || `http://localhost:${PORT}`;
 const JWT_SECRET = process.env.JWT_SECRET || 'driftboard-local-demo-secret';
-const HAS_EMAIL_PROVIDER = Boolean(process.env.RESEND_API_KEY)
+function envValue(...keys: string[]) {
+  for (const key of keys) {
+    const value = process.env[key]?.trim();
+    if (value) return value;
+  }
+  return '';
+}
+
+const HAS_EMAIL_PROVIDER = Boolean(envValue('RESEND_API_KEY'))
   || Boolean(
-    (process.env.EMAIL_HOST || process.env.SMTP_HOST) &&
-    (process.env.EMAIL_USER || process.env.SMTP_USER) &&
-    (process.env.EMAIL_PASS || process.env.SMTP_PASS)
+    envValue('EMAIL_HOST', 'SMTP_HOST') &&
+    envValue('EMAIL_USER', 'SMTP_USER') &&
+    envValue('EMAIL_PASS', 'SMTP_PASS', 'SMTP_PASSWORD')
   );
 const EMAIL_MOCK_MODE = process.env.EMAIL_MOCK_MODE === 'true'
   || (process.env.EMAIL_MOCK_MODE !== 'false' && !HAS_EMAIL_PROVIDER);
@@ -1006,17 +1014,21 @@ function isValidEmailAddress(value: string) {
 }
 
 function emailConfigStatus() {
+  const resendApiKey = envValue('RESEND_API_KEY');
+  const resendFrom = envValue('ALERT_FROM_EMAIL', 'RESEND_FROM_EMAIL', 'EMAIL_FROM');
+  const smtpHost = envValue('EMAIL_HOST', 'SMTP_HOST');
+  const smtpUser = envValue('EMAIL_USER', 'SMTP_USER');
+  const smtpPass = envValue('EMAIL_PASS', 'SMTP_PASS', 'SMTP_PASSWORD');
   const missingResend = [
-    ['RESEND_API_KEY', process.env.RESEND_API_KEY],
-    ['ALERT_FROM_EMAIL', process.env.ALERT_FROM_EMAIL],
+    ['RESEND_API_KEY', resendApiKey],
+    ['ALERT_FROM_EMAIL/RESEND_FROM_EMAIL/EMAIL_FROM', resendFrom],
   ]
     .filter(([, value]) => !value)
     .map(([key]) => key);
   const missingSmtp = [
-    ['EMAIL_HOST/SMTP_HOST', process.env.EMAIL_HOST || process.env.SMTP_HOST],
-    ['EMAIL_USER/SMTP_USER', process.env.EMAIL_USER || process.env.SMTP_USER],
-    ['EMAIL_PASS/SMTP_PASS', process.env.EMAIL_PASS || process.env.SMTP_PASS],
-    ['EMAIL_FROM/ALERT_FROM_EMAIL', process.env.EMAIL_FROM || process.env.ALERT_FROM_EMAIL],
+    ['EMAIL_HOST/SMTP_HOST', smtpHost],
+    ['EMAIL_USER/SMTP_USER', smtpUser],
+    ['EMAIL_PASS/SMTP_PASS/SMTP_PASSWORD', smtpPass],
   ]
     .filter(([, value]) => !value)
     .map(([key]) => key);
@@ -1090,9 +1102,9 @@ async function sendEmailWithResend(input: SendEmailInput): Promise<AlertDelivery
     throw new Error(status.message);
   }
 
-  const resend = new Resend(process.env.RESEND_API_KEY);
+  const resend = new Resend(envValue('RESEND_API_KEY'));
   const payload = {
-    from: process.env.ALERT_FROM_EMAIL!,
+    from: envValue('ALERT_FROM_EMAIL', 'RESEND_FROM_EMAIL', 'EMAIL_FROM'),
     to,
     replyTo: input.replyTo || process.env.ALERT_REPLY_TO || undefined,
     subject: input.subject,
@@ -1450,10 +1462,13 @@ function contactDeliveryFailure(label: string, delivery: AlertDelivery) {
 }
 
 function smtpConfigStatus() {
+  const host = envValue('EMAIL_HOST', 'SMTP_HOST');
+  const user = envValue('EMAIL_USER', 'SMTP_USER');
+  const pass = envValue('EMAIL_PASS', 'SMTP_PASS', 'SMTP_PASSWORD');
   const missing = [
-    ['EMAIL_HOST/SMTP_HOST', process.env.EMAIL_HOST || process.env.SMTP_HOST],
-    ['EMAIL_USER/SMTP_USER', process.env.EMAIL_USER || process.env.SMTP_USER],
-    ['EMAIL_PASS/SMTP_PASS', process.env.EMAIL_PASS || process.env.SMTP_PASS],
+    ['EMAIL_HOST/SMTP_HOST', host],
+    ['EMAIL_USER/SMTP_USER', user],
+    ['EMAIL_PASS/SMTP_PASS/SMTP_PASSWORD', pass],
   ]
     .filter(([, value]) => !value)
     .map(([key]) => key);
@@ -1489,12 +1504,12 @@ async function sendEmailWithSmtp(input: SendEmailInput): Promise<AlertDelivery> 
     throw new Error(status.message);
   }
 
-  const port = Number(process.env.EMAIL_PORT || process.env.SMTP_PORT || 587);
-  const smtpUser = process.env.EMAIL_USER || process.env.SMTP_USER;
-  const smtpPass = process.env.EMAIL_PASS || process.env.SMTP_PASS;
-  const fromAddress = process.env.EMAIL_FROM || process.env.ALERT_FROM_EMAIL || `DriftBoard <${smtpUser}>`;
+  const port = Number(envValue('EMAIL_PORT', 'SMTP_PORT') || 587);
+  const smtpUser = envValue('EMAIL_USER', 'SMTP_USER');
+  const smtpPass = envValue('EMAIL_PASS', 'SMTP_PASS', 'SMTP_PASSWORD');
+  const fromAddress = envValue('EMAIL_FROM', 'ALERT_FROM_EMAIL', 'SMTP_FROM') || `DriftBoard <${smtpUser}>`;
   const transporter = nodemailer.createTransport({
-    host: process.env.EMAIL_HOST || process.env.SMTP_HOST || 'smtp.gmail.com',
+    host: envValue('EMAIL_HOST', 'SMTP_HOST') || 'smtp.gmail.com',
     port,
     secure: process.env.EMAIL_SECURE === 'true' || process.env.SMTP_SECURE === 'true' || port === 465,
     auth: {

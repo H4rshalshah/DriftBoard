@@ -1,8 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useDriftStore, useEndpointStore, useProjectStore } from '@/store';
-import { api } from '@/services/api';
-import { getApiBaseUrl } from '@/services/runtimeConfig';
+import { api, apiClient } from '@/services/api';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/common/Card';
 import { Button } from '@/components/common/Button';
 import { Input } from '@/components/common/Input';
@@ -391,6 +390,9 @@ export default function DriftEventsPage() {
   const [dateRange, setDateRange] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [lastRefreshedAt, setLastRefreshedAt] = useState<string | null>(null);
+  const [isExporting, setIsExporting] = useState(false);
+  const [isRefreshingEvents, setIsRefreshingEvents] = useState(false);
+  const [actionError, setActionError] = useState('');
 
   useEffect(() => {
     if (currentProject?.id) {
@@ -545,8 +547,9 @@ export default function DriftEventsPage() {
     );
   };
 
-  const exportEvents = () => {
+  const exportEvents = async () => {
     const projectName = currentProject?.name || 'DriftBoard Project';
+    setActionError('');
 
     if (!currentProject?.id) {
       const csv = `\uFEFF${buildVisibleEventsCsv(projectName, filteredEvents)}`;
@@ -561,35 +564,46 @@ export default function DriftEventsPage() {
     if (dateRange) params.set('dateRange', dateRange);
     if (search.trim()) params.set('search', search.trim());
 
-    fetch(`${getApiBaseUrl()}/projects/${currentProject.id}/drift-events/export?${params.toString()}`, {
-      headers: {
-        Authorization: `Bearer ${sessionStorage.getItem('auth_token') || localStorage.getItem('auth_token') || ''}`,
-      },
-    })
-      .then((response) => {
-        if (!response.ok) throw new Error('Export failed');
-        return response.blob();
-      })
-      .then((blob) => downloadBlob(blob, 'drift-events.csv'))
-      .catch(() => {
-        const csv = `\uFEFF${buildVisibleEventsCsv(projectName, filteredEvents)}`;
-        downloadBlob(new Blob([csv], { type: 'text/csv;charset=utf-8' }), 'drift-events.csv');
-      });
+    setIsExporting(true);
+    try {
+      const response = await apiClient.get<Blob>(
+        `/projects/${currentProject.id}/drift-events/export?${params.toString()}`,
+        { responseType: 'blob' }
+      );
+      const filename = `drift-events-${projectName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || 'project'}.csv`;
+      downloadBlob(response.data, filename);
+    } catch (error) {
+      const csv = `\uFEFF${buildVisibleEventsCsv(projectName, filteredEvents)}`;
+      downloadBlob(new Blob([csv], { type: 'text/csv;charset=utf-8' }), 'drift-events.csv');
+      setActionError(error instanceof Error ? error.message : 'Live export failed, so the visible rows were exported instead.');
+    } finally {
+      setIsExporting(false);
+    }
   };
 
   const refreshEvents = async () => {
+    if (isRefreshingEvents) return;
+    setActionError('');
+    setIsRefreshingEvents(true);
     if (currentProject?.id) {
-      const endpointById = new Map(endpoints.filter((endpoint) => endpoint.projectId === currentProject.id).map((endpoint) => [endpoint.id, endpoint]));
-      const result = await api.post<{ checked: number; events: BackendDriftEvent[] }>(`/projects/${currentProject.id}/drift-events/refresh`);
-      await fetchEndpoints(currentProject.id);
-      setEvents(
-        result.events.map((event) => {
-          const endpoint = endpointById.get(event.endpointId);
-          return normalizeBackendEvent(event, endpoint?.url || 'Unknown URL', endpoint?.method || 'GET');
-        })
-      );
-      setLastRefreshedAt(new Date().toISOString());
-      setActiveTab('all');
+      try {
+        const result = await api.post<{ checked: number; events: BackendDriftEvent[] }>(`/projects/${currentProject.id}/drift-events/refresh`);
+        await fetchEndpoints(currentProject.id);
+        const refreshedEndpoints = await api.get<typeof endpoints>(`/projects/${currentProject.id}/endpoints`);
+        const endpointById = new Map(refreshedEndpoints.map((endpoint) => [endpoint.id, endpoint]));
+        setEvents(
+          result.events.map((event) => {
+            const endpoint = endpointById.get(event.endpointId);
+            return normalizeBackendEvent(event, endpoint?.url || 'Unknown URL', endpoint?.method || 'GET');
+          })
+        );
+        setLastRefreshedAt(new Date().toISOString());
+        setActiveTab('all');
+      } catch (error) {
+        setActionError(error instanceof Error ? error.message : 'Unable to refresh drift events.');
+      } finally {
+        setIsRefreshingEvents(false);
+      }
       return;
     }
     setLastRefreshedAt(new Date().toISOString());
@@ -612,6 +626,7 @@ export default function DriftEventsPage() {
       ...current,
     ]);
     setActiveTab('all');
+    setIsRefreshingEvents(false);
   };
 
   return (
@@ -634,14 +649,25 @@ export default function DriftEventsPage() {
           )}
         </div>
         <div className="flex flex-wrap items-center gap-3">
-          <Button variant="secondary" leftIcon={<Download className="w-4 h-4" />} onClick={exportEvents}>
-            Export CSV
+          <Button variant="secondary" leftIcon={<Download className="w-4 h-4" />} loading={isExporting} onClick={() => void exportEvents()}>
+            {isExporting ? 'Exporting' : 'Export CSV'}
           </Button>
-          <Button variant="secondary" leftIcon={<RefreshCw className="w-4 h-4" />} disabled={!canRunScans} onClick={() => void refreshEvents()}>
-            Refresh
+          <Button
+            variant="secondary"
+            leftIcon={<RefreshCw className={`w-4 h-4 ${isRefreshingEvents ? 'animate-spin' : ''}`} />}
+            loading={isRefreshingEvents}
+            disabled={!canRunScans || isRefreshingEvents}
+            onClick={() => void refreshEvents()}
+          >
+            {isRefreshingEvents ? 'Refreshing' : 'Refresh'}
           </Button>
         </div>
       </motion.div>
+      {actionError && (
+        <Card className="border-amber-400/20 bg-amber-500/10">
+          <CardContent className="py-3 text-sm text-amber-100">{actionError}</CardContent>
+        </Card>
+      )}
 
       <motion.div variants={itemVariants}>
         <Card className="relative z-30 p-4">

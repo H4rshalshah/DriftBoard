@@ -109,7 +109,7 @@ export default function ContactPage() {
   }, [user]);
 
   const supportEmail = 'h4rshal.workspace@gmail.com';
-  const supportEmailComposeUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(supportEmail)}`;
+  const supportEmailComposeUrl = `mailto:${supportEmail}?subject=${encodeURIComponent('DriftBoard support request')}`;
 
   const validate = () => {
     const nextErrors: Partial<Record<keyof ContactForm, string>> = {};
