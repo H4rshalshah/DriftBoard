@@ -504,7 +504,7 @@ export default function DriftEventsPage() {
   const [dateRange, setDateRange] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [lastRefreshedAt, setLastRefreshedAt] = useState<string | null>(null);
-  const [isExporting, setIsExporting] = useState(false);
+  const [exportingFormat, setExportingFormat] = useState<'excel' | 'csv' | null>(null);
   const [isRefreshingEvents, setIsRefreshingEvents] = useState(false);
   const [actionError, setActionError] = useState('');
 
@@ -661,11 +661,11 @@ export default function DriftEventsPage() {
     );
   };
 
-  const exportEvents = async () => {
+  const exportExcel = async () => {
     const projectName = currentProject?.name || 'DriftBoard Project';
     setActionError('');
     const severity = severityFilter || (activeTab !== 'all' ? activeTab : '');
-    setIsExporting(true);
+    setExportingFormat('excel');
     try {
       const filters: Array<[string, string]> = [
         ['Severity', severity || 'All'],
@@ -695,11 +695,26 @@ export default function DriftEventsPage() {
         `drift-report-${safeReportFilename(projectName)}.xls`
       );
     } catch (error) {
-      const csv = `\uFEFF${buildVisibleEventsCsv(projectName, filteredEvents)}`;
-      downloadBlob(new Blob([csv], { type: 'text/csv;charset=utf-8' }), 'drift-events.csv');
-      setActionError(error instanceof Error ? error.message : 'Excel export failed, so a CSV backup was downloaded.');
+      setActionError(error instanceof Error ? error.message : 'Excel export failed.');
     } finally {
-      setIsExporting(false);
+      setExportingFormat(null);
+    }
+  };
+
+  const exportCsv = async () => {
+    const projectName = currentProject?.name || 'DriftBoard Project';
+    setActionError('');
+    setExportingFormat('csv');
+    try {
+      const csv = `\uFEFF${buildVisibleEventsCsv(projectName, filteredEvents)}`;
+      downloadBlob(
+        new Blob([csv], { type: 'text/csv;charset=utf-8' }),
+        `drift-events-${safeReportFilename(projectName)}.csv`
+      );
+    } catch (error) {
+      setActionError(error instanceof Error ? error.message : 'CSV export failed.');
+    } finally {
+      setExportingFormat(null);
     }
   };
 
@@ -771,8 +786,23 @@ export default function DriftEventsPage() {
           )}
         </div>
         <div className="flex flex-wrap items-center gap-3">
-          <Button variant="secondary" leftIcon={<Download className="w-4 h-4" />} loading={isExporting} onClick={() => void exportEvents()}>
-            {isExporting ? 'Exporting' : 'Export Excel'}
+          <Button
+            variant="secondary"
+            leftIcon={<Download className="w-4 h-4" />}
+            loading={exportingFormat === 'excel'}
+            disabled={exportingFormat !== null}
+            onClick={() => void exportExcel()}
+          >
+            {exportingFormat === 'excel' ? 'Exporting' : 'Export Excel'}
+          </Button>
+          <Button
+            variant="secondary"
+            leftIcon={<Download className="w-4 h-4" />}
+            loading={exportingFormat === 'csv'}
+            disabled={exportingFormat !== null}
+            onClick={() => void exportCsv()}
+          >
+            {exportingFormat === 'csv' ? 'Exporting' : 'Export CSV'}
           </Button>
           <Button
             variant="secondary"

@@ -155,6 +155,14 @@ function inviteEmailWasSent(invite: TeamInvite | null) {
   return delivery?.channel === 'email' && delivery.status === 'sent' && delivery.provider !== 'mock';
 }
 
+function inviteEmailFailureMessage(invite: TeamInvite | null) {
+  const delivery = invite?.emailDelivery;
+  if (delivery?.channel === 'email' && delivery.status === 'failed') {
+    return delivery.message || 'Email delivery failed.';
+  }
+  return '';
+}
+
 export default function SettingsPage() {
   const { user, setUser } = useAuthStore();
   const { currentProject, fetchCurrentProject } = useProjectStore();
@@ -330,6 +338,8 @@ export default function SettingsPage() {
       setInvitePassword('');
       if (inviteEmailWasSent(invited)) {
         toast.success(`Invite email sent to ${invited.userEmail}.`);
+      } else if (inviteEmailFailureMessage(invited)) {
+        toast.error(`Invite link created, but email failed: ${inviteEmailFailureMessage(invited)}`);
       } else {
         toast.success('Invite created. Copy or share the link and invite password.');
       }
@@ -970,7 +980,9 @@ export default function SettingsPage() {
                 <div className="flex gap-3 rounded-lg border border-amber-400/25 bg-amber-400/10 px-3 py-2 text-sm leading-6 text-amber-100">
                   <AlertCircle className="mt-0.5 h-4 w-4 flex-none" />
                   <span>
-                    Invite email was not delivered. This invite is valid, but you must copy or share the link and password manually.
+                    {inviteEmailFailureMessage(generatedInvite)
+                      ? `Invite email failed: ${inviteEmailFailureMessage(generatedInvite)} This invite is valid, but you must copy or share the link and password manually.`
+                      : 'Invite email was not delivered. This invite is valid, but you must copy or share the link and password manually.'}
                   </span>
                 </div>
               )}

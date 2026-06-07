@@ -1,22 +1,24 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
-import { useEffect } from 'react';
+import { lazy, Suspense, useEffect } from 'react';
+import type { ReactNode } from 'react';
 import { useAuthStore, useProjectStore, useUIStore } from '@/store';
-import LandingPage from '@/pages/LandingPage';
-import DashboardPage from '@/pages/DashboardPage';
-import LoginPage from '@/pages/LoginPage';
-import RegisterPage from '@/pages/RegisterPage';
-import InvitePage from '@/pages/InvitePage';
-import EndpointsPage from '@/pages/EndpointsPage';
-import DriftEventsPage from '@/pages/DriftEventsPage';
-import SchemaHistoryPage from '@/pages/SchemaHistoryPage';
-import SettingsPage from '@/pages/SettingsPage';
-import NotificationsPage from '@/pages/NotificationsPage';
-import ApiKeysPage from '@/pages/ApiKeysPage';
-import ContactPage from '@/pages/ContactPage';
-import Layout from '@/components/layout/Layout';
 import { ScrollToTop } from '@/components/common/ScrollToTop';
 
-function ProtectedRoute({ children }: { children: React.ReactNode }) {
+const LandingPage = lazy(() => import('@/pages/LandingPage'));
+const DashboardPage = lazy(() => import('@/pages/DashboardPage'));
+const LoginPage = lazy(() => import('@/pages/LoginPage'));
+const RegisterPage = lazy(() => import('@/pages/RegisterPage'));
+const InvitePage = lazy(() => import('@/pages/InvitePage'));
+const EndpointsPage = lazy(() => import('@/pages/EndpointsPage'));
+const DriftEventsPage = lazy(() => import('@/pages/DriftEventsPage'));
+const SchemaHistoryPage = lazy(() => import('@/pages/SchemaHistoryPage'));
+const SettingsPage = lazy(() => import('@/pages/SettingsPage'));
+const NotificationsPage = lazy(() => import('@/pages/NotificationsPage'));
+const ApiKeysPage = lazy(() => import('@/pages/ApiKeysPage'));
+const ContactPage = lazy(() => import('@/pages/ContactPage'));
+const Layout = lazy(() => import('@/components/layout/Layout'));
+
+function ProtectedRoute({ children }: { children: ReactNode }) {
   const { isAuthenticated, isLoading } = useAuthStore();
 
   if (isLoading) {
@@ -65,33 +67,35 @@ function App() {
   return (
     <>
       <ScrollToTop />
-      <Routes>
-        <Route path="/" element={<LandingPage />} />
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/register" element={<RegisterPage />} />
-        <Route path="/invite" element={<InvitePage />} />
-        <Route path="/invite/:token" element={<InvitePage />} />
-        <Route path="/contact" element={<ContactPage />} />
-        <Route
-          path="/app"
-          element={
-            <ProtectedRoute>
-              <Layout />
-            </ProtectedRoute>
-          }
-        >
-          <Route index element={<Navigate to="/app/dashboard" replace />} />
-          <Route path="dashboard" element={<DashboardPage />} />
-          <Route path="endpoints" element={<EndpointsPage />} />
-          <Route path="drift-events" element={<DriftEventsPage />} />
-          <Route path="schema-history" element={<SchemaHistoryPage />} />
-          <Route path="contracts" element={<Navigate to="/app/endpoints" replace />} />
-          <Route path="notifications" element={<NotificationsPage />} />
-          <Route path="settings" element={<SettingsPage />} />
-          <Route path="api-keys" element={<ApiKeysPage />} />
-          <Route path="contact" element={<ContactPage />} />
-        </Route>
-      </Routes>
+      <Suspense fallback={null}>
+        <Routes>
+          <Route path="/" element={<LandingPage />} />
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/register" element={<RegisterPage />} />
+          <Route path="/invite" element={<InvitePage />} />
+          <Route path="/invite/:token" element={<InvitePage />} />
+          <Route path="/contact" element={<ContactPage />} />
+          <Route
+            path="/app"
+            element={
+              <ProtectedRoute>
+                <Layout />
+              </ProtectedRoute>
+            }
+          >
+            <Route index element={<Navigate to="/app/dashboard" replace />} />
+            <Route path="dashboard" element={<DashboardPage />} />
+            <Route path="endpoints" element={<EndpointsPage />} />
+            <Route path="drift-events" element={<DriftEventsPage />} />
+            <Route path="schema-history" element={<SchemaHistoryPage />} />
+            <Route path="contracts" element={<Navigate to="/app/endpoints" replace />} />
+            <Route path="notifications" element={<NotificationsPage />} />
+            <Route path="settings" element={<SettingsPage />} />
+            <Route path="api-keys" element={<ApiKeysPage />} />
+            <Route path="contact" element={<ContactPage />} />
+          </Route>
+        </Routes>
+      </Suspense>
     </>
   );
 }

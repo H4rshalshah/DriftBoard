@@ -5616,11 +5616,19 @@ app.post('/api/team/:projectId/invite', async (req, res) => {
   try {
     emailDelivery = await sendInvitationEmail(invite.userEmail, inviteForDelivery, project.name);
   } catch (error) {
+    const message = error instanceof Error ? error.message : 'Invitation email delivery failed';
     console.error('Invitation email failed', {
       to: invite.userEmail,
       projectId: project.id,
-      error: error instanceof Error ? error.message : error,
+      error: message,
     });
+    emailDelivery = {
+      channel: 'email',
+      target: invite.userEmail,
+      status: 'failed',
+      provider: emailConfigStatus().provider || undefined,
+      message,
+    };
   }
   res.status(201).json({ ...invite, invitePassword, invitePasswordHash: undefined, emailDelivery });
 });
