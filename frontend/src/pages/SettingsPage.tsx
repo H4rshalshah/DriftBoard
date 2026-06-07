@@ -155,6 +155,11 @@ function inviteEmailWasSent(invite: TeamInvite | null) {
   return delivery?.channel === 'email' && delivery.status === 'sent' && delivery.provider !== 'mock';
 }
 
+function inviteEmailWasQueued(invite: TeamInvite | null) {
+  const delivery = invite?.emailDelivery;
+  return delivery?.channel === 'email' && delivery.status === 'queued';
+}
+
 function inviteEmailFailureMessage(invite: TeamInvite | null) {
   const delivery = invite?.emailDelivery;
   if (delivery?.channel === 'email' && delivery.status === 'failed') {
@@ -338,6 +343,8 @@ export default function SettingsPage() {
       setInvitePassword('');
       if (inviteEmailWasSent(invited)) {
         toast.success(`Invite email sent to ${invited.userEmail}.`);
+      } else if (inviteEmailWasQueued(invited)) {
+        toast.success('Invite link generated. Email is sending in the background.');
       } else if (inviteEmailFailureMessage(invited)) {
         toast.error(`Invite link created, but email failed: ${inviteEmailFailureMessage(invited)}`);
       } else {
@@ -971,10 +978,14 @@ export default function SettingsPage() {
           />
           {generatedInvite?.inviteLink && (
             <div className="space-y-4 rounded-lg border border-primary-400/25 bg-primary-500/10 p-4">
-              {inviteEmailWasSent(generatedInvite) ? (
+              {inviteEmailWasSent(generatedInvite) || inviteEmailWasQueued(generatedInvite) ? (
                 <div className="flex gap-3 rounded-lg border border-emerald-400/25 bg-emerald-400/10 px-3 py-2 text-sm leading-6 text-emerald-100">
                   <Mail className="mt-0.5 h-4 w-4 flex-none" />
-                  <span>Invite email was sent to {generatedInvite.userEmail}. Share the password separately if needed.</span>
+                  <span>
+                    {inviteEmailWasQueued(generatedInvite)
+                      ? `Invite link generated for ${generatedInvite.userEmail}. Email is sending in the background.`
+                      : `Invite email was sent to ${generatedInvite.userEmail}. Share the password separately if needed.`}
+                  </span>
                 </div>
               ) : (
                 <div className="flex gap-3 rounded-lg border border-amber-400/25 bg-amber-400/10 px-3 py-2 text-sm leading-6 text-amber-100">

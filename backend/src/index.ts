@@ -1181,7 +1181,17 @@ async function sendEmail(input: SendEmailInput): Promise<AlertDelivery> {
     }
   }
 
-  return sendEmailWithSmtp(input);
+  try {
+    return await sendEmailWithSmtp(input);
+  } catch (error) {
+    recordEmailOutbox(
+      input,
+      'failed',
+      status.provider === 'mock' ? 'mock' : 'local',
+      error instanceof Error ? error.message : 'SMTP email delivery failed',
+    );
+    throw error;
+  }
 }
 
 function emailShell(title: string, eyebrow: string, body: string, buttonUrl: string, buttonText: string) {
@@ -1360,6 +1370,49 @@ async function sendInvitationEmail(to: string, invite: TeamInvite, projectName: 
   return sendEmail({
     to,
     subject: `DriftBoard invitation to ${projectName}`,
+    html,
+    text,
+    tag: 'team_invitation',
+  });
+}
+
+async function sendInvitationAdminEmail(invite: TeamInvite, projectName: string) {
+  const to = contactAdminEmail();
+  if (!to || !isValidEmailAddress(to) || to === invite.userEmail.toLowerCase()) {
+    return undefined;
+  }
+
+  const html = emailShell(
+    'Project invite generated',
+    `${invite.invitedByName} invited ${invite.userEmail} to ${projectName}.`,
+    `
+      ${detailRows([
+        ['Invited email', invite.userEmail],
+        ['Workspace', projectName],
+        ['Assigned role', invite.role],
+        ['Inviter', `${invite.invitedByName} <${invite.invitedByEmail}>`],
+        ['Expires', new Date(invite.expiresAt).toLocaleString()],
+      ])}
+      <p style="margin:18px 0 0;color:#cbd5e1;font-size:14px;line-height:1.7;">The invite link was generated successfully and is available to the admin in DriftBoard.</p>
+    `,
+    `${FRONTEND_URL}/app/settings`,
+    'Open team settings'
+  );
+  const text = [
+    'Project invite generated',
+    '',
+    `Invited email: ${invite.userEmail}`,
+    `Workspace: ${projectName}`,
+    `Assigned role: ${invite.role}`,
+    `Inviter: ${invite.invitedByName} <${invite.invitedByEmail}>`,
+    `Expires: ${new Date(invite.expiresAt).toLocaleString()}`,
+    `Open team settings: ${FRONTEND_URL}/app/settings`,
+  ].join('\n');
+
+  return sendEmail({
+    to,
+    replyTo: invite.invitedByEmail,
+    subject: `[DriftBoard] Invite generated for ${projectName}`,
     html,
     text,
     tag: 'team_invitation',
@@ -5611,25 +5664,33 @@ app.post('/api/team/:projectId/invite', async (req, res) => {
   }
   project.memberCount = teamMembers.filter((item) => item.projectId === project.id && ['active', 'joined'].includes(item.status)).length;
   createNotification(project.id, 'team', 'Invite generated', `${invite.userEmail} has a pending ${invite.role} invite. They will appear as active after accepting it.`);
-  let emailDelivery: AlertDelivery | undefined;
   const inviteForDelivery = { ...invite, invitePassword };
-  try {
-    emailDelivery = await sendInvitationEmail(invite.userEmail, inviteForDelivery, project.name);
-  } catch (error) {
-    const message = error instanceof Error ? error.message : 'Invitation email delivery failed';
-    console.error('Invitation email failed', {
+  const emailDelivery: AlertDelivery = {
+    channel: 'email',
+    target: invite.userEmail,
+    status: 'queued',
+    provider: emailConfigStatus().provider || undefined,
+    message: 'Invite link generated. Email delivery is running in the background.',
+  };
+  void Promise.allSettled([
+    sendInvitationEmail(invite.userEmail, inviteForDelivery, project.name),
+    sendInvitationAdminEmail(inviteForDelivery, project.name),
+  ]).then((results) => {
+    const failures = results
+      .filter((result): result is PromiseRejectedResult => result.status === 'rejected')
+      .map((result) => result.reason instanceof Error ? result.reason.message : 'Email delivery failed');
+    if (failures.length === 0) {
+      createNotification(project.id, 'team', 'Invite email sent', `Invite email was sent for ${invite.userEmail}.`, false);
+      return;
+    }
+    const message = failures.join(' | ');
+    console.error('Invitation email delivery failed', {
       to: invite.userEmail,
       projectId: project.id,
       error: message,
     });
-    emailDelivery = {
-      channel: 'email',
-      target: invite.userEmail,
-      status: 'failed',
-      provider: emailConfigStatus().provider || undefined,
-      message,
-    };
-  }
+    createNotification(project.id, 'team', 'Invite email failed', `Invite link was generated for ${invite.userEmail}, but email delivery failed: ${message}`, false);
+  });
   res.status(201).json({ ...invite, invitePassword, invitePasswordHash: undefined, emailDelivery });
 });
 
