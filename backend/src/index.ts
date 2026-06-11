@@ -1603,7 +1603,7 @@ async function sendEmailWithSmtp(input: SendEmailInput): Promise<AlertDelivery> 
   return { channel: 'email', target: to, status: 'sent', provider: 'smtp' };
 }
 
-async function sendPasswordResetEmail(user: User, resetToken: string) {
+async function sendPasswordResetEmail(user: User, resetToken: string): Promise<AlertDelivery> {
   const resetLink = `${FRONTEND_URL.replace(/\/$/, '')}/reset-password?token=${encodeURIComponent(resetToken)}`;
   const html = emailShell(
     'Reset your DriftBoard password',
@@ -2166,16 +2166,24 @@ async function sendForgotPasswordResponse(req: Request, res: Response) {
   user.resetTokenExpiresAt = new Date(Date.now() + 15 * 60 * 1000).toISOString();
   saveUsers();
 
+  let emailSent = false;
   try {
-    await sendPasswordResetEmail(user, resetToken);
-    res.json({
-      message: 'Password reset link sent to your email. It expires in 15 minutes.',
-    });
+    const delivery = await sendPasswordResetEmail(user, resetToken);
+    emailSent = delivery.status === 'sent';
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Failed to send reset email.';
     console.error('Password reset email failed', { error: errorMessage, userId: user.id });
+  }
+
+  if (emailSent) {
     res.json({
       message: 'Password reset link sent to your email. It expires in 15 minutes.',
+    });
+  } else {
+    res.json({
+      message: 'Could not send email. Use the reset code below to set a new password.',
+      resetToken,
+      emailFailed: true,
     });
   }
 }
