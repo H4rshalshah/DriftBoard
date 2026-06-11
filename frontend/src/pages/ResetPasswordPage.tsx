@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { CheckCircle2, Lock, KeyRound } from 'lucide-react';
+import { CheckCircle2, Lock, KeyRound, Mail } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
 import { Button } from '@/components/common/Button';
 import { Input } from '@/components/common/Input';
@@ -24,6 +24,8 @@ export default function ResetPasswordPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { resetPassword, isLoading, error, clearError } = useAuthStore();
+  const [email, setEmail] = useState('');
+  const [resetCode, setResetCode] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [localError, setLocalError] = useState('');
@@ -33,8 +35,8 @@ export default function ResetPasswordPage() {
   const token = searchParams.get('token') || '';
 
   useEffect(() => {
-    if (!token) {
-      setLocalError('Invalid or missing reset token. Please request a new password reset link.');
+    if (token) {
+      setResetCode(token);
     }
   }, [token]);
 
@@ -44,8 +46,13 @@ export default function ResetPasswordPage() {
     setSuccessMessage('');
     clearError();
 
-    if (!token) {
-      setLocalError('Invalid reset link. Please request a new one.');
+    if (!email.trim()) {
+      setLocalError('Enter your account email address.');
+      return;
+    }
+
+    if (!resetCode.trim()) {
+      setLocalError('Enter the reset code from the email.');
       return;
     }
 
@@ -60,9 +67,9 @@ export default function ResetPasswordPage() {
     }
 
     try {
-      await resetPassword(token, newPassword);
+      await resetPassword(resetCode, newPassword, email);
       setIsResetSuccessful(true);
-      setSuccessMessage('Password reset successful! Redirecting to login...');
+      setSuccessMessage('Password reset successfully.');
       setTimeout(() => {
         navigate('/login', { replace: true });
       }, 2000);
@@ -120,21 +127,12 @@ export default function ResetPasswordPage() {
               <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-emerald-500/10 border-2 border-emerald-400/30">
                 <CheckCircle2 className="h-8 w-8 text-emerald-400" />
               </div>
-              <p className="text-emerald-300 font-medium">{successMessage}</p>
+              <p className="text-emerald-300 font-medium text-lg">Password reset successfully.</p>
+              <p className="mt-2 text-white/50 text-sm">Redirecting to sign in...</p>
             </motion.div>
           ) : (
-            <form onSubmit={handleSubmit} className="space-y-6">
-              {!token && (
-                <motion.div
-                  initial={{ opacity: 0, y: -10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-red-400 text-sm"
-                >
-                  {localError}
-                </motion.div>
-              )}
-
-              {displayError && !localError?.includes('Invalid or missing') && (
+            <form onSubmit={handleSubmit} className="space-y-5">
+              {displayError && (
                 <motion.div
                   initial={{ opacity: 0, y: -10 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -144,7 +142,7 @@ export default function ResetPasswordPage() {
                 </motion.div>
               )}
 
-              {successMessage && !isResetSuccessful && (
+              {successMessage && (
                 <motion.div
                   initial={{ opacity: 0, y: -10 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -156,7 +154,35 @@ export default function ResetPasswordPage() {
 
               <div className="space-y-2">
                 <div className="flex items-center gap-2 mb-1">
+                  <Mail className="h-4 w-4 text-indigo-400" />
+                  <label className="block text-sm font-medium text-white/80">Account Email</label>
+                </div>
+                <Input
+                  type="email"
+                  placeholder="you@example.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  autoComplete="email"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 mb-1">
                   <KeyRound className="h-4 w-4 text-indigo-400" />
+                  <label className="block text-sm font-medium text-white/80">Reset Code</label>
+                </div>
+                <Input
+                  type="text"
+                  placeholder="Reset code from email"
+                  value={resetCode}
+                  onChange={(e) => setResetCode(e.target.value)}
+                  autoComplete="off"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 mb-1">
+                  <Lock className="h-4 w-4 text-indigo-400" />
                   <label className="block text-sm font-medium text-white/80">New Password</label>
                 </div>
                 <Input

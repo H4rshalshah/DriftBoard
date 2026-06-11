@@ -22,8 +22,8 @@ interface AuthState {
   rehydrateSession: () => Promise<void>;
   login: (identifier: string, password: string) => Promise<void>;
   register: (email: string, password: string, name: string, username?: string) => Promise<void>;
-  forgotPassword: (identifier: string) => Promise<{ message: string; resetToken?: string; emailFailed?: boolean }>;
-  resetPassword: (token: string, newPassword: string) => Promise<void>;
+  forgotPassword: (identifier: string) => Promise<{ message: string }>;
+  resetPassword: (token: string, newPassword: string, email?: string) => Promise<void>;
   socialLogin: (provider: 'google' | 'github', email?: string, name?: string) => Promise<void>;
   startOAuthLogin: (provider: 'google' | 'github') => void;
   completeOAuthLogin: (token: string, user: User) => void;
@@ -172,7 +172,7 @@ export const useAuthStore = create<AuthState>()(
       forgotPassword: async (identifier: string) => {
         set({ isLoading: true, error: null });
         try {
-          const response = await api.post<{ message: string; resetToken?: string; emailFailed?: boolean }>('/auth/forgot-password', {
+          const response = await api.post<{ message: string }>('/auth/forgot-password', {
             identifier,
           });
           set({ isLoading: false, error: null });
@@ -193,15 +193,15 @@ export const useAuthStore = create<AuthState>()(
         }
       },
 
-      resetPassword: async (token: string, newPassword: string) => {
+      resetPassword: async (token: string, newPassword: string, email?: string) => {
         set({ isLoading: true, error: null });
         try {
-          const response = await api.post<AuthResponse>('/auth/reset-password', {
+          const response = await api.post<{ message: string }>('/auth/reset-password', {
             token,
             newPassword,
+            email,
           });
-          set(applyAuthResponse(response));
-          await useProjectStore.getState().fetchCurrentProject();
+          set({ isLoading: false, error: null });
         } catch (error) {
           const message =
             error instanceof Error

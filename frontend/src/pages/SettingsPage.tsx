@@ -57,6 +57,16 @@ interface TeamMember {
   inviteExpiresAt?: string;
 }
 
+interface PendingInviteItem {
+  id: string;
+  userEmail: string;
+  role: Exclude<ProjectRole, 'owner'>;
+  invitedByName: string;
+  invitedByEmail: string;
+  createdAt: string;
+  expiresAt: string;
+}
+
 interface TeamInvite {
   id: string;
   token: string;
@@ -183,6 +193,8 @@ export default function SettingsPage() {
   const [inviteRole, setInviteRole] = useState<Exclude<ProjectRole, 'owner'>>('member');
   const [invitePassword, setInvitePassword] = useState('');
   const [generatedInvite, setGeneratedInvite] = useState<TeamInvite | null>(null);
+  const [pendingInvites, setPendingInvites] = useState<PendingInviteItem[]>([]);
+  const [isLoadingPending, setIsLoadingPending] = useState(false);
   const [isSavingTeam, setIsSavingTeam] = useState(false);
   const [notificationChannels, setNotificationChannels] = useState<NotificationChannels>(defaultNotificationChannels);
   const [isSavingChannels, setIsSavingChannels] = useState(false);
@@ -228,7 +240,33 @@ export default function SettingsPage() {
       .then((members) => setTeamMembers(members))
       .catch((error) => toast.error(getErrorMessage(error, 'Could not load team members.')))
       .finally(() => setIsLoadingTeam(false));
+
+    fetchPendingInvites();
   }, [currentProject?.id]);
+
+  const fetchPendingInvites = async () => {
+    if (!currentProject?.id) return;
+    setIsLoadingPending(true);
+    try {
+      const invites = await api.get<PendingInviteItem[]>(`/team/${currentProject.id}/pending-invites`);
+      setPendingInvites(invites);
+    } catch {
+      // Pending invites may not be available
+    } finally {
+      setIsLoadingPending(false);
+    }
+  };
+
+  const revokePendingInvite = async (inviteId: string) => {
+    if (!window.confirm('Revoke this pending invite? The invited person will no longer be able to join.')) return;
+    try {
+      await api.delete(`/team/pending-invite/${inviteId}`);
+      setPendingInvites((current) => current.filter((item) => item.id !== inviteId));
+      toast.success('Pending invite revoked.');
+    } catch (error) {
+      toast.error(getErrorMessage(error, 'Could not revoke invite.'));
+    }
+  };
 
   useEffect(() => {
     api.get<NotificationChannels>('/settings/notification-channels')
@@ -338,6 +376,7 @@ export default function SettingsPage() {
       setGeneratedInvite(invited);
       const members = await api.get<TeamMember[]>(`/team/${currentProject.id}`);
       setTeamMembers(members);
+      await fetchPendingInvites();
       await fetchCurrentProject();
       setInviteRole('member');
       setInvitePassword('');
@@ -768,6 +807,65 @@ export default function SettingsPage() {
                 </div>
               </CardContent>
             </Card>
+
+            {canManageTeam && (
+              <Card className="mt-6">
+                <CardHeader>
+                  <CardTitle>Pending Invites</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {isLoadingPending ? (
+                    <p className="text-sm text-white/50">Loading pending invites...</p>
+                  ) : pendingInvites.length === 0 ? (
+                    <p className="text-sm text-white/50">No pending invites.</p>
+                  ) : (
+                    <div className="space-y-3">
+                      {pendingInvites.map((invite) => (
+                        <div
+                          key={invite.id}
+                          className="flex flex-col gap-3 rounded-lg border border-amber-500/20 bg-amber-500/5 p-3 sm:flex-row sm:items-center sm:justify-between"
+                        >
+                          <div className="flex items-center gap-3 min-w-0">
+                            <div className="w-10 h-10 rounded-full bg-amber-500/20 flex items-center justify-center text-amber-300 font-medium">
+                              {invite.userEmail.charAt(0).toUpperCase()}
+                            </div>
+                            <div className="min-w-0">
+                              <p className="text-white font-medium truncate">{invite.userEmail}</p>
+                              <div className="flex flex-wrap items-center gap-2 mt-1">
+                                <Badge className="border-amber-500/30 bg-amber-500/15 text-amber-300">
+                                  {invite.role}
+                                </Badge>
+                                <span className="text-xs text-white/40">
+                                  Invited {new Date(invite.createdAt).toLocaleDateString()}
+                                </span>
+                                {new Date(invite.expiresAt).getTime() < Date.now() ? (
+                                  <Badge className="border-red-500/30 bg-red-500/15 text-red-300">expired</Badge>
+                                ) : (
+                                  <Badge className="border-emerald-500/30 bg-emerald-500/15 text-emerald-300">active</Badge>
+                                )}
+                              </div>
+                              <p className="text-xs text-white/40 mt-0.5">
+                                Invited by {invite.invitedByName}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              leftIcon={<Trash2 className="w-4 h-4" />}
+                              onClick={() => void revokePendingInvite(invite.id)}
+                            >
+                              Revoke
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            )}
           </TabPanel>
 
           <TabPanel value="notifications">

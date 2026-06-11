@@ -1610,7 +1610,10 @@ async function sendPasswordResetEmail(user: User, resetToken: string): Promise<A
     'You requested a password reset link.',
     `
       <p style="margin:0 0 16px;color:#cbd5e1;font-size:14px;line-height:1.7;">
-        Click the button below to reset your password. This link expires in 15 minutes.
+        Click the button below to reset your password. This link expires in 15 minutes. If the button does not work, use the reset code shown below.
+        <p style="margin:14px 0 0;color:#94a3b8;font-size:13px;">
+          Reset code: <code style="font-family:monospace;font-size:16px;font-weight:700;letter-spacing:3px;color:#e2e8f0;background:#1e293b;padding:4px 10px;border-radius:6px;">${resetToken}</code>
+        </p>
       </p>
       ${detailRows([
         ['Account', user.email],
@@ -1631,6 +1634,8 @@ async function sendPasswordResetEmail(user: User, resetToken: string): Promise<A
     `Requested: ${new Date().toLocaleString()}`,
     '',
     `Reset link (expires in 15 minutes): ${resetLink}`,
+    '',
+    `Reset code: ${resetToken}`,
     '',
     'If you did not request this, you can safely ignore this email.',
   ].join('\n');
@@ -2166,32 +2171,22 @@ async function sendForgotPasswordResponse(req: Request, res: Response) {
   user.resetTokenExpiresAt = new Date(Date.now() + 15 * 60 * 1000).toISOString();
   saveUsers();
 
-  let emailSent = false;
   try {
-    const delivery = await sendPasswordResetEmail(user, resetToken);
-    emailSent = delivery.status === 'sent';
-    console.info('Password reset email delivery', { status: delivery.status, provider: delivery.provider, to: user.email });
+    await sendPasswordResetEmail(user, resetToken);
+    console.info('Password reset email sent', { to: user.email });
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Failed to send reset email.';
     console.error('Password reset email failed', { error: errorMessage, userId: user.id });
   }
 
-  if (emailSent) {
-    res.json({
-      message: 'Password reset link sent to your email. It expires in 15 minutes.',
-    });
-  } else {
-    res.json({
-      message: 'Email delivery is unavailable. Use the reset code below to set a new password.',
-      resetToken,
-      emailFailed: true,
-    });
-  }
+  res.json({
+    message: 'Password reset link sent to your email. It expires in 15 minutes.',
+  });
 }
-
 function sendResetPasswordResponse(req: Request, res: Response) {
   const token = typeof req.body?.token === 'string' ? req.body.token.trim() : '';
   const newPassword = typeof req.body?.newPassword === 'string' ? req.body.newPassword : '';
+  const email = typeof req.body?.email === 'string' ? req.body.email.trim().toLowerCase() : '';
 
   if (!token || !newPassword || newPassword.length < 8) {
     res.status(400).json({ message: 'Reset code and a new password of at least 8 characters are required' });
@@ -2204,16 +2199,19 @@ function sendResetPasswordResponse(req: Request, res: Response) {
     return;
   }
 
+  if (email && user.email.toLowerCase() !== email) {
+    res.status(400).json({ message: 'Email does not match the reset request.' });
+    return;
+  }
+
   user.passwordHash = bcrypt.hashSync(newPassword, 10);
   user.authProvider = 'password';
   user.resetToken = undefined;
   user.resetTokenExpiresAt = undefined;
   saveUsers();
-  setActiveUser(user);
 
-  res.json({ ...authPayload(user), message: 'Password reset successful' });
+  res.json({ message: 'Password reset successfully.' });
 }
-
 function sendSocialLoginResponse(req: Request, res: Response) {
   const provider = req.body?.provider === 'github' ? 'github' : req.body?.provider === 'google' ? 'google' : '';
   const email = normalizeEmail(req.body?.email);
@@ -5793,6 +5791,42 @@ app.get('/api/team/:projectId', (req, res) => {
   res.json(projectMembers);
 });
 
+app.get('/api/team/:projectId/pending-invites', (req, res) => {
+  const project = projects.find((item) => item.id === req.params.projectId);
+  if (!project) {
+    res.status(404).json({ message: 'Project not found' });
+    return;
+  }
+  const user = requireProjectPermission(req, res, project.id, 'team:view');
+  if (!user) return;
+  const pendingInvites = teamInvites
+    .filter((invite) => invite.projectId === req.params.projectId && !invite.usedAt && new Date(invite.expiresAt).getTime() > Date.now())
+    .map((invite) => ({
+      id: invite.id,
+      userEmail: invite.userEmail,
+      role: invite.role,
+      invitedByName: invite.invitedByName,
+      invitedByEmail: invite.invitedByEmail,
+      createdAt: invite.createdAt,
+      expiresAt: invite.expiresAt,
+    }));
+  res.json(pendingInvites);
+});
+
+app.delete('/api/team/pending-invite/:id', (req, res) => {
+  const index = teamInvites.findIndex((invite) => invite.id === req.params.id);
+  if (index === -1) {
+    res.status(404).json({ message: 'Pending invite not found' });
+    return;
+  }
+  const invite = teamInvites[index];
+  const user = requireProjectPermission(req, res, invite.projectId, 'team:remove');
+  if (!user) return;
+  teamInvites.splice(index, 1);
+  saveAppState();
+  res.status(204).send();
+});
+
 app.post('/api/team/:projectId/invite', async (req, res) => {
   const project = projects.find((item) => item.id === req.params.projectId);
   if (!project) {
@@ -5826,35 +5860,7 @@ app.post('/api/team/:projectId/invite', async (req, res) => {
     createdAt: now(),
   };
   teamInvites.push(invite);
-  const existingMember = teamMembers.find((item) => item.projectId === project.id && item.userEmail.toLowerCase() === email);
-  if (existingMember && existingMember.status !== 'active' && existingMember.status !== 'joined') {
-    existingMember.role = role;
-    existingMember.status = 'invited';
-    existingMember.invitedAt = invite.createdAt;
-    existingMember.invitedByName = inviter.name;
-    existingMember.invitedByEmail = inviter.email;
-    existingMember.inviteLink = invite.inviteLink;
-    existingMember.inviteExpiresAt = invite.expiresAt;
-    existingMember.updatedAt = invite.createdAt;
-  } else if (!existingMember) {
-    teamMembers.push({
-      id: uuidv4(),
-      projectId: project.id,
-      userEmail: email,
-      name: email.split('@')[0],
-      role,
-      status: 'invited',
-      invitedAt: invite.createdAt,
-      invitedByName: inviter.name,
-      invitedByEmail: inviter.email,
-      inviteLink: invite.inviteLink,
-      inviteExpiresAt: invite.expiresAt,
-      createdAt: invite.createdAt,
-      updatedAt: invite.createdAt,
-    });
-  }
-  project.memberCount = teamMembers.filter((item) => item.projectId === project.id && ['active', 'joined'].includes(item.status)).length;
-  createNotification(project.id, 'team', 'Invite generated', `${invite.userEmail} has a pending ${invite.role} invite. They will appear as active after accepting it.`);
+  project.memberCount = teamMembers.filter((item) => item.projectId === project.id && ['active', 'joined'].includes(item.status)).length;  createNotification(project.id, 'team', 'Invite generated', `${invite.userEmail} has a pending ${invite.role} invite. They will appear as active after accepting it.`);
   const inviteForDelivery = { ...invite, invitePassword };
   const emailDelivery: AlertDelivery = {
     channel: 'email',
@@ -5962,68 +5968,39 @@ app.post('/api/team/invite/:token/accept', (req, res) => {
     }
   }
 
-  const newAccountPassword = String(req.body?.newPassword || '');
+    const newAccountPassword = String(req.body?.newPassword || '');
   const invitedName = typeof req.body?.name === 'string' && req.body.name.trim()
     ? req.body.name.trim()
     : invite.userEmail.split('@')[0];
   const invitedUsername = normalizeUsername(req.body?.username, invite.userEmail);
 
-  if (!existingUser) {
-    if (!newAccountPassword || newAccountPassword.length < 8) {
-      res.status(400).json({ message: 'Create an account password of at least 8 characters.' });
-      return;
-    }
-    if (!invitedName) {
-      res.status(400).json({ message: 'Full name is required.' });
-      return;
-    }
-    if (isUsernameTaken(invitedUsername)) {
-      res.status(409).json({ message: 'That username is already taken.' });
-      return;
-    }
-  }
-
-  const invitedUser = upsertUser({
-    ...(existingUser || {}),
-    id: existingUser?.id || uuidv4(),
-    email: invite.userEmail,
-    username: existingUser?.username || invitedUsername,
-    name: existingUser?.name || invitedName,
-    role: existingUser?.role || 'member',
-    authProvider: existingUser?.authProvider || 'password',
-    passwordHash: existingUser?.passwordHash || bcrypt.hashSync(newAccountPassword, 10),
-  } as User);
-
-  let member = teamMembers.find(
-    (item) => item.projectId === invite.projectId && item.userEmail.toLowerCase() === invite.userEmail.toLowerCase()
-  );
-  if (member) {
-    member.userId = invitedUser.id;
-    member.role = invite.role;
-    member.status = 'active';
-    member.joinedAt = now();
-    member.updatedAt = now();
-    member.name = invitedUser.name;
-    member.inviteLink = undefined;
-    member.invitePassword = undefined;
-    member.inviteExpiresAt = undefined;
+  const existingMember = teamMembers.find((item) => item.projectId === project.id && item.userEmail.toLowerCase() === invite.userEmail);
+  if (existingMember) {
+    existingMember.role = invite.role;
+    existingMember.status = 'active';
+    existingMember.name = invitedName;
+    existingMember.joinedAt = now();
+    existingMember.updatedAt = now();
+    existingMember.userId = existingUser?.id;
+    existingMember.invitedAt = existingMember.invitedAt || invite.createdAt;
   } else {
-    member = {
+    teamMembers.push({
       id: uuidv4(),
-      userId: invitedUser.id,
-      projectId: invite.projectId,
+      projectId: project.id,
       userEmail: invite.userEmail,
-      name: invitedUser.name,
+      name: invitedName,
       role: invite.role,
       status: 'active',
+      joinedAt: now(),
+      invitedAt: invite.createdAt,
+      invitedByName: invite.invitedByName,
+      invitedByEmail: invite.invitedByEmail,
       createdAt: now(),
       updatedAt: now(),
-      joinedAt: now(),
-    };
-    teamMembers.push(member);
+      userId: existingUser?.id,
+    });
   }
   project.memberCount = teamMembers.filter((item) => item.projectId === project.id && ['active', 'joined'].includes(item.status)).length;
-
   invite.usedAt = now();
   invite.usedByUserId = invitedUser.id;
   invite.invitePassword = undefined;

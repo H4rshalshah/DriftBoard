@@ -24,15 +24,13 @@ const itemVariants = {
 export default function LoginPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { login, forgotPassword, resetPassword, startOAuthLogin, completeOAuthLogin, isLoading, error, clearError } = useAuthStore();
+  const { login, forgotPassword, startOAuthLogin, completeOAuthLogin, isLoading, error, clearError } = useAuthStore();
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
-  const [resetToken, setResetToken] = useState('');
-  const [newPassword, setNewPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
   const [localError, setLocalError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
-  const [mode, setMode] = useState<'login' | 'forgot' | 'reset'>('login');
+  const [mode, setMode] = useState<'login' | 'forgot'>('login');
 
   useEffect(() => {
     const rememberedIdentifier = localStorage.getItem('driftboard_remembered_identifier');
@@ -83,32 +81,8 @@ export default function LoginPage() {
       try {
         const response = await forgotPassword(identifier);
         setSuccessMessage(response.message);
-        if (response.resetToken) {
-          setResetToken(response.resetToken);
-          setMode('reset');
-        }
       } catch (err) {
         setLocalError(err instanceof Error ? err.message : 'Password reset failed');
-      }
-      return;
-    }
-
-    if (mode === 'reset') {
-      if (!resetToken || !newPassword) {
-        setLocalError('Enter the reset code and your new password');
-        return;
-      }
-
-      if (newPassword.length < 8) {
-        setLocalError('New password must be at least 8 characters');
-        return;
-      }
-
-      try {
-        await resetPassword(resetToken, newPassword);
-        navigate('/app/dashboard');
-      } catch (err) {
-        setLocalError(err instanceof Error ? err.message : 'Could not reset password');
       }
       return;
     }
@@ -198,13 +172,11 @@ export default function LoginPage() {
 
   const displayError = localError || error;
   const oauthProviderLabel = oauthProvider === 'google' ? 'Google' : oauthProvider === 'github' ? 'GitHub' : '';
-  const title = mode === 'login' ? 'Welcome back' : mode === 'forgot' ? 'Reset password' : 'Set new password';
+  const title = mode === 'login' ? 'Welcome back' : 'Reset password';
   const subtitle =
     mode === 'login'
       ? 'Sign in to your account to continue'
-      : mode === 'forgot'
-      ? 'Enter your account email and we will send you a reset link'
-      : 'Email delivery is unavailable. Use the reset code below to set a new password.';
+      : 'Enter your account email and we will send you a reset link';
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden">
@@ -343,29 +315,8 @@ export default function LoginPage() {
               </>
             )}
 
-            {mode === 'reset' && (
-              <>
-                <Input
-                  label="Reset code"
-                  type="text"
-                  value={resetToken}
-                  onChange={(e) => setResetToken(e.target.value)}
-                  placeholder="Paste your reset code"
-                  autoComplete="off"
-                />
-                <Input
-                  label="New password"
-                  type="password"
-                  placeholder="Create a new password (min. 8 characters)"
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                  autoComplete="new-password"
-                />
-              </>
-            )}
-
             <Button type="submit" fullWidth loading={isLoading}>
-              {mode === 'login' ? 'Sign In' : mode === 'forgot' ? 'Send Reset Link' : 'Reset Password'}
+              {mode === 'login' ? 'Sign In' : 'Send Reset Link'}
             </Button>
 
             {mode !== 'login' && (
