@@ -5779,7 +5779,7 @@ app.get('/api/team/:projectId', (req, res) => {
     return;
   }
   const projectMembers = teamMembers
-    .filter((member) => member.projectId === req.params.projectId && ['active', 'joined', 'pending', 'invited'].includes(member.status))
+    .filter((member) => member.projectId === req.params.projectId && ['active', 'joined'].includes(member.status))
     .map(normalizeTeamMember);
   res.json(projectMembers);
 });

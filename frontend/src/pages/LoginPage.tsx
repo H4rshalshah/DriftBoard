@@ -38,7 +38,12 @@ export default function LoginPage() {
       setIdentifier(rememberedIdentifier);
       setRememberMe(true);
     }
-  }, []);
+    const urlIdentifier = searchParams.get('identifier');
+    if (urlIdentifier) {
+      setIdentifier(urlIdentifier);
+      setMode('forgot');
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     const authError = searchParams.get('authError');

@@ -223,15 +223,23 @@ export default function InvitePage() {
             />
 
             {accountMode === 'existing' && (
-              <Input
-                label="Account password"
-                type="password"
-                value={accountPassword}
-                onChange={(event) => setAccountPassword(event.target.value)}
-                placeholder="Enter account password"
-                autoComplete="current-password"
-                leftIcon={<KeyRound className="h-4 w-4" />}
-              />
+              <div className="space-y-2">
+                <Input
+                  label="Account password"
+                  type="password"
+                  value={accountPassword}
+                  onChange={(event) => setAccountPassword(event.target.value)}
+                  placeholder="Enter account password"
+                  autoComplete="current-password"
+                  leftIcon={<KeyRound className="h-4 w-4" />}
+                />
+                <Link
+                  to={`/login?identifier=${encodeURIComponent(invite.email)}`}
+                  className="block text-xs text-indigo-400 hover:text-indigo-300 transition-colors"
+                >
+                  Forgot your password? Reset it here
+                </Link>
+              </div>
             )}
 
             {accountMode === 'new' && (
