@@ -204,7 +204,7 @@ export default function LoginPage() {
       ? 'Sign in to your account to continue'
       : mode === 'forgot'
       ? 'Enter your account email and we will send you a reset link'
-      : 'Email delivery failed. Use the reset code to set a new password.';
+      : 'Email delivery is unavailable. Use the reset code below to set a new password.';
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden">
