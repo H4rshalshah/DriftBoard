@@ -2170,6 +2170,7 @@ async function sendForgotPasswordResponse(req: Request, res: Response) {
   try {
     const delivery = await sendPasswordResetEmail(user, resetToken);
     emailSent = delivery.status === 'sent';
+    console.info('Password reset email delivery', { status: delivery.status, provider: delivery.provider, to: user.email });
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Failed to send reset email.';
     console.error('Password reset email failed', { error: errorMessage, userId: user.id });
@@ -2181,7 +2182,7 @@ async function sendForgotPasswordResponse(req: Request, res: Response) {
     });
   } else {
     res.json({
-      message: 'Could not send email. Use the reset code below to set a new password.',
+      message: 'Email delivery is unavailable. Use the reset code below to set a new password.',
       resetToken,
       emailFailed: true,
     });
