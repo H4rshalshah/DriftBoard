@@ -5974,6 +5974,27 @@ app.post('/api/team/invite/:token/accept', (req, res) => {
     : invite.userEmail.split('@')[0];
   const invitedUsername = normalizeUsername(req.body?.username, invite.userEmail);
 
+  // Create user account for new invitees who don't have an account yet
+  let acceptedUser: User | null = existingUser || null;
+  if (!existingUser && accountMode === 'new') {
+    acceptedUser = upsertUser({
+      id: uuidv4(),
+      email: invite.userEmail,
+      name: invitedName,
+      username: invitedUsername,
+      authProvider: 'password',
+      passwordHash: newAccountPassword ? bcrypt.hashSync(newAccountPassword, 10) : undefined,
+      role: 'member',
+      createdAt: now(),
+      updatedAt: now(),
+    } as User);
+  }
+
+  if (!acceptedUser) {
+    res.status(500).json({ message: 'Failed to resolve user account for this invite.' });
+    return;
+  }
+
   const existingMember = teamMembers.find((item) => item.projectId === project.id && item.userEmail.toLowerCase() === invite.userEmail);
   if (existingMember) {
     existingMember.role = invite.role;
@@ -5981,7 +6002,7 @@ app.post('/api/team/invite/:token/accept', (req, res) => {
     existingMember.name = invitedName;
     existingMember.joinedAt = now();
     existingMember.updatedAt = now();
-    existingMember.userId = existingUser?.id;
+    existingMember.userId = acceptedUser.id;
     existingMember.invitedAt = existingMember.invitedAt || invite.createdAt;
   } else {
     teamMembers.push({
@@ -5997,15 +6018,59 @@ app.post('/api/team/invite/:token/accept', (req, res) => {
       invitedByEmail: invite.invitedByEmail,
       createdAt: now(),
       updatedAt: now(),
-      userId: existingUser?.id,
+      userId: acceptedUser.id,
     });
   }
   project.memberCount = teamMembers.filter((item) => item.projectId === project.id && ['active', 'joined'].includes(item.status)).length;
   invite.usedAt = now();
-  invite.usedByUserId = invitedUser.id;
+  invite.usedByUserId = (existingUser || acceptedUser)?.id;
   invite.invitePassword = undefined;
   createNotification(invite.projectId, 'team', 'Team member joined', `${invite.userEmail} joined ${project.name}.`);
-  res.json({ ...authPayload(invitedUser), project: projectForUser(project, invitedUser) });
+  res.json({ ...authPayload(existingUser || acceptedUser), project: projectForUser(project, existingUser || acceptedUser) });
+});
+
+
+// ===== PENDING INVITES =====
+app.get('/api/team/:projectId/pending-invites', (req, res) => {
+  const user = requireRequestUser(req, res);
+  if (!user) return;
+  const project = projects.find((item) => item.id === req.params.projectId);
+  if (!project) {
+    res.status(404).json({ message: 'Project not found' });
+    return;
+  }
+  if (!userHasProjectPermission(project.id, user, 'team:view')) {
+    deny(res);
+    return;
+  }
+  const pending = teamInvites
+    .filter((inv) => inv.projectId === project.id && !inv.usedAt)
+    .map((inv) => ({
+      id: inv.id,
+      token: inv.token,
+      userEmail: inv.userEmail,
+      invitedByName: inv.invitedByName,
+      invitedByEmail: inv.invitedByEmail,
+      role: inv.role,
+      createdAt: inv.createdAt,
+      expiresAt: inv.expiresAt,
+      status: new Date(inv.expiresAt).getTime() < Date.now() ? 'expired' : 'pending',
+    }));
+  res.json(pending);
+});
+
+app.delete('/api/team/pending-invite/:id', (req, res) => {
+  const inviteIndex = teamInvites.findIndex((inv) => inv.id === req.params.id);
+  const invite = teamInvites[inviteIndex];
+  if (!invite) {
+    res.status(404).json({ message: 'Invite not found' });
+    return;
+  }
+  const user = requireProjectPermission(req, res, invite.projectId, 'team:invite');
+  if (!user) return;
+  teamInvites.splice(inviteIndex, 1);
+  saveAppState();
+  res.json({ message: 'Invite revoked.' });
 });
 
 app.put('/api/team/member/:id', (req, res) => {
