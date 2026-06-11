@@ -16,6 +16,7 @@ const SettingsPage = lazy(() => import('@/pages/SettingsPage'));
 const NotificationsPage = lazy(() => import('@/pages/NotificationsPage'));
 const ApiKeysPage = lazy(() => import('@/pages/ApiKeysPage'));
 const ContactPage = lazy(() => import('@/pages/ContactPage'));
+const ResetPasswordPage = lazy(() => import('@/pages/ResetPasswordPage'));
 const Layout = lazy(() => import('@/components/layout/Layout'));
 
 function ProtectedRoute({ children }: { children: ReactNode }) {
@@ -75,6 +76,7 @@ function App() {
           <Route path="/invite" element={<InvitePage />} />
           <Route path="/invite/:token" element={<InvitePage />} />
           <Route path="/contact" element={<ContactPage />} />
+          <Route path="/reset-password" element={<ResetPasswordPage />} />
           <Route
             path="/app"
             element={

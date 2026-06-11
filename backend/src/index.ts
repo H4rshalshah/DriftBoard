@@ -1603,6 +1603,47 @@ async function sendEmailWithSmtp(input: SendEmailInput): Promise<AlertDelivery> 
   return { channel: 'email', target: to, status: 'sent', provider: 'smtp' };
 }
 
+async function sendPasswordResetEmail(user: User, resetToken: string) {
+  const resetLink = `${FRONTEND_URL.replace(/\/$/, '')}/reset-password?token=${encodeURIComponent(resetToken)}`;
+  const html = emailShell(
+    'Reset your DriftBoard password',
+    'You requested a password reset link.',
+    `
+      <p style="margin:0 0 16px;color:#cbd5e1;font-size:14px;line-height:1.7;">
+        Click the button below to reset your password. This link expires in 15 minutes.
+      </p>
+      ${detailRows([
+        ['Account', user.email],
+        ['Requested', new Date().toLocaleString()],
+      ])}
+      <p style="margin:18px 0 0;color:#94a3b8;font-size:13px;line-height:1.5;">
+        If you did not request this, you can safely ignore this email.
+      </p>
+    `,
+    resetLink,
+    'Reset Password'
+  );
+  const text = [
+    'Reset your DriftBoard password',
+    '',
+    'You requested a password reset link.',
+    `Account: ${user.email}`,
+    `Requested: ${new Date().toLocaleString()}`,
+    '',
+    `Reset link (expires in 15 minutes): ${resetLink}`,
+    '',
+    'If you did not request this, you can safely ignore this email.',
+  ].join('\n');
+
+  return sendEmail({
+    to: user.email,
+    subject: '[DriftBoard] Reset your password',
+    html,
+    text,
+    tag: 'contact_message',
+  });
+}
+
 async function sendContactAdminEmail(message: ContactMessage) {
   const to = contactAdminEmail();
   if (!to || !isValidEmailAddress(to)) {
@@ -2106,7 +2147,7 @@ function sendRegisterResponse(req: Request, res: Response) {
   res.status(existingUser ? 200 : 201).json(authPayload(user));
 }
 
-function sendForgotPasswordResponse(req: Request, res: Response) {
+async function sendForgotPasswordResponse(req: Request, res: Response) {
   const identifier = normalizeIdentifier(req.body?.identifier || req.body?.email || req.body?.username);
 
   if (!identifier) {
@@ -2125,11 +2166,18 @@ function sendForgotPasswordResponse(req: Request, res: Response) {
   user.resetTokenExpiresAt = new Date(Date.now() + 15 * 60 * 1000).toISOString();
   saveUsers();
 
-  res.json({
-    message: 'Password reset is ready. Use the reset code below to set a new password.',
-    resetToken,
-    expiresAt: user.resetTokenExpiresAt,
-  });
+  try {
+    await sendPasswordResetEmail(user, resetToken);
+    res.json({
+      message: 'Password reset link sent to your email. It expires in 15 minutes.',
+    });
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Failed to send reset email.';
+    console.error('Password reset email failed', { error: errorMessage, userId: user.id });
+    res.json({
+      message: 'Password reset link sent to your email. It expires in 15 minutes.',
+    });
+  }
 }
 
 function sendResetPasswordResponse(req: Request, res: Response) {

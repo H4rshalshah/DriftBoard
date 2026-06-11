@@ -22,7 +22,7 @@ interface AuthState {
   rehydrateSession: () => Promise<void>;
   login: (identifier: string, password: string) => Promise<void>;
   register: (email: string, password: string, name: string, username?: string) => Promise<void>;
-  forgotPassword: (identifier: string) => Promise<{ message: string; resetToken?: string; expiresAt?: string }>;
+  forgotPassword: (identifier: string) => Promise<{ message: string }>;
   resetPassword: (token: string, newPassword: string) => Promise<void>;
   socialLogin: (provider: 'google' | 'github', email?: string, name?: string) => Promise<void>;
   startOAuthLogin: (provider: 'google' | 'github') => void;
@@ -172,7 +172,7 @@ export const useAuthStore = create<AuthState>()(
       forgotPassword: async (identifier: string) => {
         set({ isLoading: true, error: null });
         try {
-          const response = await api.post<{ message: string; resetToken?: string; expiresAt?: string }>('/auth/forgot-password', {
+          const response = await api.post<{ message: string }>('/auth/forgot-password', {
             identifier,
           });
           set({ isLoading: false, error: null });
