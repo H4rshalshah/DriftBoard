@@ -4580,6 +4580,140 @@ function createProjectHandler(req: Request, res: Response) {
   res.status(201).json(projectForUser(project, user));
 }
 
+
+// Auto-detect endpoints from project's API base URL
+app.post('/api/projects/:projectId/endpoints/auto-detect', async (req, res) => {
+  const user = requireProjectPermission(req, res, req.params.projectId, 'endpoint:create');
+  if (!user) return;
+  
+  const project = projects.find((item) => item.id === req.params.projectId);
+  if (!project) {
+    res.status(404).json({ message: 'Project not found' });
+    return;
+  }
+
+  const baseUrl = typeof req.body?.baseUrl === 'string' && req.body.baseUrl.trim()
+    ? req.body.baseUrl.trim().replace(/\/$/, '')
+    : project.apiBaseUrl;
+
+  if (!baseUrl) {
+    res.status(400).json({ message: 'Project has no API base URL. Provide one or set it in project settings.' });
+    return;
+  }
+
+  // Try common API discovery paths
+  const discoveryPaths = [
+    '/openapi.json',
+    '/api/openapi.json',
+    '/swagger.json',
+    '/api/swagger.json',
+    '/api/v1/openapi.json',
+    '/api/docs',
+    '/api/v1/docs',
+    '/api/spec',
+    '/api/v1/spec',
+    '/docs',
+  ];
+
+  const detectedEndpoints: DetectedEndpoint[] = [];
+  const errors: string[] = [];
+
+  for (const discoveryPath of discoveryPaths) {
+    try {
+      const url = baseUrl + discoveryPath;
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 5000);
+      const response = await fetch(url, { signal: controller.signal });
+      clearTimeout(timeout);
+      
+      if (!response.ok) continue;
+      
+      const contentType = response.headers.get('content-type') || '';
+      const text = await response.text();
+      
+      if (contentType.includes('json') || text.trim().startsWith('{')) {
+        try {
+          const parsed = JSON.parse(text);
+          const found = detectEndpointsFromOpenApiJson(parsed, discoveryPath) || detectEndpointsFromGenericJson(parsed, discoveryPath);
+          if (found.length > 0) {
+            detectedEndpoints.push(...found);
+            break; // Found a valid spec, stop discovery
+          }
+        } catch {
+          continue;
+        }
+      }
+    } catch {
+      errors.push(discoveryPath);
+    }
+  }
+
+  // If no endpoints found from spec, try common REST endpoints
+  if (detectedEndpoints.length === 0) {
+    const commonEndpoints = [
+      { url: '/api/users', method: 'GET' },
+      { url: '/api/users', method: 'POST' },
+      { url: '/api/users/:id', method: 'GET' },
+      { url: '/api/users/:id', method: 'PUT' },
+      { url: '/api/users/:id', method: 'DELETE' },
+      { url: '/api/auth/login', method: 'POST' },
+      { url: '/api/auth/register', method: 'POST' },
+      { url: '/api/health', method: 'GET' },
+    ];
+
+    for (const endpoint of commonEndpoints) {
+      try {
+        const url = baseUrl + endpoint.url;
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 3000);
+        const response = await fetch(url, { 
+          method: endpoint.method,
+          signal: controller.signal 
+        });
+        clearTimeout(timeout);
+        
+        let schema: Record<string, unknown> = {};
+        try {
+          const data = await response.json();
+          if (data && typeof data === 'object' && !Array.isArray(data)) {
+            schema = Object.fromEntries(
+              Object.entries(data).map(([key, val]) => [key, Array.isArray(val) ? 'array' : typeof val])
+            );
+          } else if (Array.isArray(data) && data.length > 0) {
+            const first = data[0];
+            if (first && typeof first === 'object') {
+              schema = Object.fromEntries(
+                Object.entries(first).map(([key, val]) => [key, Array.isArray(val) ? 'array' : typeof val])
+              );
+            }
+          }
+        } catch {
+          // Response not JSON, skip schema capture
+        }
+
+        detectedEndpoints.push({
+          name: endpoint.url.replace(/^\/api\//, '').replace(/\//g, ' ').replace(/\b\w/g, (c: string) => c.toUpperCase()),
+          url: endpoint.url,
+          method: endpoint.method as Endpoint['method'],
+          currentSchema: Object.keys(schema).length > 0 ? schema : undefined,
+          monitoringEnabled: true,
+        });
+      } catch {
+        // Endpoint not reachable
+      }
+    }
+  }
+
+  res.json({
+    detected: detectedEndpoints,
+    source: detectedEndpoints.length > 0 ? (detectedEndpoints.length > 8 ? 'openapi-spec' : 'common-endpoints') : 'none',
+    count: detectedEndpoints.length,
+    message: detectedEndpoints.length > 0
+      ? 'Found ' + detectedEndpoints.length + ' endpoint' + (detectedEndpoints.length === 1 ? '' : 's')
+      : 'No endpoints could be auto-detected. Try providing an OpenAPI spec URL or add endpoints manually.',
+  });
+});
+
 app.post('/api/projects', createProjectHandler);
 app.post('/api/projects/connect-github', createProjectHandler);
 app.post('/api/projects/upload', createProjectHandler);

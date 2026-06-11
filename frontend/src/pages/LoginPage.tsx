@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import { Shield, RefreshCw } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
 import { Button } from '@/components/common/Button';
 import { Input } from '@/components/common/Input';
 import { DriftBoardLogo } from '@/components/common/DriftBoardLogo';
+import { getApiBaseUrl } from '@/services/runtimeConfig';
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -124,10 +126,61 @@ export default function LoginPage() {
     }
   };
 
-  const continueWithProvider = (provider: 'google' | 'github') => {
+  const [oauthLoading, setOauthLoading] = useState(false);
+  const [oauthProvider, setOauthProvider] = useState<'google' | 'github' | null>(null);
+  const [oauthStatus, setOauthStatus] = useState('');
+
+  const continueWithProvider = async (provider: 'google' | 'github') => {
     setLocalError('');
     setSuccessMessage('');
     clearError();
+    setOauthProvider(provider);
+    setOauthLoading(true);
+    setOauthStatus('Connecting securely...');
+
+    const providerLabel = provider === 'google' ? 'Google' : 'GitHub';
+    const apiBaseUrl = getApiBaseUrl();
+    const healthUrl = `${apiBaseUrl.replace(/\/$/, '')}/health`;
+
+    // Ping health endpoint to wake up backend (Render free tier)
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 15000);
+
+    let backendReady = false;
+    for (let attempt = 0; attempt < 3; attempt++) {
+      try {
+        setOauthStatus(
+          attempt === 0
+            ? 'Connecting securely...'
+            : `Waking up server (attempt ${attempt + 1})...`
+        );
+        const response = await fetch(healthUrl, {
+          method: 'GET',
+          signal: controller.signal,
+        });
+        if (response.ok || response.status < 500) {
+          backendReady = true;
+          break;
+        }
+      } catch {
+        // Backend not ready yet, retry
+      }
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+    }
+
+    clearTimeout(timeoutId);
+
+    if (!backendReady) {
+      setOauthLoading(false);
+      setOauthProvider(null);
+      setLocalError(
+        `Could not reach the server for ${providerLabel} sign-in. Please try again in a moment.`
+      );
+      return;
+    }
+
+    setOauthStatus(`Preparing ${providerLabel} login...`);
+    await new Promise((resolve) => setTimeout(resolve, 100));
     startOAuthLogin(provider);
   };
 
@@ -139,6 +192,7 @@ export default function LoginPage() {
   };
 
   const displayError = localError || error;
+  const oauthProviderLabel = oauthProvider === 'google' ? 'Google' : oauthProvider === 'github' ? 'GitHub' : '';
   const title = mode === 'login' ? 'Welcome back' : mode === 'forgot' ? 'Reset password' : 'Set new password';
   const subtitle =
     mode === 'login'
@@ -171,10 +225,48 @@ export default function LoginPage() {
           <Link to="/" className="mb-6 inline-flex">
             <DriftBoardLogo />
           </Link>
-          <h1 className="text-3xl font-bold text-white mb-2">{title}</h1>
-          <p className="text-white/60">{subtitle}</p>
+          <h1 className="text-3xl font-bold text-white mb-2">{oauthLoading ? oauthProviderLabel : title}</h1>
+          <p className="text-white/60">{oauthLoading ? oauthStatus : subtitle}</p>
         </motion.div>
 
+        {oauthLoading ? (
+          <motion.div
+            variants={itemVariants}
+            className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-8 flex flex-col items-center justify-center min-h-[300px]"
+          >
+            <div className="relative mb-6">
+              <div className="absolute inset-0 rounded-full bg-gradient-to-r from-indigo-500/20 to-purple-500/20 animate-pulse" />
+              <div className="relative flex h-20 w-20 items-center justify-center rounded-full border-2 border-indigo-400/30 bg-indigo-500/10">
+                <Shield className="h-10 w-10 text-indigo-400" />
+              </div>
+            </div>
+            <div className="mb-4 flex items-center gap-3">
+              <RefreshCw className="h-5 w-5 animate-spin text-indigo-400" />
+              <p className="text-lg font-medium text-white">{oauthStatus}</p>
+            </div>
+            <div className="h-1.5 w-full max-w-xs overflow-hidden rounded-full bg-white/10">
+              <motion.div
+                className="h-full rounded-full bg-gradient-to-r from-indigo-400 to-purple-400"
+                initial={{ width: '0%' }}
+                animate={{ width: '100%' }}
+                transition={{ duration: 8, ease: 'easeInOut' }}
+              />
+            </div>
+            <p className="mt-4 text-sm text-white/40">
+              Waking up the server for a secure {oauthProviderLabel} sign-in
+            </p>
+            <button
+              type="button"
+              onClick={() => {
+                setOauthLoading(false);
+                setOauthProvider(null);
+              }}
+              className="mt-6 text-sm text-white/40 hover:text-white/60 transition-colors"
+            >
+              Cancel
+            </button>
+          </motion.div>
+        ) : (
         <motion.div
           variants={itemVariants}
           className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-8"
@@ -315,6 +407,7 @@ export default function LoginPage() {
             </>
           )}
         </motion.div>
+        )}
 
         {mode === 'login' && (
           <motion.p variants={itemVariants} className="text-center mt-6 text-white/60">
@@ -323,6 +416,11 @@ export default function LoginPage() {
               Sign up
             </Link>
           </motion.p>
+        )}
+        {oauthLoading && (
+          <p className="text-center mt-4 text-xs text-white/30">
+            This ensures the backend is awake before redirecting to {oauthProviderLabel}
+          </p>
         )}
       </motion.div>
     </div>

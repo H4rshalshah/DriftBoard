@@ -25,6 +25,7 @@ import {
   RefreshCw,
   Search,
   Trash2,
+  Zap,
 } from 'lucide-react';
 import type { ProjectRole } from '@/utils/permissions';
 import { hasProjectPermission } from '@/utils/permissions';
@@ -211,6 +212,11 @@ export default function EndpointsPage() {
   const [refreshingId, setRefreshingId] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [projectRole, setProjectRole] = useState<ProjectRole | null>(currentProject?.currentUserRole || null);
+  const [autoDetectLoading, setAutoDetectLoading] = useState(false);
+  const [showAutoDetectModal, setShowAutoDetectModal] = useState(false);
+  const [detectedEndpoints, setDetectedEndpoints] = useState<Array<{ name?: string; url: string; method: Endpoint['method']; currentSchema?: Record<string, unknown> }>>([]);
+  const [selectedDetectedEndpoints, setSelectedDetectedEndpoints] = useState<Set<number>>(new Set());
+  const [autoDetectUrl, setAutoDetectUrl] = useState('');
   const endpointsPerPage = 9;
   const canEditEndpoints = hasProjectPermission(projectRole, 'endpoint:update');
 
@@ -361,6 +367,61 @@ export default function EndpointsPage() {
     }
   };
 
+  const startAutoDetect = async () => {
+    if (!canEditEndpoints || !currentProject?.id) return;
+    setAutoDetectUrl(currentProject.apiBaseUrl || '');
+    setShowAutoDetectModal(true);
+    setDetectedEndpoints([]);
+    setSelectedDetectedEndpoints(new Set());
+    setAutoDetectLoading(true);
+
+    try {
+      const result = await api.post<{
+        detected: Array<{ name?: string; url: string; method: string; currentSchema?: Record<string, unknown> }>;
+        count: number;
+        message: string;
+      }>(`/projects/${currentProject.id}/endpoints/auto-detect`, {
+        baseUrl: currentProject.apiBaseUrl || undefined,
+      });
+
+      const mapped = (result.detected || []).map((ep) => ({
+        ...ep,
+        method: ep.method as Endpoint['method'],
+      }));
+
+      setDetectedEndpoints(mapped);
+      setSelectedDetectedEndpoints(new Set(mapped.map((_, i) => i)));
+
+      if (mapped.length === 0) {
+        toast.error(result.message || 'No endpoints could be auto-detected.');
+      }
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Auto-detection failed.');
+      setDetectedEndpoints([]);
+    } finally {
+      setAutoDetectLoading(false);
+    }
+  };
+
+  const importDetectedEndpoints = async () => {
+    if (!currentProject?.id || selectedDetectedEndpoints.size === 0) return;
+    
+    setAutoDetectLoading(true);
+    try {
+      const selected = Array.from(selectedDetectedEndpoints).map((i) => detectedEndpoints[i]);
+      await api.post(`/projects/${currentProject.id}/endpoints/import-detected`, {
+        endpoints: selected,
+      });
+      toast.success(`Imported ${selected.length} endpoint${selected.length === 1 ? '' : 's'}.`);
+      setShowAutoDetectModal(false);
+      await fetchEndpoints(currentProject.id);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Import failed.');
+    } finally {
+      setAutoDetectLoading(false);
+    }
+  };
+
   const refreshAll = async () => {
     if (!currentProject?.id) return;
     if (!canEditEndpoints) {
@@ -458,6 +519,9 @@ export default function EndpointsPage() {
           <p className="text-white/60">Manage and monitor real API endpoints for the active project.</p>
         </div>
         <div className="flex flex-wrap gap-2">
+          <Button variant="secondary" leftIcon={<Zap className="w-4 h-4" />} onClick={() => void startAutoDetect()} disabled={!canEditEndpoints || !currentProject?.id}>
+            Auto Detect
+          </Button>
           <Button variant="secondary" leftIcon={<RefreshCw className={`w-4 h-4 ${refreshingId === 'all' ? 'animate-spin' : ''}`} />} onClick={() => void refreshAll()} disabled={!endpoints.length || !canEditEndpoints}>
             Refresh Endpoints
           </Button>
@@ -657,6 +721,111 @@ export default function EndpointsPage() {
             ))
           )}
         </ModalBody>
+      </Modal>
+
+      <Modal isOpen={showAutoDetectModal} onClose={() => { setShowAutoDetectModal(false); setDetectedEndpoints([]); }} size="lg">
+        <ModalHeader><h2 className="text-xl font-semibold text-white">Auto Detect Endpoints</h2></ModalHeader>
+        <ModalBody className="space-y-4">
+          {autoDetectLoading ? (
+            <div className="flex flex-col items-center justify-center py-12">
+              <RefreshCw className="h-8 w-8 animate-spin text-indigo-400 mb-4" />
+              <p className="text-white/80 text-sm">Scanning API endpoints...</p>
+              <p className="text-white/40 text-xs mt-2">Checking common API discovery paths</p>
+            </div>
+          ) : detectedEndpoints.length > 0 ? (
+            <>
+              <div className="flex items-center justify-between">
+                <p className="text-sm text-white/60">
+                  Found {detectedEndpoints.length} endpoint{detectedEndpoints.length === 1 ? '' : 's'}. Select the ones to import:
+                </p>
+                <button
+                  onClick={() => {
+                    if (selectedDetectedEndpoints.size === detectedEndpoints.length) {
+                      setSelectedDetectedEndpoints(new Set());
+                    } else {
+                      setSelectedDetectedEndpoints(new Set(detectedEndpoints.map((_, i) => i)));
+                    }
+                  }}
+                  className="text-xs text-indigo-400 hover:text-indigo-300 transition-colors"
+                >
+                  {selectedDetectedEndpoints.size === detectedEndpoints.length ? 'Deselect all' : 'Select all'}
+                </button>
+              </div>
+              <div className="max-h-64 space-y-2 overflow-y-auto">
+                {detectedEndpoints.map((ep, i) => {
+                  const isSelected = selectedDetectedEndpoints.has(i);
+                  return (
+                    <div
+                      key={i}
+                      onClick={() => {
+                        const next = new Set(selectedDetectedEndpoints);
+                        if (next.has(i)) next.delete(i);
+                        else next.add(i);
+                        setSelectedDetectedEndpoints(next);
+                      }}
+                      className={`flex cursor-pointer items-center gap-3 rounded-lg border p-3 transition-colors ${
+                        isSelected
+                          ? 'border-indigo-500/40 bg-indigo-500/10'
+                          : 'border-white/10 bg-white/5 hover:border-white/20'
+                      }`}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={isSelected}
+                        onChange={() => {}}
+                        className="h-4 w-4 accent-indigo-500"
+                      />
+                      <span className={`rounded border px-2 py-0.5 text-xs font-medium ${methodColors[ep.method]}`}>
+                        {ep.method}
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-medium text-white truncate">{ep.name || ep.url}</p>
+                        <p className="text-xs text-white/50 font-mono truncate">{ep.url}</p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </>
+          ) : (
+            <div className="py-8 text-center">
+              <p className="text-white/60 text-sm">
+                {currentProject?.apiBaseUrl
+                  ? `No endpoints detected from ${currentProject.apiBaseUrl}`
+                  : 'Set a project API base URL first or provide one below to auto-detect endpoints.'}
+              </p>
+              <Input
+                label="API Base URL"
+                placeholder="https://api.example.com"
+                value={autoDetectUrl}
+                onChange={(e) => setAutoDetectUrl(e.target.value)}
+                className="mt-4"
+              />
+              <Button
+                variant="secondary"
+                leftIcon={<RefreshCw className="w-4 h-4" />}
+                onClick={() => void startAutoDetect()}
+                disabled={!autoDetectUrl.trim()}
+                className="mt-4"
+              >
+                Retry Detection
+              </Button>
+            </div>
+          )}
+        </ModalBody>
+        <ModalFooter>
+          <Button variant="secondary" onClick={() => { setShowAutoDetectModal(false); setDetectedEndpoints([]); }}>
+            Cancel
+          </Button>
+          <Button
+            leftIcon={<Plus className="w-4 h-4" />}
+            onClick={() => void importDetectedEndpoints()}
+            disabled={selectedDetectedEndpoints.size === 0 || autoDetectLoading}
+            loading={autoDetectLoading}
+          >
+            Import {selectedDetectedEndpoints.size > 0 ? `(${selectedDetectedEndpoints.size})` : ''}
+          </Button>
+        </ModalFooter>
       </Modal>
 
       <Modal isOpen={modalMode === 'delete'} onClose={closeModal} size="md">
