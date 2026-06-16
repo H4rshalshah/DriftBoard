@@ -1863,6 +1863,7 @@ async function deliverConfiguredAlert(title: string, message: string, projectId:
 function isAllowedOrigin(origin?: string) {
   if (!origin) return true;
   if (ALLOWED_ORIGINS.includes(origin)) return true;
+  if (/^https:\/\/drift-board-frontend(?:-[a-z0-9-]+)?\.vercel\.app$/i.test(origin)) return true;
   if (process.env.NODE_ENV !== 'production' && /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)) return true;
   return Boolean(process.env.ALLOW_VERCEL_PREVIEWS === 'true' && /^https:\/\/[a-z0-9-]+\.vercel\.app$/i.test(origin));
 }
