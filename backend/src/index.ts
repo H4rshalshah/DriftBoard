@@ -5833,6 +5833,85 @@ app.get('/api/team/:projectId', (req, res) => {
   res.json(projectMembers);
 });
 
+app.post('/api/team/:projectId/invite', async (req, res) => {
+  const project = projects.find((item) => item.id === req.params.projectId);
+  if (!project) {
+    res.status(404).json({ message: 'Project not found' });
+    return;
+  }
+  const user = requireProjectPermission(req, res, project.id, 'team:invite');
+  if (!user) return;
+
+  const email = normalizeEmail(req.body?.email);
+  const role = ['admin', 'member', 'viewer'].includes(req.body?.role) ? req.body.role as TeamMember['role'] : 'member';
+  const suppliedPassword = typeof req.body?.invitePassword === 'string' ? req.body.invitePassword.trim() : '';
+  const invitePassword = suppliedPassword || generateInvitePassword();
+
+  if (!email || !isValidEmailAddress(email)) {
+    res.status(400).json({ message: 'Valid invite email is required.' });
+    return;
+  }
+
+  const alreadyActive = teamMembers.some((member) =>
+    member.projectId === project.id &&
+    member.userEmail.toLowerCase() === email &&
+    ['active', 'joined'].includes(member.status)
+  );
+  if (alreadyActive) {
+    res.status(409).json({ message: 'This teammate already has access to the project.' });
+    return;
+  }
+
+  for (let index = teamInvites.length - 1; index >= 0; index -= 1) {
+    const invite = teamInvites[index];
+    if (
+      invite.projectId === project.id &&
+      invite.userEmail.toLowerCase() === email &&
+      !invite.usedAt &&
+      new Date(invite.expiresAt).getTime() >= Date.now()
+    ) {
+      teamInvites.splice(index, 1);
+    }
+  }
+
+  const token = crypto.randomBytes(16).toString('hex');
+  const invite: TeamInvite = {
+    id: uuidv4(),
+    token,
+    projectId: project.id,
+    userEmail: email,
+    invitedByName: user.name,
+    invitedByEmail: user.email,
+    role,
+    inviteLink: createInviteLink(token),
+    invitePassword,
+    invitePasswordHash: bcrypt.hashSync(invitePassword, 10),
+    expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+    createdAt: now(),
+  };
+  teamInvites.unshift(invite);
+
+  let emailDelivery: AlertDelivery | undefined;
+  try {
+    emailDelivery = await sendInvitationEmail(email, invite, project.name);
+  } catch (error) {
+    emailDelivery = {
+      channel: 'email',
+      target: email,
+      status: 'failed',
+      message: error instanceof Error ? error.message : 'Invite email failed.',
+    };
+  }
+
+  void sendInvitationAdminEmail(invite, project.name).catch(() => undefined);
+  createNotification(project.id, 'team', 'Invite link generated', `Invite link generated for ${email}.`);
+  saveAppState();
+  res.status(201).json({
+    ...invite,
+    emailDelivery,
+  });
+});
+
 
 app.post('/api/team/invite/:token/accept', (req, res) => {
   const inviteIndex = teamInvites.findIndex((item) => item.token === req.params.token);
@@ -5862,6 +5941,7 @@ app.post('/api/team/invite/:token/accept', (req, res) => {
 
   const existingUser = findUserByEmail(invite.userEmail);
   const hasExistingAccount = Boolean(existingUser);
+  const accountEmail = normalizeEmail(req.body?.email || req.body?.accountEmail || invite.userEmail);
   const accountMode = req.body?.accountMode === 'existing' || req.body?.accountMode === 'new'
     ? req.body.accountMode as InviteAccountStatus
     : hasExistingAccount
@@ -5878,6 +5958,11 @@ app.post('/api/team/invite/:token/accept', (req, res) => {
     return;
   }
 
+  if (accountEmail !== invite.userEmail.toLowerCase()) {
+    res.status(400).json({ message: 'Use the same email address this invite was sent to.' });
+    return;
+  }
+
   if (existingUser?.passwordHash) {
     const accountPassword = String(req.body?.accountPassword || '');
     if (!accountPassword) {
@@ -5890,7 +5975,7 @@ app.post('/api/team/invite/:token/accept', (req, res) => {
     }
   }
 
-    const newAccountPassword = String(req.body?.newPassword || '');
+  const newAccountPassword = String(req.body?.newPassword || '');
   const invitedName = typeof req.body?.name === 'string' && req.body.name.trim()
     ? req.body.name.trim()
     : invite.userEmail.split('@')[0];
@@ -5899,6 +5984,10 @@ app.post('/api/team/invite/:token/accept', (req, res) => {
   // Create user account for new invitees who don't have an account yet
   let acceptedUser: User | null = existingUser || null;
   if (!existingUser && accountMode === 'new') {
+    if (!newAccountPassword || newAccountPassword.length < 8) {
+      res.status(400).json({ message: 'Create a password of at least 8 characters.' });
+      return;
+    }
     acceptedUser = upsertUser({
       id: uuidv4(),
       email: invite.userEmail,

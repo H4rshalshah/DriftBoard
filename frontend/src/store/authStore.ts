@@ -30,6 +30,7 @@ interface AuthState {
   acceptInvite: (token: string, data: {
     password: string;
     accountMode: 'existing' | 'new';
+    email?: string;
     accountPassword?: string;
     name?: string;
     username?: string;

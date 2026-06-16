@@ -38,7 +38,11 @@ export default function ResetPasswordPage() {
     if (token) {
       setResetCode(token);
     }
-  }, [token]);
+    const emailParam = searchParams.get('email');
+    if (emailParam) {
+      setEmail(emailParam);
+    }
+  }, [searchParams, token]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

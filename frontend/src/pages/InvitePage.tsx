@@ -34,17 +34,19 @@ export default function InvitePage() {
   const inviteToken = token || searchParams.get('token') || '';
 
   const navigate = useNavigate();
-  const { acceptInvite, isLoading } = useAuthStore();
+  const { acceptInvite, forgotPassword, isLoading } = useAuthStore();
 
   const [invite, setInvite] = useState<InviteDetails | null>(null);
   const [invitePassword, setInvitePassword] = useState('');
   const [accountMode, setAccountMode] = useState<'existing' | 'new' | null>(null);
 
+  const [accountEmail, setAccountEmail] = useState('');
   const [accountPassword, setAccountPassword] = useState('');
   const [name, setName] = useState('');
   const [username, setUsername] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [resetMessage, setResetMessage] = useState('');
 
   const [isLoadingInvite, setIsLoadingInvite] = useState(true);
   const [error, setError] = useState('');
@@ -71,6 +73,7 @@ export default function InvitePage() {
 
         setInvite(details);
         setAccountMode(details.accountStatus);
+        setAccountEmail(details.email);
         setUsername(details.email.split('@')[0] || '');
       })
       .catch((requestError) => {
@@ -100,9 +103,19 @@ export default function InvitePage() {
       return;
     }
 
-    if (accountMode === 'existing' && !accountPassword.trim()) {
-      setError('Enter your account password.');
-      return;
+    if (accountMode === 'existing') {
+      if (!accountEmail.trim()) {
+        setError('Enter your account email address.');
+        return;
+      }
+      if (invite && accountEmail.trim().toLowerCase() !== invite.email.toLowerCase()) {
+        setError('Use the same email address this invite was sent to.');
+        return;
+      }
+      if (!accountPassword.trim()) {
+        setError('Enter your account password.');
+        return;
+      }
     }
 
     if (accountMode === 'new') {
@@ -126,6 +139,7 @@ export default function InvitePage() {
       await acceptInvite(inviteToken, {
         password: invitePassword.trim(),
         accountMode,
+        email: accountEmail.trim(),
         accountPassword: accountPassword.trim(),
         name: name.trim(),
         username: username.trim(),
@@ -136,6 +150,24 @@ export default function InvitePage() {
       navigate('/app/dashboard', { replace: true });
     } catch (requestError) {
       setError(getErrorMessage(requestError, 'Could not accept invite.'));
+    }
+  };
+
+  const requestPasswordReset = async () => {
+    setError('');
+    setResetMessage('');
+    const email = (accountEmail || invite?.email || '').trim();
+    if (!email) {
+      setError('Enter your account email address first.');
+      return;
+    }
+    try {
+      const response = await forgotPassword(email);
+      const resetUrl = `/reset-password?email=${encodeURIComponent(email)}`;
+      setResetMessage(`${response.message} Open the reset link from your email, then return here and sign in with the new password.`);
+      window.open(resetUrl, '_blank', 'noopener,noreferrer');
+    } catch (requestError) {
+      setError(getErrorMessage(requestError, 'Could not start password reset.'));
     }
   };
 
@@ -223,7 +255,15 @@ export default function InvitePage() {
             />
 
             {accountMode === 'existing' && (
-              <div className="space-y-2">
+              <div className="space-y-3">
+                <Input
+                  label="Account email"
+                  type="email"
+                  value={accountEmail}
+                  onChange={(event) => setAccountEmail(event.target.value)}
+                  placeholder="you@example.com"
+                  autoComplete="email"
+                />
                 <Input
                   label="Account password"
                   type="password"
@@ -233,12 +273,18 @@ export default function InvitePage() {
                   autoComplete="current-password"
                   leftIcon={<KeyRound className="h-4 w-4" />}
                 />
-                <Link
-                  to={`/login?identifier=${encodeURIComponent(invite.email)}`}
-                  className="block text-xs text-indigo-400 hover:text-indigo-300 transition-colors"
+                {resetMessage && (
+                  <div className="rounded-lg border border-emerald-500/25 bg-emerald-500/10 px-3 py-2 text-xs leading-5 text-emerald-200">
+                    {resetMessage}
+                  </div>
+                )}
+                <button
+                  type="button"
+                  onClick={() => void requestPasswordReset()}
+                  className="block text-left text-xs text-indigo-400 transition-colors hover:text-indigo-300"
                 >
                   Forgot your password? Reset it here
-                </Link>
+                </button>
               </div>
             )}
 
