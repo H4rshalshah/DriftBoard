@@ -5921,6 +5921,34 @@ app.post('/api/team/:projectId/invite', async (req, res) => {
   });
 });
 
+app.get('/api/team/invite/:token', (req, res) => {
+  const invite = teamInvites.find((item) => item.token === req.params.token);
+  if (!invite || invite.usedAt) {
+    res.status(404).json({ message: 'Invite not found or already used' });
+    return;
+  }
+
+  if (new Date(invite.expiresAt).getTime() < Date.now()) {
+    res.status(410).json({ message: 'Invite has expired' });
+    return;
+  }
+
+  const project = projects.find((item) => item.id === invite.projectId);
+  if (!project) {
+    res.status(404).json({ message: 'Project not found' });
+    return;
+  }
+
+  res.json({
+    projectName: project.name,
+    teamName: project.name,
+    email: invite.userEmail,
+    role: invite.role,
+    accountStatus: findUserByEmail(invite.userEmail) ? 'existing' : 'new',
+    expiresAt: invite.expiresAt,
+  });
+});
+
 
 app.post('/api/team/invite/:token/accept', (req, res) => {
   const inviteIndex = teamInvites.findIndex((item) => item.token === req.params.token);
