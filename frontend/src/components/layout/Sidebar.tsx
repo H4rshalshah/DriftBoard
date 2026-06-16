@@ -24,6 +24,7 @@ import {
   FolderOpen,
   GitBranch,
   CheckCircle2,
+  Trash2,
 } from 'lucide-react';
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
@@ -79,7 +80,7 @@ export default function Sidebar() {
   const location = useLocation();
   const navigate = useNavigate();
   const { sidebarCollapsed, sidebarOpen, setSidebarCollapsed, setSidebarOpen } = useUIStore();
-  const { projects, currentProject, setCurrentProject, fetchProjects, createProject, isLoading, isCreating } = useProjectStore();
+  const { projects, currentProject, setCurrentProject, fetchProjects, createProject, deleteProject, isLoading, isCreating, isDeleting } = useProjectStore();
   const { fetchEndpoints } = useEndpointStore();
   const { user, logout } = useAuthStore();
   const [projectDropdownOpen, setProjectDropdownOpen] = useState(false);
@@ -235,7 +236,7 @@ export default function Sidebar() {
   };
 
   const readSourceFilesForUpload = async (files: File[]): Promise<SourceFilePayload[]> => {
-    const sourceFiles = getScannableSourceFiles(files).slice(0, 80);
+    const sourceFiles = getScannableSourceFiles(files).slice(0, 250);
     const payloads = await Promise.all(
       sourceFiles.map(async (file) => ({
         originalName: file.webkitRelativePath || file.name,
@@ -267,6 +268,33 @@ export default function Sidebar() {
       await api.post(`/projects/${projectId}/endpoints/import-detected`, {
         endpoints: detectedEndpoints,
       });
+    }
+  };
+
+  const handleDeleteProject = async (projectId: string) => {
+    const project = projects.find((item) => item.id === projectId);
+    if (!project || project.id === 'project_demo' || project.sourceType === 'demo') return;
+    const canDelete = project.ownerId === user?.id || hasProjectPermission(project.currentUserRole, 'project:delete');
+    if (!canDelete) {
+      window.alert('Only the project owner can delete this project.');
+      return;
+    }
+    const confirmed = window.confirm(`Delete ${project.name}? This removes its endpoints, drift history, uploads, keys, and team data.`);
+    if (!confirmed) return;
+
+    try {
+      await deleteProject(project.id);
+      const nextProject = projects.find((item) => item.id !== project.id && item.id !== 'project_demo')
+        || projects.find((item) => item.id !== project.id)
+        || null;
+      setCurrentProject(nextProject);
+      if (nextProject?.id) {
+        await fetchEndpoints(nextProject.id);
+      }
+      setProjectDropdownOpen(false);
+      navigate('/app/dashboard');
+    } catch (error) {
+      window.alert(error instanceof Error ? error.message : 'Unable to delete this project.');
     }
   };
 
@@ -307,7 +335,7 @@ export default function Sidebar() {
     }
 
     try {
-      setSetupStatus('Reading project source...');
+      setSetupStatus('Reading project source and detecting endpoints...');
       const detectedEndpoints = sourceType === 'folder' ? await detectEndpointsFromFiles(selectedFiles) : [];
       const filesToUpload = sourceType === 'folder' ? await readSourceFilesForUpload(selectedFiles) : [];
       const uploadedFiles = sourceType === 'folder'
@@ -333,7 +361,7 @@ export default function Sidebar() {
 
       setCurrentProject(project);
       if (filesToUpload.length > 0) {
-        setSetupStatus('Uploading source files for backend scanning...');
+        setSetupStatus('Scanning uploaded project files for endpoints and schemas...');
         await uploadSourceFilesForBackendScan(project.id, filesToUpload);
       }
       setSetupStatus('Loading monitored endpoints...');
@@ -508,20 +536,40 @@ export default function Sidebar() {
                     </div>
                   )}
                   {projects.map((project) => (
-                    <button
+                    <div
                       key={project.id}
-                      onClick={() => {
-                        setCurrentProject(project);
-                        setProjectDropdownOpen(false);
-                      }}
                       className={cn(
-                        'w-full text-left px-3 py-2 text-sm',
+                        'flex w-full items-center gap-2 px-3 py-2 text-sm',
                         'hover:bg-white/10 transition-colors duration-150',
                         currentProject?.id === project.id ? 'text-primary-400' : 'text-gray-300'
                       )}
                     >
-                      {project.name}
-                    </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setCurrentProject(project);
+                          setProjectDropdownOpen(false);
+                        }}
+                        className="min-w-0 flex-1 truncate text-left"
+                      >
+                        {project.name}
+                      </button>
+                      {project.id !== 'project_demo' && project.sourceType !== 'demo' && (
+                        <button
+                          type="button"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            void handleDeleteProject(project.id);
+                          }}
+                          disabled={isDeleting || !(project.ownerId === user?.id || hasProjectPermission(project.currentUserRole, 'project:delete'))}
+                          className="rounded p-1 text-white/40 transition-colors hover:bg-red-500/10 hover:text-red-300 disabled:cursor-not-allowed disabled:opacity-30"
+                          aria-label={`Delete ${project.name}`}
+                          title="Delete project"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      )}
+                    </div>
                   ))}
                   {canOpenProjectSetup && (
                     <>

@@ -104,14 +104,28 @@ router.post(
 router.post(
   '/login',
   [
-    body('email').isEmail().normalizeEmail().withMessage('Valid email is required'),
+    body('identifier')
+      .optional()
+      .trim()
+      .notEmpty()
+      .withMessage('Email or username is required'),
+    body('email')
+      .optional()
+      .isEmail()
+      .normalizeEmail()
+      .withMessage('Valid email is required'),
+    body('username')
+      .optional()
+      .trim()
+      .notEmpty()
+      .withMessage('Username is required'),
     body('password').notEmpty().withMessage('Password is required'),
   ],
   validate,
   async (req: Request, res: Response): Promise<void> => {
     try {
-      const { email, password } = req.body;
-      const result = await authService.login(email, password);
+      const { identifier, email, username, password } = req.body;
+      const result = await authService.login(identifier || email || username, password);
 
       res.json({
         message: 'Login successful',

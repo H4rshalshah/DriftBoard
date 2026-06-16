@@ -3165,8 +3165,11 @@ function detectEndpointsFromText(content: string, sourceFile?: string) {
   const methodPattern = HTTP_METHODS.join('|');
   const routePatterns = [
     new RegExp(`\\b(?:app|router|api|server|fastify)\\s*\\.\\s*(${methodPattern.toLowerCase()})\\s*\\(\\s*['"\`]([^'"\`]+)['"\`]`, 'gi'),
+    new RegExp(`\\b(?:router|route)\\s*\\.\\s*route\\s*\\(\\s*['"\`]([^'"\`]+)['"\`]\\s*\\)[\\s\\S]{0,240}?\\.\\s*(${methodPattern.toLowerCase()})\\s*\\(`, 'gi'),
     new RegExp(`\\bRoute\\s*::\\s*(${methodPattern.toLowerCase()})\\s*\\(\\s*['"\`]([^'"\`]+)['"\`]`, 'gi'),
+    new RegExp(`\\b(?:app|blueprint)\\s*\\.\\s*route\\s*\\(\\s*['"\`]([^'"\`]+)['"\`][\\s\\S]{0,180}?methods\\s*=\\s*\\[\\s*['"\`](${methodPattern})['"\`]`, 'gi'),
     new RegExp(`@(${methodPattern})\\s*\\(\\s*['"\`]([^'"\`]+)['"\`]`, 'gi'),
+    new RegExp(`\\b(?:path|re_path)\\s*\\(\\s*['"\`]([^'"\`]+)['"\`]`, 'gi'),
     new RegExp(`\\bmethod\\s*:\\s*['"\`](${methodPattern})['"\`][\\s\\S]{0,160}?\\b(?:url|path)\\s*:\\s*['"\`]([^'"\`]+)['"\`]`, 'gi'),
     new RegExp(`\\b(${methodPattern})\\s+((?:https?:\\/\\/|\\/)[^\\s"'<>]+)`, 'gi'),
   ];
@@ -3174,9 +3177,28 @@ function detectEndpointsFromText(content: string, sourceFile?: string) {
   routePatterns.forEach((pattern) => {
     let match: RegExpExecArray | null;
     while ((match = pattern.exec(content)) !== null) {
-      pushDetectedEndpoint(detected, match[1], match[2], sourceFile);
+      if (pattern.source.includes('route\\\\s*\\\\(') || pattern.source.includes('path|re_path')) {
+        pushDetectedEndpoint(detected, match[2] || 'GET', match[1], sourceFile);
+      } else {
+        pushDetectedEndpoint(detected, match[1], match[2], sourceFile);
+      }
     }
   });
+
+  if (sourceFile) {
+    const normalizedSource = sourceFile.replace(/\\/g, '/');
+    const nextRouteMatch = normalizedSource.match(/(?:^|\/)app\/api\/(.+?)\/route\.(?:js|jsx|ts|tsx)$/i);
+    if (nextRouteMatch) {
+      const routePath = `/api/${nextRouteMatch[1]
+        .replace(/\/index$/i, '')
+        .replace(/\[([^\]]+)\]/g, ':$1')}`;
+      HTTP_METHODS.forEach((method) => {
+        if (new RegExp(`\\bexport\\s+(?:async\\s+)?function\\s+${method}\\b|\\bexport\\s+const\\s+${method}\\b`, 'i').test(content)) {
+          pushDetectedEndpoint(detected, method, routePath, sourceFile);
+        }
+      });
+    }
+  }
 
   const lines = content.split(/\r?\n/);
   lines.forEach((line, index) => {
@@ -4772,6 +4794,26 @@ app.post('/api/projects/:projectId/endpoints/auto-detect', async (req, res) => {
 app.post('/api/projects', createProjectHandler);
 app.post('/api/projects/connect-github', createProjectHandler);
 app.post('/api/projects/upload', createProjectHandler);
+
+app.delete('/api/projects/:projectId', (req, res) => {
+  const project = projects.find((item) => item.id === req.params.projectId);
+  if (!project) {
+    res.status(404).json({ message: 'Project not found' });
+    return;
+  }
+  if (project.id === 'project_demo' || project.sourceType === 'demo') {
+    res.status(400).json({ message: 'Demo Project cannot be deleted.' });
+    return;
+  }
+  const user = requireProjectPermission(req, res, project.id, 'project:delete');
+  if (!user) return;
+
+  removeProjectData(project.id);
+  createNotification('project_demo', 'system', 'Project deleted', `${project.name} was deleted by ${user.name}.`, false);
+  saveAppState();
+  io.emit('project:deleted', { projectId: project.id, deletedAt: now() });
+  res.status(204).send();
+});
 
 app.post('/api/projects/:projectId/replace', (req, res) => {
   req.body = { ...req.body, replaceExisting: true };

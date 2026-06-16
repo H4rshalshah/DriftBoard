@@ -88,6 +88,7 @@ export interface IProjectSettings {
 
 export interface ICreateUserDto {
   email: string;
+  username?: string;
   password: string;
   name: string;
 }

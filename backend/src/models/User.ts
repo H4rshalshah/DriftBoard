@@ -7,6 +7,7 @@ import {
 
 export interface IUserDocument extends Document {
   email: string;
+  username?: string;
   passwordHash: string;
   name: string;
   avatar?: string;
@@ -36,6 +37,13 @@ const userSchema = new Schema<IUserDocument>(
       lowercase: true,
       trim: true,
       index: true,
+    },
+    username: {
+      type: String,
+      lowercase: true,
+      trim: true,
+      index: true,
+      default: undefined,
     },
     passwordHash: {
       type: String,
@@ -92,6 +100,7 @@ const userSchema = new Schema<IUserDocument>(
 
 userSchema.index({ createdAt: -1 });
 userSchema.index({ email: 1 }, { unique: true });
+userSchema.index({ username: 1 }, { sparse: true });
 userSchema.index({ teamIds: 1 });
 
 userSchema.virtual('isAdmin').get(function () {
@@ -144,6 +153,7 @@ userSchema.methods.toSafeObject = function (): Record<string, unknown> {
   return {
     id: this._id,
     email: this.email,
+    username: this.username || this.email.split('@')[0],
     name: this.name,
     avatar: this.avatar,
     role: this.role,
@@ -160,6 +170,7 @@ userSchema.statics.build = async function (
 ): Promise<IUserDocument> {
   const user = new this({
     email: dto.email,
+    username: dto.username,
     passwordHash: dto.password,
     name: dto.name,
     role: UserRole.MEMBER,

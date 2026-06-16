@@ -63,8 +63,14 @@ class AuthService {
     return { user, tokens };
   }
 
-  public async login(email: string, password: string): Promise<LoginResult> {
-    const user = await UserModel.findByEmail(email);
+  public async login(identifier: string, password: string): Promise<LoginResult> {
+    const normalizedIdentifier = String(identifier || '').trim().toLowerCase();
+    const user = await UserModel.findOne({
+      $or: [
+        { email: normalizedIdentifier },
+        { username: normalizedIdentifier },
+      ],
+    }).select('+passwordHash +refreshToken');
 
     if (!user) {
       throw new AuthServiceError('Invalid credentials', 'INVALID_CREDENTIALS');

@@ -71,8 +71,10 @@ class ApiClient {
       (response: AxiosResponse) => response,
       async (error: AxiosError) => {
         const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
+        const requestUrl = originalRequest.url || '';
+        const isAuthEntryRequest = /\/auth\/(login|register|social|oauth|forgot-password|reset-password)$/i.test(requestUrl);
 
-        if (error.response?.status === 401 && !originalRequest._retry) {
+        if (error.response?.status === 401 && !originalRequest._retry && !isAuthEntryRequest) {
           originalRequest._retry = true;
 
           try {

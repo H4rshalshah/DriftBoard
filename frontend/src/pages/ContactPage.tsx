@@ -98,6 +98,17 @@ async function submitContactForm(form: ContactForm) {
   }
 }
 
+function contactMailtoUrl(form: ContactForm) {
+  const subject = `[DriftBoard] ${subjectOptions.find((option) => option.value === form.subject)?.label || 'Support'} - ${form.name}`;
+  const body = [
+    `Name: ${form.name}`,
+    `Email: ${form.email}`,
+    '',
+    form.message,
+  ].join('\n');
+  return `mailto:h4rshal.workspace@gmail.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+}
+
 export default function ContactPage() {
   const location = useLocation();
   const user = useAuthStore((state) => state.user);
@@ -158,9 +169,12 @@ export default function ContactPage() {
     try {
       const response = await submitContactForm(form);
       const delivered = response.notificationStatus === 'sent';
-      const successMessage = response.message || (delivered
-        ? 'Message sent.'
-        : 'Message received. We will follow up soon.');
+      if (!delivered) {
+        window.location.href = contactMailtoUrl(form);
+      }
+      const successMessage = delivered
+        ? (response.message || 'Message sent.')
+        : 'Email delivery is not configured, so we opened your email app with the developer address.';
       toast.success(successMessage, { id: toastId });
       setSubmittedMessage(successMessage);
       setForm((current) => ({
@@ -170,7 +184,8 @@ export default function ContactPage() {
         startedAt: Date.now(),
       }));
     } catch (error) {
-      const fallbackMessage = 'Message received. If email delivery is delayed, the team can still follow up from your submitted address.';
+      window.location.href = contactMailtoUrl(form);
+      const fallbackMessage = 'Could not send from DriftBoard, so we opened your email app with the developer address.';
       toast.success(fallbackMessage, { id: toastId });
       setSubmittedMessage(fallbackMessage);
       setForm((current) => ({

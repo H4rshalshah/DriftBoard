@@ -49,6 +49,8 @@ type AuthResponse = {
   };
 };
 
+type UserResponse = User | { user: User };
+
 type InviteAcceptResponse = AuthResponse & {
   project: Project;
 };
@@ -100,7 +102,8 @@ export const useAuthStore = create<AuthState>()(
         localStorage.removeItem('refresh_token');
         set({ isLoading: true, error: null, token, isAuthenticated: true });
         try {
-          const user = await api.get<User>('/auth/me');
+          const response = await api.get<UserResponse>('/auth/me');
+          const user = 'user' in response ? response.user : response;
           set({ user, token, isAuthenticated: true, isLoading: false });
         } catch (error) {
           localStorage.removeItem('auth_token');
