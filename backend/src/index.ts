@@ -5892,18 +5892,26 @@ app.post('/api/team/:projectId/invite', async (req, res) => {
   };
   teamInvites.unshift(invite);
 
-  let emailDelivery: AlertDelivery | undefined;
-  try {
-    emailDelivery = await sendInvitationEmail(email, invite, project.name);
-  } catch (error) {
-    emailDelivery = {
-      channel: 'email',
-      target: email,
+  const emailDelivery: AlertDelivery = {
+    channel: 'email',
+    target: email,
+    status: 'queued',
+    message: 'Invite email is being sent in the background.',
+  };
+  void sendInvitationEmail(email, invite, project.name).catch((error) => {
+    emailOutbox.unshift({
+      id: uuidv4(),
+      to: email,
+      subject: `DriftBoard invitation to ${project.name}`,
+      text: `Invite link: ${invite.inviteLink}\nLogin code: ${invite.invitePassword}`,
+      html: `Invite link: ${htmlEscape(invite.inviteLink)}<br>Login code: ${htmlEscape(invite.invitePassword || '')}`,
       status: 'failed',
-      message: error instanceof Error ? error.message : 'Invite email failed.',
-    };
-  }
-
+      provider: process.env.RESEND_API_KEY ? 'resend' : 'local',
+      createdAt: now(),
+      errorMessage: error instanceof Error ? error.message : 'Invite email failed.',
+    });
+    saveAppState();
+  });
   void sendInvitationAdminEmail(invite, project.name).catch(() => undefined);
   createNotification(project.id, 'team', 'Invite link generated', `Invite link generated for ${email}.`);
   saveAppState();
