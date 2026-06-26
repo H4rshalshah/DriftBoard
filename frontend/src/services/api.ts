@@ -2,7 +2,8 @@ import axios, { AxiosInstance, AxiosError, InternalAxiosRequestConfig, AxiosResp
 import { getApiBaseUrl } from './runtimeConfig';
 
 const API_BASE_URL = getApiBaseUrl();
-const REQUEST_TIMEOUT = parseInt(import.meta.env.VITE_API_TIMEOUT || '30000', 10);
+// Increase timeout to 60s to handle backend cold starts (Render free tier spins down)
+const REQUEST_TIMEOUT = parseInt(import.meta.env.VITE_API_TIMEOUT || '60000', 10);
 
 export interface ApiError {
   message: string;

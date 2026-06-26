@@ -123,11 +123,35 @@ export const useAuthStore = create<AuthState>()(
 
       login: async (identifier: string, password: string) => {
         set({ isLoading: true, error: null });
-        try {
-          const response = await api.post<AuthResponse>('/auth/login', {
+
+        const attemptLogin = async (): Promise<AuthResponse> => {
+          return api.post<AuthResponse>('/auth/login', {
             identifier,
             password,
           });
+        };
+
+        try {
+          let response: AuthResponse;
+          try {
+            response = await attemptLogin();
+          } catch (firstError) {
+            // Auto-retry once on network/timeout errors to handle cold-start edge cases
+            const isTransient =
+              firstError instanceof Error &&
+              (/network|timeout|econnaborted|econnrefused|enotfound|socket/i.test(firstError.message) ||
+               !firstError.message || firstError.message === 'Network error. Please check your connection.');
+
+            if (isTransient) {
+              console.info('Login attempt failed due to transient error, retrying once...');
+              // Brief backoff before retry
+              await new Promise((resolve) => setTimeout(resolve, 1500));
+              response = await attemptLogin();
+            } else {
+              throw firstError;
+            }
+          }
+
           set(applyAuthResponse(response));
           await useProjectStore.getState().fetchCurrentProject();
         } catch (error) {

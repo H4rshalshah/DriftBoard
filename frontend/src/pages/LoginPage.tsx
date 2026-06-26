@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Shield, RefreshCw } from 'lucide-react';
@@ -31,6 +31,16 @@ export default function LoginPage() {
   const [localError, setLocalError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
   const [mode, setMode] = useState<'login' | 'forgot'>('login');
+  const [warmupStatus, setWarmupStatus] = useState('');
+  const [isWarmingUp, setIsWarmingUp] = useState(false);
+  const warmupAbortRef = useRef<AbortController | null>(null);
+  const warmupCancelledRef = useRef(false);
+
+  useEffect(() => {
+    return () => {
+      warmupAbortRef.current?.abort();
+    };
+  }, []);
 
   useEffect(() => {
     const rememberedIdentifier = localStorage.getItem('driftboard_remembered_identifier');
@@ -66,10 +76,50 @@ export default function LoginPage() {
     }
   }, [completeOAuthLogin, navigate, searchParams]);
 
+  const warmupBackend = async (): Promise<boolean> => {
+    const apiBaseUrl = getApiBaseUrl();
+    const healthUrl = `${apiBaseUrl.replace(/\/$/, '')}/health`;
+
+    warmupAbortRef.current?.abort();
+    const controller = new AbortController();
+    warmupAbortRef.current = controller;
+    warmupCancelledRef.current = false;
+
+    for (let attempt = 0; attempt < 3; attempt++) {
+      if (controller.signal.aborted) {
+        warmupCancelledRef.current = true;
+        return false;
+      }
+      try {
+        setWarmupStatus(
+          attempt === 0
+            ? 'Waking up server...'
+            : `Waking up server (attempt ${attempt + 1})...`
+        );
+        const response = await fetch(healthUrl, {
+          method: 'GET',
+          signal: controller.signal,
+        });
+        if (response.ok || response.status < 500) {
+          return true;
+        }
+      } catch {
+        // Backend not ready yet, retry
+      }
+      if (attempt < 2) {
+        await new Promise((resolve) => setTimeout(resolve, 2000));
+      }
+    }
+
+    return false;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLocalError('');
     setSuccessMessage('');
+    setWarmupStatus('');
+    setIsWarmingUp(false);
     clearError();
 
     if (mode === 'forgot') {
@@ -92,6 +142,27 @@ export default function LoginPage() {
       return;
     }
 
+    // Warm up backend before login to avoid cold start timeouts
+    setIsWarmingUp(true);
+    warmupCancelledRef.current = false;
+    const backendReady = await warmupBackend();
+
+    // If user cancelled warmup, don't proceed with login
+    if (warmupCancelledRef.current) {
+      setIsWarmingUp(false);
+      setWarmupStatus('');
+      return;
+    }
+
+    if (!backendReady) {
+      // Warmup failed but proceed anyway — the increased 60s timeout may still handle it
+    } else {
+      // Small delay so the backend can fully initialize after warmup
+      await new Promise((resolve) => setTimeout(resolve, 300));
+    }
+    setIsWarmingUp(false);
+    setWarmupStatus('');
+
     try {
       await login(identifier, password);
       if (rememberMe) {
@@ -101,7 +172,13 @@ export default function LoginPage() {
       }
       navigate('/app/dashboard');
     } catch (err) {
-      setLocalError(err instanceof Error ? err.message : 'Login failed');
+      const message = err instanceof Error ? err.message : 'Login failed';
+      // If the error is a network/timeout error, suggest retrying
+      if (message.toLowerCase().includes('network') || message.toLowerCase().includes('timeout') || message.toLowerCase().includes('econnaborted')) {
+        setLocalError('Connection timed out. The server may still be starting up — please wait a moment and sign in again.');
+      } else {
+        setLocalError(message);
+      }
     }
   };
 
@@ -202,11 +279,53 @@ export default function LoginPage() {
           <Link to="/" className="mb-6 inline-flex">
             <DriftBoardLogo />
           </Link>
-          <h1 className="text-3xl font-bold text-white mb-2">{oauthLoading ? oauthProviderLabel : title}</h1>
-          <p className="text-white/60">{oauthLoading ? oauthStatus : subtitle}</p>
+          <h1 className="text-3xl font-bold text-white mb-2">
+            {oauthLoading ? oauthProviderLabel : isWarmingUp ? 'Waking up server' : title}
+          </h1>
+          <p className="text-white/60">
+            {oauthLoading ? oauthStatus : isWarmingUp ? warmupStatus : subtitle}
+          </p>
         </motion.div>
 
-        {oauthLoading ? (
+        {isWarmingUp ? (
+          <motion.div
+            variants={itemVariants}
+            className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-8 flex flex-col items-center justify-center min-h-[300px]"
+          >
+            <div className="relative mb-6">
+              <div className="absolute inset-0 rounded-full bg-gradient-to-r from-indigo-500/20 to-purple-500/20 animate-pulse" />
+              <div className="relative flex h-20 w-20 items-center justify-center rounded-full border-2 border-indigo-400/30 bg-indigo-500/10">
+                <Shield className="h-10 w-10 text-indigo-400" />
+              </div>
+            </div>
+            <div className="mb-4 flex items-center gap-3">
+              <RefreshCw className="h-5 w-5 animate-spin text-indigo-400" />
+              <p className="text-lg font-medium text-white">{warmupStatus}</p>
+            </div>
+            <div className="h-1.5 w-full max-w-xs overflow-hidden rounded-full bg-white/10">
+              <motion.div
+                className="h-full rounded-full bg-gradient-to-r from-indigo-400 to-purple-400"
+                initial={{ width: '0%' }}
+                animate={{ width: '100%' }}
+                transition={{ duration: 8, ease: 'easeInOut' }}
+              />
+            </div>
+            <p className="mt-4 text-sm text-white/40">
+              Waking up the server for a secure sign-in
+            </p>              <button
+                type="button"
+                onClick={() => {
+                  setIsWarmingUp(false);
+                  setWarmupStatus('');
+                  warmupCancelledRef.current = true;
+                  warmupAbortRef.current?.abort();
+                }}
+                className="mt-6 text-sm text-white/40 hover:text-white/60 transition-colors"
+              >
+                Cancel
+              </button>
+          </motion.div>
+        ) : oauthLoading ? (
           <motion.div
             variants={itemVariants}
             className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-8 flex flex-col items-center justify-center min-h-[300px]"
