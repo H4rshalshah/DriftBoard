@@ -1,5 +1,8 @@
 import { create } from 'zustand';
 import { useAuthStore } from './authStore';
+import { useEndpointStore, type Endpoint } from './endpointStore';
+import { useDriftStore, type DriftEvent } from './driftStore';
+import { useNotificationStore, type Notification } from './notificationStore';
 import { getApiBaseUrl } from '../services/runtimeConfig';
 
 export type ConnectionStatus = 'disconnected' | 'connecting' | 'connected' | 'error';
@@ -25,6 +28,7 @@ interface SocketState {
   error: string | null;
   reconnectAttempts: number;
   maxReconnectAttempts: number;
+  currentProjectRoom: string | null;
 
   connect: () => void;
   disconnect: () => void;
@@ -33,11 +37,67 @@ interface SocketState {
   sendMessage: (room: string, type: string, payload: unknown) => void;
   clearMessages: () => void;
   handleReconnect: () => void;
+  joinProjectRoom: (projectId: string) => void;
+  leaveProjectRoom: () => void;
 }
 
 let socket: WebSocket | null = null;
 let reconnectTimeout: ReturnType<typeof setTimeout> | null = null;
 let messageHandler: ((message: RealtimeMessage) => void) | null = null;
+
+// Handle incoming real-time data events and update stores
+function handleDataEvent(message: RealtimeMessage) {
+  const payload = message.payload as Record<string, unknown> | undefined;
+  if (!payload) return;
+
+  switch (message.type) {
+    case 'drift:new': {
+      const      event = payload as unknown as DriftEvent;
+      useDriftStore.setState((state) => ({
+        driftEvents: [event, ...state.driftEvents.filter((e) => e.id !== event.id)],
+      }));
+      break;
+    }
+    case 'drift:updated': {
+      const event = payload as unknown as DriftEvent;
+      useDriftStore.setState((state) => ({
+        driftEvents: state.driftEvents.map((e) => (e.id === event.id ? event : e)),
+      }));
+      break;
+    }
+    case 'endpoint:updated': {
+      const endpoint = payload as unknown as Endpoint;
+      useEndpointStore.setState((state) => ({
+        endpoints: state.endpoints.map((e) => (e.id === endpoint.id ? endpoint : e)),
+      }));
+      break;
+    }
+    case 'endpoint:created': {
+      const endpoint = payload as unknown as Endpoint;
+      useEndpointStore.setState((state) => ({
+        endpoints: state.endpoints.some((e) => e.id === endpoint.id)
+          ? state.endpoints
+          : [...state.endpoints, endpoint],
+      }));
+      break;
+    }
+    case 'endpoint:deleted': {
+      const { endpointId } = payload as { endpointId: string };
+      useEndpointStore.setState((state) => ({
+        endpoints: state.endpoints.filter((e) => e.id !== endpointId),
+      }));
+      break;
+    }
+    case 'notification:new': {
+      const notification = payload as unknown as Notification;
+      useNotificationStore.setState((state) => ({
+        notifications: [notification, ...state.notifications],
+        unreadCount: state.unreadCount + 1,
+      }));
+      break;
+    }
+  }
+}
 
 export const useSocketStore = create<SocketState>((set, get) => ({
   status: 'disconnected',
@@ -45,7 +105,8 @@ export const useSocketStore = create<SocketState>((set, get) => ({
   messages: [],
   error: null,
   reconnectAttempts: 0,
-  maxReconnectAttempts: 5,
+  maxReconnectAttempts: 10,
+  currentProjectRoom: null,
 
   connect: () => {
     const { status, reconnectAttempts, maxReconnectAttempts } = get();
@@ -69,6 +130,7 @@ export const useSocketStore = create<SocketState>((set, get) => ({
       socket.onopen = () => {
         set({ status: 'connected', reconnectAttempts: 0, error: null });
 
+        // Re-join all subscriptions
         const { subscriptions } = get();
         subscriptions.forEach((sub) => {
           socket?.send(JSON.stringify({ type: 'join', room: sub.room, channel: sub.channel }));
@@ -81,15 +143,23 @@ export const useSocketStore = create<SocketState>((set, get) => ({
           set((state) => ({
             messages: [...state.messages.slice(-99), message],
           }));
+
+          // Handle data events to update stores
+          handleDataEvent(message);
+
+          // Call external message handler if set
           messageHandler?.(message);
         } catch {
           console.error('Failed to parse WebSocket message');
         }
       };
 
-      socket.onclose = () => {
+      socket.onclose = (event) => {
         set({ status: 'disconnected' });
-        get().handleReconnect();
+        // Only reconnect on abnormal closures
+        if (event.code !== 1000) {
+          get().handleReconnect();
+        }
       };
 
       socket.onerror = () => {
@@ -109,9 +179,9 @@ export const useSocketStore = create<SocketState>((set, get) => ({
       reconnectTimeout = null;
     }
 
-    socket?.close();
+    socket?.close(1000, 'Client disconnect');
     socket = null;
-    set({ status: 'disconnected', subscriptions: [], reconnectAttempts: 0 });
+    set({ status: 'disconnected', subscriptions: [], reconnectAttempts: 0, currentProjectRoom: null });
   },
 
   joinRoom: (room: string, channel: string) => {
@@ -137,6 +207,27 @@ export const useSocketStore = create<SocketState>((set, get) => ({
 
     if (get().status === 'connected') {
       socket?.send(JSON.stringify({ type: 'leave', room }));
+    }
+  },
+
+  joinProjectRoom: (projectId: string) => {
+    const { currentProjectRoom } = get();
+    if (currentProjectRoom === projectId) return;
+
+    // Leave previous project room
+    if (currentProjectRoom) {
+      get().leaveRoom(`project:${currentProjectRoom}`);
+    }
+
+    get().joinRoom(`project:${projectId}`, 'data');
+    set({ currentProjectRoom: projectId });
+  },
+
+  leaveProjectRoom: () => {
+    const { currentProjectRoom } = get();
+    if (currentProjectRoom) {
+      get().leaveRoom(`project:${currentProjectRoom}`);
+      set({ currentProjectRoom: null });
     }
   },
 
@@ -167,7 +258,10 @@ export const useSocketStore = create<SocketState>((set, get) => ({
       return;
     }
 
-    const delay = Math.min(1000 * Math.pow(2, reconnectAttempts), 30000);
+    // Exponential backoff with jitter
+    const baseDelay = Math.min(1000 * Math.pow(2, reconnectAttempts), 30000);
+    const jitter = Math.random() * 1000;
+    const delay = baseDelay + jitter;
 
     reconnectTimeout = setTimeout(() => {
       set((state) => ({ reconnectAttempts: state.reconnectAttempts + 1 }));

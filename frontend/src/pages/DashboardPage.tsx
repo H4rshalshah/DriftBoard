@@ -1,7 +1,7 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
-import { useAuthStore, useDriftStore, useEndpointStore, useProjectStore } from '@/store';
+import { useAuthStore, useDriftStore, useEndpointStore, useProjectStore, useSocketStore } from '@/store';
 import { api } from '@/services/api';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/common/Card';
 import { Button } from '@/components/common/Button';
@@ -22,6 +22,8 @@ import {
   TrendingUp,
   Play,
   Pause,
+  Wifi,
+  WifiOff,
 } from 'lucide-react';
 import { hasProjectPermission } from '@/utils/permissions';
 
@@ -167,17 +169,6 @@ function percentChange(current: number, previous: number) {
   return Math.round(((current - previous) / previous) * 100);
 }
 
-function makeTrend(current: number, previous: number, increaseIsPositive = true): StatTrend {
-  const delta = current - previous;
-  const value = Math.abs(percentChange(current, previous));
-
-  return {
-    direction: delta >= 0 ? 'up' : 'down',
-    value,
-    positive: increaseIsPositive ? delta >= 0 : delta <= 0,
-  };
-}
-
 function endpointPercent(count: number, total: number) {
   if (total === 0) return 0;
   return Math.round((count / total) * 100);
@@ -204,10 +195,15 @@ export default function DashboardPage() {
   const graphSectionRef = useRef<HTMLDivElement>(null);
   const monitoringActionRef = useRef(0);
   const restartCooldownTargetRef = useRef<number | null>(null);
+  const initialLoadDone = useRef(false);
   const { user } = useAuthStore();
   const { currentProject, fetchProject, resumeMonitoring, startMonitoring, stopMonitoring } = useProjectStore();
-  const { driftEvents, isLoading: driftLoading } = useDriftStore();
+  const { driftEvents, isLoading: driftLoading, fetchDriftEvents } = useDriftStore();
   const { endpoints, isLoading: endpointsLoading, fetchEndpoints } = useEndpointStore();
+  const socketStatus = useSocketStore((state) => state.status);
+  const joinProjectRoom = useSocketStore((state) => state.joinProjectRoom);
+  const leaveProjectRoom = useSocketStore((state) => state.leaveProjectRoom);
+
   const [reportOpen, setReportOpen] = useState(false);
   const [lastReportAt, setLastReportAt] = useState<string | null>(null);
   const [reportUrl, setReportUrl] = useState<string | null>(null);
@@ -219,19 +215,40 @@ export default function DashboardPage() {
   const reportUrlRef = useRef<string | null>(null);
   const reportFileName = 'driftboard-demo-report.json';
 
-  useEffect(() => {
-    if (currentProject?.id) {
-      void fetchEndpoints(currentProject.id);
-    }
-  }, [currentProject?.id, fetchEndpoints]);
+  const isSocketConnected = socketStatus === 'connected';
 
+  // Join project room for real-time updates
+  useEffect(() => {
+    if (currentProject?.id && isSocketConnected) {
+      joinProjectRoom(currentProject.id);
+    }
+    return () => {
+      if (currentProject?.id) {
+        leaveProjectRoom();
+      }
+    };
+  }, [currentProject?.id, isSocketConnected, joinProjectRoom, leaveProjectRoom]);
+
+  // Initial data fetch
+  useEffect(() => {
+    if (currentProject?.id && !initialLoadDone.current) {
+      initialLoadDone.current = true;
+      void fetchEndpoints(currentProject.id);
+      void fetchDriftEvents(currentProject.id);
+    }
+  }, [currentProject?.id, fetchEndpoints, fetchDriftEvents]);
+
+  // Poll project data - use longer intervals when socket is connected
   useEffect(() => {
     if (!currentProject?.id) return;
     const refreshProject = () => void fetchProject(currentProject.id);
-    const intervalId = window.setInterval(refreshProject, 15000);
+    // Longer polling when socket is connected (socket provides real-time updates)
+    const intervalMs = isSocketConnected ? 60000 : 15000;
+    const intervalId = window.setInterval(refreshProject, intervalMs);
     return () => window.clearInterval(intervalId);
-  }, [currentProject?.id, fetchProject]);
+  }, [currentProject?.id, fetchProject, isSocketConnected]);
 
+  // Poll activity data - reduced frequency when socket is connected
   useEffect(() => {
     if (!currentProject?.id) {
       setActivityData(buildLastSevenDaysActivity([]));
@@ -301,13 +318,15 @@ export default function DashboardPage() {
     };
 
     void refreshActivity();
-    const intervalId = window.setInterval(refreshActivity, 5000);
+    // Longer interval when socket is connected (socket provides real-time updates)
+    const intervalMs = isSocketConnected ? 30000 : 5000;
+    const intervalId = window.setInterval(refreshActivity, intervalMs);
 
     return () => {
       cancelled = true;
       window.clearInterval(intervalId);
     };
-  }, [currentProject?.id, endpoints]);
+  }, [currentProject?.id, endpoints, isSocketConnected]);
 
   const projectEndpoints = currentProject?.id
     ? endpoints.filter((endpoint) => endpoint.projectId === currentProject.id)
@@ -422,11 +441,11 @@ export default function DashboardPage() {
   const totalActivity = activityData.reduce((total, item) => total + item.changes, 0);
   const todayKey = new Date().toISOString().slice(0, 10);
 
-  const viewGraph = () => {
+  const viewGraph = useCallback(() => {
     graphSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-  };
+  }, []);
 
-  const generateReport = () => {
+  const generateReport = useCallback(() => {
     const generatedAt = new Date().toISOString();
     const report = {
       generatedAt,
@@ -451,9 +470,9 @@ export default function DashboardPage() {
     link.remove();
     setLastReportAt(generatedAt);
     setReportOpen(true);
-  };
+  }, [currentProject, stats, displayEvents, activityData]);
 
-  const startProjectMonitoring = async () => {
+  const startProjectMonitoring = useCallback(async () => {
     if (!currentProject?.id) return;
     if (!canRunScans) return;
     if (isUpdatingMonitoring) return;
@@ -478,15 +497,16 @@ export default function DashboardPage() {
     request
       .then(() => {
         void fetchEndpoints(projectId);
+        void fetchDriftEvents(projectId);
       })
       .catch(() => {
         if (monitoringActionRef.current === actionId) {
           setIsUpdatingMonitoring(false);
         }
       });
-  };
+  }, [currentProject?.id, canRunScans, isUpdatingMonitoring, isProjectConnected, isRestartCoolingDown, monitoringDuration, startMonitoring, resumeMonitoring, fetchEndpoints, fetchDriftEvents]);
 
-  const stopProjectMonitoring = async () => {
+  const stopProjectMonitoring = useCallback(async () => {
     if (!currentProject?.id) return;
     if (!canRunScans) return;
     if (isUpdatingMonitoring) return;
@@ -497,15 +517,7 @@ export default function DashboardPage() {
     setRestartSecondsRemaining(Math.ceil(RESTART_COOLDOWN_MS / 1000));
     setIsUpdatingMonitoring(true);
 
-    const request = stopMonitoring(projectId);
-
-    window.setTimeout(() => {
-      if (monitoringActionRef.current === actionId) {
-        setIsUpdatingMonitoring(false);
-      }
-    }, 180);
-
-    request
+    stopMonitoring(projectId)
       .then(() => {
         void fetchEndpoints(projectId);
       })
@@ -516,7 +528,7 @@ export default function DashboardPage() {
           setIsUpdatingMonitoring(false);
         }
       });
-  };
+  }, [currentProject?.id, canRunScans, isUpdatingMonitoring, stopMonitoring, fetchEndpoints]);
 
   useEffect(() => {
     if (!restartCooldownTargetRef.current) return;
@@ -536,7 +548,7 @@ export default function DashboardPage() {
     }, 200);
 
     return () => window.clearInterval(intervalId);
-  }, [restartSecondsRemaining]);
+  }, []);
 
   useEffect(() => {
     return () => {
@@ -559,7 +571,21 @@ export default function DashboardPage() {
             <h1 className="text-2xl font-bold text-white">
               Welcome back, {user?.name?.split(' ')[0] || 'User'}
             </h1>
-            <LiveIndicator isConnected={isProjectConnected} />
+            <div className="flex items-center gap-2">
+              <LiveIndicator isConnected={isProjectConnected} />
+              {isSocketConnected && (
+                <span className="inline-flex items-center gap-1 rounded-full border border-indigo-400/20 bg-indigo-500/10 px-2.5 py-1 text-[10px] font-medium text-indigo-300">
+                  <Wifi className="h-3 w-3" />
+                  Live
+                </span>
+              )}
+              {!isSocketConnected && socketStatus !== 'disconnected' && (
+                <span className="inline-flex items-center gap-1 rounded-full border border-amber-400/20 bg-amber-500/10 px-2.5 py-1 text-[10px] font-medium text-amber-300">
+                  <WifiOff className="h-3 w-3" />
+                  Polling
+                </span>
+              )}
+            </div>
           </div>
           <p className="text-white/60">
             {currentProject?.name
@@ -694,7 +720,19 @@ export default function DashboardPage() {
           <Card>
             <CardHeader>
               <div className="flex items-center justify-between">
-                <CardTitle>Drift Events</CardTitle>
+                <div className="flex items-center gap-3">
+                  <CardTitle>Drift Events</CardTitle>
+                  {isSocketConnected && (
+                    <motion.span
+                      className="flex h-2 w-2"
+                      initial={{ opacity: 0, scale: 0 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                    >
+                      <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-indigo-400 opacity-75" />
+                      <span className="relative inline-flex h-2 w-2 rounded-full bg-indigo-500" />
+                    </motion.span>
+                  )}
+                </div>
                 <Link to="/app/drift-events">
                   <Button variant="ghost" size="sm">
                     View All
@@ -750,7 +788,10 @@ export default function DashboardPage() {
             <CardHeader>
               <div>
                 <CardTitle>Activity</CardTitle>
-                <span className="text-xs text-white/40">Last 7 days - live</span>
+                <span className="text-xs text-white/40">
+                  Last 7 days
+                  {isSocketConnected ? ' - live' : ''}
+                </span>
               </div>
               <Badge className="border-indigo-400/25 bg-indigo-500/15 text-indigo-200">
                 {totalActivity} event{totalActivity === 1 ? '' : 's'}
