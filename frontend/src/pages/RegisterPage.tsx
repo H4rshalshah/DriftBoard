@@ -1,12 +1,10 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { RefreshCw, Shield } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
 import { Button } from '@/components/common/Button';
 import { Input } from '@/components/common/Input';
 import { DriftBoardLogo } from '@/components/common/DriftBoardLogo';
-import { getApiBaseUrl } from '@/services/runtimeConfig';
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -55,54 +53,6 @@ export default function RegisterPage() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [acceptTerms, setAcceptTerms] = useState(false);
   const [localError, setLocalError] = useState('');
-  const [warmupStatus, setWarmupStatus] = useState('');
-  const [isWarmingUp, setIsWarmingUp] = useState(false);
-  const warmupAbortRef = useRef<AbortController | null>(null);
-  const warmupCancelledRef = useRef(false);
-
-  useEffect(() => {
-    return () => {
-      warmupAbortRef.current?.abort();
-    };
-  }, []);
-
-  const warmupBackend = async (): Promise<boolean> => {
-    const apiBaseUrl = getApiBaseUrl();
-    const healthUrl = `${apiBaseUrl.replace(/\/$/, '')}/health`;
-
-    warmupAbortRef.current?.abort();
-    const controller = new AbortController();
-    warmupAbortRef.current = controller;
-    warmupCancelledRef.current = false;
-
-    for (let attempt = 0; attempt < 3; attempt++) {
-      if (controller.signal.aborted) {
-        warmupCancelledRef.current = true;
-        return false;
-      }
-      try {
-        setWarmupStatus(
-          attempt === 0
-            ? 'Waking up server...'
-            : `Waking up server (attempt ${attempt + 1})...`
-        );
-        const response = await fetch(healthUrl, {
-          method: 'GET',
-          signal: controller.signal,
-        });
-        if (response.ok || response.status < 500) {
-          return true;
-        }
-      } catch {
-        // Backend not ready yet, retry
-      }
-      if (attempt < 2) {
-        await new Promise((resolve) => setTimeout(resolve, 2000));
-      }
-    }
-
-    return false;
-  };
 
   const passwordStrength = getPasswordStrength(password);
   const passwordsMatch = password === confirmPassword && confirmPassword.length > 0;
@@ -147,30 +97,13 @@ export default function RegisterPage() {
       return;
     }
 
-    // Warm up backend before registration to avoid cold start timeouts
-    setIsWarmingUp(true);
-    warmupCancelledRef.current = false;
-    const backendReady = await warmupBackend();
-
-    if (warmupCancelledRef.current) {
-      setIsWarmingUp(false);
-      setWarmupStatus('');
-      return;
-    }
-
-    if (backendReady) {
-      await new Promise((resolve) => setTimeout(resolve, 300));
-    }
-    setIsWarmingUp(false);
-    setWarmupStatus('');
-
     try {
       await register(email, password, name, finalUsername);
       navigate('/app/dashboard');
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Registration failed';
       if (message.toLowerCase().includes('network') || message.toLowerCase().includes('timeout') || message.toLowerCase().includes('econnaborted')) {
-        setLocalError('Connection timed out. The server may still be starting up — please wait a moment and try again.');
+        setLocalError('Connection timed out. Please try again.');
       } else {
         setLocalError(message);
       }
@@ -203,54 +136,10 @@ export default function RegisterPage() {
           <Link to="/" className="mb-6 inline-flex">
             <DriftBoardLogo />
           </Link>
-          <h1 className="text-3xl font-bold text-white mb-2">
-            {isWarmingUp ? 'Waking up server' : 'Create an account'}
-          </h1>
-          <p className="text-white/60">
-            {isWarmingUp ? warmupStatus : 'Start monitoring your APIs today'}
-          </p>
+          <h1 className="text-3xl font-bold text-white mb-2">Create an account</h1>
+          <p className="text-white/60">Start monitoring your APIs today</p>
         </motion.div>
 
-        {isWarmingUp ? (
-          <motion.div
-            variants={itemVariants}
-            className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-8 flex flex-col items-center justify-center min-h-[300px]"
-          >
-            <div className="relative mb-6">
-              <div className="absolute inset-0 rounded-full bg-gradient-to-r from-indigo-500/20 to-purple-500/20 animate-pulse" />
-              <div className="relative flex h-20 w-20 items-center justify-center rounded-full border-2 border-indigo-400/30 bg-indigo-500/10">
-                <Shield className="h-10 w-10 text-indigo-400" />
-              </div>
-            </div>
-            <div className="mb-4 flex items-center gap-3">
-              <RefreshCw className="h-5 w-5 animate-spin text-indigo-400" />
-              <p className="text-lg font-medium text-white">{warmupStatus}</p>
-            </div>
-            <div className="h-1.5 w-full max-w-xs overflow-hidden rounded-full bg-white/10">
-              <motion.div
-                className="h-full rounded-full bg-gradient-to-r from-indigo-400 to-purple-400"
-                initial={{ width: '0%' }}
-                animate={{ width: '100%' }}
-                transition={{ duration: 8, ease: 'easeInOut' }}
-              />
-            </div>
-            <p className="mt-4 text-sm text-white/40">
-              Waking up the server for secure registration
-            </p>
-            <button
-              type="button"
-              onClick={() => {
-                setIsWarmingUp(false);
-                setWarmupStatus('');
-                warmupCancelledRef.current = true;
-                warmupAbortRef.current?.abort();
-              }}
-              className="mt-6 text-sm text-white/40 hover:text-white/60 transition-colors"
-            >
-              Cancel
-            </button>
-          </motion.div>
-        ) : (
         <motion.div
           variants={itemVariants}
           className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-8"
@@ -398,7 +287,6 @@ export default function RegisterPage() {
             </Button>
           </div>
         </motion.div>
-        )}
 
         <motion.p variants={itemVariants} className="text-center mt-6 text-white/60">
           Already have an account?{' '}
