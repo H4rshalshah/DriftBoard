@@ -7,6 +7,8 @@ import { Button } from '@/components/common/Button';
 import { DemoVideo } from '@/components/common/DemoVideo';
 import { DriftBoardLogo } from '@/components/common/DriftBoardLogo';
 import { ThemeToggle } from '@/components/common/ThemeToggle';
+import { useAuthStore } from '@/store/authStore';
+import { getApiBaseUrl } from '@/services/runtimeConfig';
 
 const features = [
   {
@@ -195,6 +197,62 @@ export default function LandingPage() {
               Request demo
             </Button>
           </motion.form>
+
+          <motion.div variants={itemVariants} className="mx-auto mt-6 max-w-2xl">
+            <div className="relative flex items-center gap-4 text-sm">
+              <div className="h-px flex-1 bg-white/10" />
+              <span className="text-white/40">Or continue with</span>
+              <div className="h-px flex-1 bg-white/10" />
+            </div>
+
+            <div className="mt-3 grid grid-cols-2 gap-3">
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() => {
+                  const apiBaseUrl = getApiBaseUrl();
+                  const healthUrl = `${apiBaseUrl.replace(/\/$/, '')}/health`;
+                  fetch(healthUrl, { method: 'GET' })
+                    .catch(() => undefined)
+                    .finally(() => {
+                      useAuthStore.getState().startOAuthLogin('google');
+                    });
+                }}
+                leftIcon={
+                  <svg className="w-5 h-5" viewBox="0 0 48 48">
+                    <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+                    <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+                    <path fill="#FBBC05" d="M10.53 28.59A14.5 14.5 0 0 1 9.5 24c0-1.59.28-3.14.76-4.59l-7.98-6.19A23.99 23.99 0 0 0 0 24c0 3.77.87 7.35 2.56 10.61l7.97-6.02z"/>
+                    <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.02C6.51 42.62 14.62 48 24 48z"/>
+                    <path fill="none" d="M0 0h48v48H0z"/>
+                  </svg>
+                }
+              >
+                Google
+              </Button>
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() => {
+                  const apiBaseUrl = getApiBaseUrl();
+                  const healthUrl = `${apiBaseUrl.replace(/\/$/, '')}/health`;
+                  fetch(healthUrl, { method: 'GET' })
+                    .catch(() => undefined)
+                    .finally(() => {
+                      useAuthStore.getState().startOAuthLogin('github');
+                    });
+                }}
+                leftIcon={
+                  <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 .5C5.37.5 0 5.78 0 12.292c0 5.211 3.438 9.63 8.205 11.188.6.111.82-.254.82-.567 0-.28-.01-1.022-.015-2.005-3.338.711-4.042-1.582-4.042-1.582-.546-1.36-1.335-1.723-1.335-1.723-1.089-.73.083-.716.083-.716 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.108-.775.417-1.305.762-1.604-2.665-.305-5.466-1.336-5.466-5.931 0-1.31.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23A11.61 11.61 0 0 1 12 5.803c1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.569.801.564 4.771-1.56 8.205-5.977 8.205-11.188C24 5.78 18.627.5 12 .5z"/>
+                  </svg>
+                }
+              >
+                GitHub
+              </Button>
+            </div>
+          </motion.div>
+
         </motion.div>
 
         <motion.div
