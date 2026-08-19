@@ -1,7 +1,7 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { lazy, Suspense, useEffect } from 'react';
 import type { ReactNode } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { useAuthStore, useProjectStore, useUIStore, useSocketStore } from '@/store';
 import { ScrollToTop } from '@/components/common/ScrollToTop';
 import { RouteLoading } from '@/components/common/RouteLoading';
@@ -150,38 +150,36 @@ function App() {
   return (
     <>
       <ScrollToTop />
-      <AnimatePresence mode="wait">
-        <Routes>
-          <Route path="/" element={<SuspenseWrapper><LandingPage /></SuspenseWrapper>} />
-          <Route path="/login" element={<SuspenseWrapper><LoginPage /></SuspenseWrapper>} />
-          <Route path="/register" element={<SuspenseWrapper><RegisterPage /></SuspenseWrapper>} />
-          <Route path="/invite" element={<SuspenseWrapper><InvitePage /></SuspenseWrapper>} />
-          <Route path="/invite/:token" element={<SuspenseWrapper><InvitePage /></SuspenseWrapper>} />
-          <Route path="/contact" element={<SuspenseWrapper><ContactPage /></SuspenseWrapper>} />
-          <Route path="/reset-password" element={<SuspenseWrapper><ResetPasswordPage /></SuspenseWrapper>} />
-          <Route
-            path="/app"
-            element={
-              <ProtectedRoute>
-                <SuspenseWrapper>
-                  <Layout />
-                </SuspenseWrapper>
-              </ProtectedRoute>
-            }
-          >
-            <Route index element={<Navigate to="/app/dashboard" replace />} />
-            <Route path="dashboard" element={<SuspenseWrapper><DashboardPage /></SuspenseWrapper>} />
-            <Route path="endpoints" element={<SuspenseWrapper><EndpointsPage /></SuspenseWrapper>} />
-            <Route path="drift-events" element={<SuspenseWrapper><DriftEventsPage /></SuspenseWrapper>} />
-            <Route path="schema-history" element={<SuspenseWrapper><SchemaHistoryPage /></SuspenseWrapper>} />
-            <Route path="contracts" element={<Navigate to="/app/endpoints" replace />} />
-            <Route path="notifications" element={<SuspenseWrapper><NotificationsPage /></SuspenseWrapper>} />
-            <Route path="settings" element={<SuspenseWrapper><SettingsPage /></SuspenseWrapper>} />
-            <Route path="api-keys" element={<SuspenseWrapper><ApiKeysPage /></SuspenseWrapper>} />
-            <Route path="contact" element={<SuspenseWrapper><ContactPage /></SuspenseWrapper>} />
-          </Route>
-        </Routes>
-      </AnimatePresence>
+      <Routes>
+        <Route path="/" element={<SuspenseWrapper><LandingPage /></SuspenseWrapper>} />
+        <Route path="/login" element={<SuspenseWrapper><LoginPage /></SuspenseWrapper>} />
+        <Route path="/register" element={<SuspenseWrapper><RegisterPage /></SuspenseWrapper>} />
+        <Route path="/invite" element={<SuspenseWrapper><InvitePage /></SuspenseWrapper>} />
+        <Route path="/invite/:token" element={<SuspenseWrapper><InvitePage /></SuspenseWrapper>} />
+        <Route path="/contact" element={<SuspenseWrapper><ContactPage /></SuspenseWrapper>} />
+        <Route path="/reset-password" element={<SuspenseWrapper><ResetPasswordPage /></SuspenseWrapper>} />
+        <Route
+          path="/app"
+          element={
+            <ProtectedRoute>
+              <SuspenseWrapper>
+                <Layout />
+              </SuspenseWrapper>
+            </ProtectedRoute>
+          }
+        >
+          <Route index element={<Navigate to="/app/dashboard" replace />} />
+          <Route path="dashboard" element={<SuspenseWrapper><DashboardPage /></SuspenseWrapper>} />
+          <Route path="endpoints" element={<SuspenseWrapper><EndpointsPage /></SuspenseWrapper>} />
+          <Route path="drift-events" element={<SuspenseWrapper><DriftEventsPage /></SuspenseWrapper>} />
+          <Route path="schema-history" element={<SuspenseWrapper><SchemaHistoryPage /></SuspenseWrapper>} />
+          <Route path="contracts" element={<Navigate to="/app/endpoints" replace />} />
+          <Route path="notifications" element={<SuspenseWrapper><NotificationsPage /></SuspenseWrapper>} />
+          <Route path="settings" element={<SuspenseWrapper><SettingsPage /></SuspenseWrapper>} />
+          <Route path="api-keys" element={<SuspenseWrapper><ApiKeysPage /></SuspenseWrapper>} />
+          <Route path="contact" element={<SuspenseWrapper><ContactPage /></SuspenseWrapper>} />
+        </Route>
+      </Routes>
     </>
   );
 }
