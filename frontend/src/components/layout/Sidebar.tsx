@@ -394,7 +394,7 @@ export default function Sidebar() {
     >
       <div
         className={cn(
-          'relative flex h-16 items-center border-b border-white/[0.06] p-3',
+          'relative flex h-16 items-center border-b border-neutral-200 dark:border-neutral-200 dark:border-white/[0.06] p-3',
           effectiveCollapsed ? 'justify-start gap-5 pl-4 pr-3' : 'justify-between pr-16'
         )}
       >
@@ -416,8 +416,8 @@ export default function Sidebar() {
         <button
           onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
           className={cn(
-            'z-50 place-items-center rounded-md text-white/40',
-            'hidden transition-colors duration-200 hover:text-white/80 lg:inline-grid',
+            'z-50 place-items-center rounded-md text-neutral-400 dark:text-neutral-500 dark:text-white/40',
+            'hidden transition-colors duration-200 hover:text-neutral-700 dark:hover:text-neutral-800 dark:text-white/80 lg:inline-grid',
             effectiveCollapsed
               ? 'relative right-auto top-auto h-10 w-10 translate-y-0 p-0'
               : 'absolute right-5 top-1/2 h-10 w-10 -translate-y-1/2 p-0'
@@ -449,8 +449,8 @@ export default function Sidebar() {
                     'flex items-center gap-3 px-3 py-2 rounded-lg',
                     'transition-all duration-150 group relative',
                     isActive
-                      ? 'bg-primary-500/8 text-primary-400'
-                      : 'text-white/40 hover:text-white/70 hover:bg-white/[0.03]'
+                      ? 'bg-green-50 dark:bg-primary-500/8 text-green-700 dark:text-primary-400'
+                      : 'text-neutral-500 dark:text-white/40 hover:text-neutral-800 dark:hover:text-neutral-700 dark:text-white/70 hover:bg-neutral-50 dark:hover:bg-white/[0.03]'
                   )}
                 >
                   {isActive && (
@@ -471,15 +471,15 @@ export default function Sidebar() {
         </nav>
       </div>
 
-      <div className={cn('border-t border-white/[0.06] p-3', effectiveCollapsed && 'px-2')}>
+      <div className={cn('border-t border-neutral-200 dark:border-white/[0.06] p-3', effectiveCollapsed && 'px-2')}>
         {effectiveCollapsed && (
           <div className="relative mb-2">
             <button
               onClick={openProjectSetup}
               disabled={isCreating}
               className={cn(
-                'grid h-11 w-full place-items-center rounded-lg bg-white/[0.03] text-primary-400',
-                'transition-colors duration-150 hover:bg-white/5 hover:text-white/80',
+                'grid h-11 w-full place-items-center rounded-lg bg-white dark:bg-white/[0.03] text-primary-600 dark:text-primary-400',
+                'transition-colors duration-150 hover:bg-neutral-200 dark:hover:bg-white/5 hover:text-primary-700 dark:hover:text-neutral-800 dark:text-white/80',
                 'disabled:cursor-not-allowed disabled:opacity-40'
               )}
               aria-label="Create project"
@@ -503,9 +503,8 @@ export default function Sidebar() {
                 setUserMenuOpen(false);
               }}
               className={cn(
-                'w-full flex items-center justify-between gap-2 px-3 py-2',
-                'bg-white/[0.03] hover:bg-white/5 rounded-lg',
-                'text-sm text-white/50 transition-colors duration-150'
+                'w-full flex items-center justify-between gap-2 px-3 py-2',                  'bg-white dark:bg-white/[0.03] hover:bg-neutral-200 dark:hover:bg-white/5 rounded-lg',
+                  'text-sm text-neutral-500 dark:text-white/50 transition-colors duration-150'
               )}
             >
               <div className="flex items-center gap-2 min-w-0">
@@ -530,7 +529,7 @@ export default function Sidebar() {
                   className="sidebar-menu-surface relative z-[55] mt-2 overflow-hidden rounded-lg py-1 shadow-2xl"
                 >
                   {projects.length === 0 && (
-                    <div className="px-3 py-2 text-sm text-white/30">
+                    <div className="px-3 py-2 text-sm text-neutral-400 dark:text-white/30">
                       {isLoading ? 'Loading projects...' : 'No projects found'}
                     </div>
                   )}
@@ -539,8 +538,8 @@ export default function Sidebar() {
                       key={project.id}
                       className={cn(
                         'flex w-full items-center gap-2 px-3 py-2 text-sm',
-                        'hover:bg-white/5 transition-colors duration-150',
-                        currentProject?.id === project.id ? 'text-primary-400' : 'text-white/60'
+                        'hover:bg-neutral-50 dark:hover:bg-white/5 transition-colors duration-150',
+                        currentProject?.id === project.id ? 'text-primary-400' : 'text-neutral-600 dark:text-white/60'
                       )}
                     >
                       <button
@@ -561,7 +560,7 @@ export default function Sidebar() {
                             void handleDeleteProject(project.id);
                           }}
                           disabled={isDeleting || !(project.ownerId === user?.id || hasProjectPermission(project.currentUserRole, 'project:delete'))}
-                          className="rounded p-1 text-white/25 transition-colors hover:bg-red-500/10 hover:text-red-400 disabled:cursor-not-allowed disabled:opacity-20"
+                          className="rounded p-1 text-neutral-400 dark:text-white/25 transition-colors hover:bg-red-500/10 hover:text-red-400 disabled:cursor-not-allowed disabled:opacity-20"
                           aria-label={`Delete ${project.name}`}
                           title="Delete project"
                         >
@@ -572,11 +571,11 @@ export default function Sidebar() {
                   ))}
                   {canOpenProjectSetup && (
                     <>
-                      <div className="my-1 h-px bg-white/[0.06]" />
+                      <div className="my-1 h-px bg-neutral-200 dark:bg-white/[0.06]" />
                       <button
                         onClick={openProjectSetup}
                         disabled={isCreating}
-                        className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-primary-400 transition-colors duration-150 hover:bg-white/5 disabled:cursor-not-allowed disabled:opacity-40"
+                        className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-primary-400 transition-colors duration-150 hover:bg-neutral-50 dark:hover:bg-white/5 disabled:cursor-not-allowed disabled:opacity-40"
                       >
                         <Plus className="h-4 w-4" />
                         {isCreating ? 'Creating...' : 'Create your project'}
@@ -597,7 +596,7 @@ export default function Sidebar() {
             }}
             className={cn(
               'flex items-center gap-3 w-full p-2 rounded-lg',
-              'hover:bg-white/[0.03] transition-colors duration-150',
+              'hover:bg-neutral-50 dark:hover:bg-white/[0.03] transition-colors duration-150',
               effectiveCollapsed && 'justify-center'
             )}
           >
@@ -611,8 +610,8 @@ export default function Sidebar() {
             {!effectiveCollapsed && (
               <>
                 <div className="flex-1 min-w-0 text-left">
-                  <p className="text-sm font-medium text-white/80 truncate">{user?.name || 'User'}</p>
-                  <p className="text-xs text-white/30 truncate">{user?.email}</p>
+                  <p className="text-sm font-medium text-neutral-800 dark:text-white/80 truncate">{user?.name || 'User'}</p>
+                  <p className="text-xs text-neutral-400 dark:text-white/30 truncate">{user?.email}</p>
                 </div>
               </>
             )}
@@ -637,7 +636,7 @@ export default function Sidebar() {
                   }}
                   className={cn(
                     'flex items-center gap-2 w-full px-3 py-2 text-sm',
-                    'text-white/50 hover:bg-white/5 hover:text-red-400',
+                    'text-neutral-500 dark:text-white/50 hover:bg-white dark:hover:bg-white/5 hover:text-red-500 dark:hover:text-red-400',
                     'transition-colors duration-150'
                   )}
                 >
@@ -657,8 +656,8 @@ export default function Sidebar() {
         className="h-[min(680px,calc(100vh-4rem))]"
       >
         <ModalHeader className="pb-2">
-          <h2 className="text-xl font-semibold text-white">Add your project</h2>
-          <p className="mt-1 text-sm leading-5 text-white/40">
+          <h2 className="text-xl font-semibold text-neutral-900 dark:text-white">Add your project</h2>
+          <p className="mt-1 text-sm leading-5 text-neutral-500 dark:text-white/40">
             Connect the project you want DriftBoard to watch for endpoint changes, schema drift, and breaking API updates.
           </p>
         </ModalHeader>
@@ -674,7 +673,7 @@ export default function Sidebar() {
           />
 
           <div>
-            <label className="mb-2 block text-sm font-medium text-white/60">Project source</label>
+            <label className="mb-2 block text-sm font-medium text-neutral-600 dark:text-white/60">Project source</label>
             <div className="grid gap-3 sm:grid-cols-2">
               <button
                 type="button"
@@ -683,12 +682,12 @@ export default function Sidebar() {
                   'rounded-lg border p-3 text-left transition-colors',
                   sourceType === 'folder'
                     ? 'border-primary-500/40 bg-primary-500/8 text-white'
-                    : 'border-white/[0.06] bg-white/[0.02] text-white/60 hover:bg-white/5'
+                    : 'border-neutral-200 dark:border-white/[0.06] bg-neutral-50 dark:bg-white/[0.02] text-neutral-600 dark:text-white/60 hover:bg-neutral-50 dark:hover:bg-white/5'
                 )}
               >
                 <FolderOpen className="mb-1.5 h-5 w-5 text-primary-400" />
                 <span className="block font-medium">Upload local project</span>
-                <span className="mt-1 block text-xs leading-4 text-white/35">Select your app folder from this machine.</span>
+                <span className="mt-1 block text-xs leading-4 text-neutral-400 dark:text-white/35">Select your app folder from this machine.</span>
               </button>
               <button
                 type="button"
@@ -697,24 +696,24 @@ export default function Sidebar() {
                   'rounded-lg border p-3 text-left transition-colors',
                   sourceType === 'repository'
                     ? 'border-primary-500/40 bg-primary-500/8 text-white'
-                    : 'border-white/[0.06] bg-white/[0.02] text-white/60 hover:bg-white/5'
+                    : 'border-neutral-200 dark:border-white/[0.06] bg-neutral-50 dark:bg-white/[0.02] text-neutral-600 dark:text-white/60 hover:bg-neutral-50 dark:hover:bg-white/5'
                 )}
               >
                 <GitBranch className="mb-1.5 h-5 w-5 text-primary-400" />
                 <span className="block font-medium">Use repository URL</span>
-                <span className="mt-1 block text-xs leading-4 text-white/35">Attach a GitHub/GitLab project URL.</span>
+                <span className="mt-1 block text-xs leading-4 text-neutral-400 dark:text-white/35">Attach a GitHub/GitLab project URL.</span>
               </button>
             </div>
           </div>
 
           {sourceType === 'folder' ? (
-            <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-4">
-              <label className="flex cursor-pointer flex-col items-center justify-center rounded-lg border border-dashed border-white/10 px-4 py-5 text-center transition-colors hover:border-primary-500/30 hover:bg-white/[0.02]">
+            <div className="rounded-lg border border-neutral-200 dark:border-white/[0.06] bg-neutral-50 dark:bg-white/[0.02] p-4">
+              <label className="flex cursor-pointer flex-col items-center justify-center rounded-lg border border-dashed border-neutral-200 dark:border-neutral-200 dark:border-white/10 px-4 py-5 text-center transition-colors hover:border-primary-500/30 hover:bg-neutral-50 dark:bg-white/[0.02]">
                 <FolderOpen className="mb-2 h-6 w-6 text-primary-400" />
                 <span className="text-sm font-medium text-white">
                   {selectedSourceName || 'Choose project folder'}
                 </span>
-                <span className="mt-1 text-xs text-white/30">
+                <span className="mt-1 text-xs text-neutral-400 dark:text-white/30">
                   {selectedFileCount > 0 ? `${selectedFileCount} files selected` : 'Your folder is used to set up this DriftBoard project.'}
                 </span>
                 <input
@@ -725,7 +724,7 @@ export default function Sidebar() {
                   {...({ webkitdirectory: '', directory: '' } as Record<string, string>)}
                 />
               </label>
-              <label className="mt-3 flex cursor-pointer items-center justify-center rounded-lg border border-white/[0.06] bg-white/[0.02] px-4 py-3 text-sm font-medium text-white/60 transition-colors hover:border-primary-500/25 hover:bg-white/5">
+              <label className="mt-3 flex cursor-pointer items-center justify-center rounded-lg border border-neutral-200 dark:border-white/[0.06] bg-neutral-50 dark:bg-white/[0.02] px-4 py-3 text-sm font-medium text-neutral-600 dark:text-white/60 transition-colors hover:border-primary-500/25 hover:bg-neutral-50 dark:hover:bg-white/5">
                 Choose JSON/OpenAPI files
                 <input
                   type="file"
@@ -770,7 +769,7 @@ export default function Sidebar() {
             </div>
           )}
 
-          <div className="flex items-start gap-2 rounded-lg border border-primary-500/15 bg-primary-500/5 p-3 text-xs leading-5 text-white/50">
+          <div className="flex items-start gap-2 rounded-lg border border-primary-500/15 bg-primary-500/5 p-3 text-xs leading-5 text-neutral-500 dark:text-white/50">
             <CheckCircle2 className="mt-0.5 h-4 w-4 flex-shrink-0 text-primary-400" />
             <span>
               Once both fields are complete, DriftBoard creates the workspace, reads the selected project source, and starts monitoring endpoint schemas and drift errors for that project.

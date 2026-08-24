@@ -48,17 +48,17 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
         {label && (
           <label
             htmlFor={inputId}
-            className="block text-sm font-medium text-white/70 mb-1.5"
+            className="block text-sm font-medium text-neutral-700 dark:text-white/70 mb-1.5"
           >
             {label}
           </label>
         )}
         <div className="relative">
           {isSearch && !leftIcon && (
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30 pointer-events-none" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400 dark:text-white/30 pointer-events-none" />
           )}
           {leftIcon && (
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-white/30">
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400 dark:text-white/30">
               {leftIcon}
             </span>
           )}
@@ -67,7 +67,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
             id={inputId}
             type={inputType}
             className={cn(
-              'w-full bg-white/[0.03] border border-white/[0.08] rounded-lg text-white placeholder:text-white/25',
+              'w-full bg-white dark:bg-white/[0.03] border border-neutral-300 dark:border-white/[0.08] rounded-lg text-neutral-900 dark:text-white placeholder:text-neutral-400 dark:placeholder:text-white/25',
               'focus:outline-none focus:border-primary-500/40 focus:ring-1 focus:ring-primary-500/10',
               'transition-all duration-200',
               sizeStyles[size],
@@ -83,13 +83,13 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/60 transition-colors"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 dark:text-white/30 hover:text-neutral-600 dark:hover:text-white/60 transition-colors"
             >
               {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
             </button>
           )}
           {rightIcon && type !== 'password' && (
-            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-white/30">
+            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 dark:text-white/30">
               {rightIcon}
             </span>
           )}

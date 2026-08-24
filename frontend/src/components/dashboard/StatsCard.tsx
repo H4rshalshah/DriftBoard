@@ -44,8 +44,8 @@ export function StatsCard({
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       className={cn(
-        'bg-[#0a0a0a] border border-white/[0.06] rounded-xl p-4',
-        'transition-all duration-200 hover:border-white/[0.1]',
+        'bg-white dark:bg-[#0a0a0a] border border-neutral-200 dark:border-white/[0.06] rounded-xl p-4',
+        'transition-all duration-200 hover:border-neutral-200 dark:border-white/[0.1]',
         className
       )}
     >

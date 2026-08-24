@@ -34,7 +34,7 @@ const itemVariants = {
 };
 
 const schemaPreviewClass =
-  'schema-code-block whitespace-pre-wrap break-words rounded-lg border border-white/10 bg-black p-4 font-mono leading-6 text-slate-100 shadow-inner';
+  'schema-code-block whitespace-pre-wrap break-words rounded-lg border border-neutral-200 dark:border-white/10 bg-black p-4 font-mono leading-6 text-slate-100 shadow-inner';
 
 interface SchemaVersion {
   id: string;
@@ -302,8 +302,8 @@ export default function SchemaHistoryPage() {
     >
       <motion.div variants={itemVariants} className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-white">Schema History</h1>
-          <p className="text-white/60">
+          <h1 className="text-2xl font-bold text-neutral-900 dark:text-white">Schema History</h1>
+          <p className="text-neutral-500 dark:text-white/60">
             {currentProject?.name ? `View and compare schema versions for ${currentProject.name}.` : 'View and compare schema versions'}
           </p>
         </div>
@@ -316,7 +316,7 @@ export default function SchemaHistoryPage() {
         <Card className="p-4">
           <div className="flex items-center gap-4">
             <div className="flex-1">
-              <label className="block text-sm font-medium text-white/80 mb-1.5">Select Endpoint</label>
+              <label className="block text-sm font-medium text-neutral-800 dark:text-white/80 mb-1.5">Select Endpoint</label>
               <Dropdown
                 trigger={
                   <DropdownTrigger className="min-w-[230px] justify-between">
@@ -356,7 +356,7 @@ export default function SchemaHistoryPage() {
             <CardHeader>
               <div className="flex items-center justify-between">
                 <CardTitle className="flex items-center gap-2">
-                  <History className="w-5 h-5 text-white/50" />
+                  <History className="w-5 h-5 text-neutral-500 dark:text-white/50" />
                   Version Timeline
                 </CardTitle>
                 <Badge>{versions.length} versions</Badge>
@@ -395,7 +395,7 @@ export default function SchemaHistoryPage() {
                               checked={selectedVersions.includes(version.id)}
                               onChange={() => handleVersionSelect(version.id)}
                               disabled={!selectedVersions.includes(version.id) && selectedVersions.length >= 2}
-                              className="w-4 h-4 rounded border-white/20 bg-white/5 text-primary-500"
+                              className="w-4 h-4 rounded border-white/20 bg-white dark:bg-white/5 text-primary-500"
                             />
                             <span className="text-white font-medium">Version {version.version}</span>
                             {version.version === currentEndpoint?.currentSchemaVersion && <Badge severity="low">Current</Badge>}
@@ -423,9 +423,9 @@ export default function SchemaHistoryPage() {
                           </div>
                         </div>
                         {version.changelog && (
-                          <p className="text-sm text-white/50 mt-1">{version.changelog}</p>
+                          <p className="text-sm text-neutral-500 dark:text-white/50 mt-1">{version.changelog}</p>
                         )}
-                        <div className="flex items-center gap-4 mt-2 text-xs text-white/40">
+                        <div className="flex items-center gap-4 mt-2 text-xs text-neutral-500 dark:text-white/40">
                           <span className="flex items-center gap-1">
                             <Calendar className="w-3 h-3" />
                             {formatDateTime(version.createdAt)}
@@ -448,7 +448,7 @@ export default function SchemaHistoryPage() {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <GitBranch className="w-5 h-5 text-white/50" />
+                <GitBranch className="w-5 h-5 text-neutral-500 dark:text-white/50" />
                 Schema Preview
               </CardTitle>
             </CardHeader>
@@ -464,7 +464,7 @@ export default function SchemaHistoryPage() {
                   </pre>
                 </div>
               ) : (
-                <div className="text-center py-8 text-white/40">
+                <div className="text-center py-8 text-neutral-500 dark:text-white/40">
                   <Eye className="w-8 h-8 mx-auto mb-2 opacity-50" />
                   <p>Select a version to preview</p>
                 </div>
@@ -511,7 +511,7 @@ export default function SchemaHistoryPage() {
         <ModalBody>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <h3 className="text-sm font-medium text-white/80 mb-2">
+              <h3 className="text-sm font-medium text-neutral-800 dark:text-white/80 mb-2">
                 Version {compareVersions[0]?.version ?? selectedVersions[0]}
               </h3>
               <pre className={`${schemaPreviewClass} max-h-80 overflow-auto text-xs`}>
@@ -519,7 +519,7 @@ export default function SchemaHistoryPage() {
               </pre>
             </div>
             <div>
-              <h3 className="text-sm font-medium text-white/80 mb-2">
+              <h3 className="text-sm font-medium text-neutral-800 dark:text-white/80 mb-2">
                 Version {compareVersions[1]?.version ?? selectedVersions[1]}
               </h3>
               <pre className={`${schemaPreviewClass} max-h-80 overflow-auto text-xs`}>

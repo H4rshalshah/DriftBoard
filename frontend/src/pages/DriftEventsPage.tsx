@@ -555,14 +555,14 @@ export default function DriftEventsPage() {
     >
       <motion.div variants={itemVariants} className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-white">Drift Events</h1>
-          <p className="text-white/60">
+          <h1 className="text-2xl font-bold text-neutral-900 dark:text-white">Drift Events</h1>
+          <p className="text-neutral-500 dark:text-white/60">
             {currentProject?.name
               ? `Track and manage schema changes for ${currentProject.name}.`
               : 'Track and manage API schema changes.'}
           </p>
           {lastRefreshedAt && (
-            <p className="mt-1 text-xs text-white/40">Last refreshed {formatRelativeTime(lastRefreshedAt)}</p>
+            <p className="mt-1 text-xs text-neutral-500 dark:text-white/40">Last refreshed {formatRelativeTime(lastRefreshedAt)}</p>
           )}
         </div>
         <div className="flex flex-wrap items-center gap-3">
@@ -646,17 +646,17 @@ export default function DriftEventsPage() {
       </motion.div>
 
       <motion.div variants={itemVariants}>
-        <div className="flex items-center gap-4 border-b border-white/10">
+        <div className="flex items-center gap-4 border-b border-neutral-200 dark:border-white/10">
           {severityTabs.map((tab) => (
             <button
               key={tab.value}
               onClick={() => setActiveTab(tab.value)}
               className={`relative py-3 px-1 text-sm font-medium transition-colors ${
-                activeTab === tab.value ? 'text-white' : 'text-white/50 hover:text-white/70'
+                activeTab === tab.value ? 'text-white' : 'text-neutral-500 dark:text-white/50 hover:text-neutral-600 dark:text-white/70'
               }`}
             >
               <span>{tab.label}</span>
-              <span className="ml-2 text-xs text-white/40">({tab.count})</span>
+              <span className="ml-2 text-xs text-neutral-500 dark:text-white/40">({tab.count})</span>
               {activeTab === tab.value && (
                 <motion.div
                   layoutId="severity-indicator"
@@ -674,7 +674,7 @@ export default function DriftEventsPage() {
           animate={{ opacity: 1, y: 0 }}
           className="flex items-center justify-between p-3 bg-primary-500/10 border border-primary-500/20 rounded-lg"
         >
-          <span className="text-sm text-white/80">
+          <span className="text-sm text-neutral-800 dark:text-white/80">
             {selectedEvents.size} event{selectedEvents.size > 1 ? 's' : ''} selected
           </span>
           <div className="flex items-center gap-2">
@@ -696,7 +696,7 @@ export default function DriftEventsPage() {
             </Button>
             <button
               onClick={() => setSelectedEvents(new Set())}
-              className="p-2 text-white/40 hover:text-white"
+              className="p-2 text-neutral-500 dark:text-white/40 hover:text-white"
             >
               <X className="w-4 h-4" />
             </button>
@@ -712,11 +712,11 @@ export default function DriftEventsPage() {
         </div>
       ) : filteredEvents.length === 0 ? (
         <motion.div variants={itemVariants} className="text-center py-16">
-          <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-4">
-            <AlertTriangle className="w-8 h-8 text-white/30" />
+          <div className="w-16 h-16 bg-white dark:bg-white/5 rounded-full flex items-center justify-center mx-auto mb-4">
+            <AlertTriangle className="w-8 h-8 text-neutral-400 dark:text-white/30" />
           </div>
           <h3 className="text-lg font-medium text-white mb-2">No drift events found</h3>
-          <p className="text-white/50">No schema changes detected matching your filters.</p>
+          <p className="text-neutral-500 dark:text-white/50">No schema changes detected matching your filters.</p>
         </motion.div>
       ) : (
         <div className="space-y-3">
@@ -737,7 +737,7 @@ export default function DriftEventsPage() {
                         type="checkbox"
                         checked={selectedEvents.has(event.id)}
                         onChange={() => toggleEventSelection(event.id)}
-                        className="mt-1 w-4 h-4 rounded border-white/20 bg-white/5 text-primary-500 focus:ring-primary-500/20"
+                        className="mt-1 w-4 h-4 rounded border-white/20 bg-white dark:bg-white/5 text-primary-500 focus:ring-primary-500/20"
                       />
                       <div className="flex-1">
                         <div className="flex items-start justify-between gap-4">
@@ -753,10 +753,10 @@ export default function DriftEventsPage() {
                               <span className="text-white font-medium">{event.endpointName}</span>
                               <UrlLink
                                 url={event.endpointUrl}
-                                className="text-white/40 text-sm font-mono underline-offset-4 hover:text-white hover:underline"
+                                className="text-neutral-500 dark:text-white/40 text-sm font-mono underline-offset-4 hover:text-white hover:underline"
                               />
                             </div>
-                            <p className="text-sm text-white/70">{event.message}</p>
+                            <p className="text-sm text-neutral-600 dark:text-white/70">{event.message}</p>
                           </div>
                           <div className="flex items-center gap-2">
                             <Badge severity={event.severity}>{event.severity}</Badge>
@@ -770,12 +770,12 @@ export default function DriftEventsPage() {
                         </div>
 
                         <div className="flex items-center justify-between mt-3 pt-3 border-t border-white/5">
-                          <span className="text-xs text-white/40">
+                          <span className="text-xs text-neutral-500 dark:text-white/40">
                             {formatDateTime(event.detectedAt)}
                           </span>
                           <button
                             onClick={() => setExpandedEvent(expandedEvent === event.id ? null : event.id)}
-                            className="flex items-center gap-1 text-sm text-white/50 hover:text-white transition-colors"
+                            className="flex items-center gap-1 text-sm text-neutral-500 dark:text-white/50 hover:text-white transition-colors"
                           >
                             {expandedEvent === event.id ? 'Hide' : 'Show'} changes
                             <ChevronDown className={`w-4 h-4 transition-transform ${expandedEvent === event.id ? 'rotate-180' : ''}`} />
@@ -789,10 +789,10 @@ export default function DriftEventsPage() {
                               animate={{ height: 'auto', opacity: 1 }}
                               exit={{ height: 0, opacity: 0 }}
                               transition={{ duration: 0.2 }}
-                              className="mt-4 pt-4 border-t border-white/10"
+                              className="mt-4 pt-4 border-t border-neutral-200 dark:border-white/10"
                             >
                               <div className="space-y-4">
-                                <div className="relative rounded-2xl border border-white/10 bg-black/30 p-4 font-mono text-sm leading-7 text-white/85">
+                                <div className="relative rounded-2xl border border-neutral-200 dark:border-white/10 bg-black/30 p-4 font-mono text-sm leading-7 text-white/85">
                                   <button
                                     type="button"
                                     onClick={() =>
@@ -805,7 +805,7 @@ export default function DriftEventsPage() {
                                         ].join('\n')
                                       )
                                     }
-                                    className="absolute right-4 top-4 rounded-lg p-1.5 text-white/50 hover:bg-white/10 hover:text-white"
+                                    className="absolute right-4 top-4 rounded-lg p-1.5 text-neutral-500 dark:text-white/50 hover:bg-white/10 hover:text-white"
                                     aria-label="Copy change summary"
                                   >
                                     <Copy className="h-4 w-4" />
@@ -822,7 +822,7 @@ export default function DriftEventsPage() {
                                   <p><span className="text-white">Time:</span> {formatRelativeTime(event.detectedAt)}</p>
                                 </div>
 
-                                <div className="relative rounded-2xl border border-white/10 bg-black/30 p-4">
+                                <div className="relative rounded-2xl border border-neutral-200 dark:border-white/10 bg-black/30 p-4">
                                   <button
                                     type="button"
                                     onClick={() =>
@@ -838,7 +838,7 @@ export default function DriftEventsPage() {
                                         ].join('\n')
                                       )
                                     }
-                                    className="absolute right-4 top-4 rounded-lg p-1.5 text-white/50 hover:bg-white/10 hover:text-white"
+                                    className="absolute right-4 top-4 rounded-lg p-1.5 text-neutral-500 dark:text-white/50 hover:bg-white/10 hover:text-white"
                                     aria-label="Copy schema diff"
                                   >
                                     <Copy className="h-4 w-4" />
@@ -873,7 +873,7 @@ export default function DriftEventsPage() {
 
                                 <div className="grid gap-3 md:grid-cols-2">
                                   {event.changes.map((change, index) => (
-                                    <div key={index} className="rounded-lg border border-white/10 bg-white/5 p-3">
+                                    <div key={index} className="rounded-lg border border-neutral-200 dark:border-white/10 bg-white dark:bg-white/5 p-3">
                                       <div className="flex flex-wrap items-center gap-2">
                                         <span className={`px-2 py-0.5 text-xs font-medium rounded ${
                                           change.type === 'added' ? 'bg-green-500/20 text-green-400' :
@@ -882,9 +882,9 @@ export default function DriftEventsPage() {
                                         }`}>
                                           {change.type}
                                         </span>
-                                        <span className="text-sm font-mono text-white/80">{change.path || change.field}</span>
+                                        <span className="text-sm font-mono text-neutral-800 dark:text-white/80">{change.path || change.field}</span>
                                       </div>
-                                      <p className="mt-2 text-sm text-white/70">{changeSummary(change)}</p>
+                                      <p className="mt-2 text-sm text-neutral-600 dark:text-white/70">{changeSummary(change)}</p>
                                     </div>
                                   ))}
                                 </div>

@@ -163,19 +163,19 @@ export default function ApiKeysPage() {
       <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div className="min-w-0">
           <p className="mb-2 text-sm font-semibold uppercase tracking-[0.18em] text-primary-300">Security</p>
-          <h1 className="text-2xl font-bold text-white sm:text-3xl">API Keys</h1>
-          <p className="mt-1 max-w-2xl text-sm leading-6 text-white/60 sm:text-base">
+          <h1 className="text-2xl font-bold text-neutral-900 dark:text-white sm:text-3xl">API Keys</h1>
+          <p className="mt-1 max-w-2xl text-sm leading-6 text-neutral-500 dark:text-white/60 sm:text-base">
             {currentProject ? `Create and manage keys for ${currentProject.name}.` : 'Connect a project before creating live API keys.'}
           </p>
         </div>
         <div className="grid gap-3 sm:grid-cols-2 lg:min-w-[320px]">
           <Card className="px-5 py-4">
-            <p className="text-sm text-white/50">Active keys</p>
-            <p className="mt-1 text-2xl font-bold text-white">{activeCount}</p>
+            <p className="text-sm text-neutral-500 dark:text-white/50">Active keys</p>
+            <p className="mt-1 text-2xl font-bold text-neutral-900 dark:text-white">{activeCount}</p>
           </Card>
           <Card className="px-5 py-4">
-            <p className="text-sm text-white/50">Protected scopes</p>
-            <p className="mt-1 text-2xl font-bold text-white">5</p>
+            <p className="text-sm text-neutral-500 dark:text-white/50">Protected scopes</p>
+            <p className="mt-1 text-2xl font-bold text-neutral-900 dark:text-white">5</p>
           </Card>
         </div>
       </div>
@@ -186,7 +186,7 @@ export default function ApiKeysPage() {
         </CardHeader>
         <CardContent>
           {!canViewApiKeys && (
-            <p className="mb-3 text-sm text-white/50">You do not have permission to view or manage API keys for this project.</p>
+            <p className="mb-3 text-sm text-neutral-500 dark:text-white/50">You do not have permission to view or manage API keys for this project.</p>
           )}
           <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
             <Input
@@ -205,10 +205,10 @@ export default function ApiKeysPage() {
       </Card>
 
       <div className="grid gap-4">
-        {isLoading && <p className="text-sm text-white/50">Loading API keys...</p>}
+        {isLoading && <p className="text-sm text-neutral-500 dark:text-white/50">Loading API keys...</p>}
         {!isLoading && canViewApiKeys && keys.length === 0 && (
           <Card>
-            <CardContent className="p-8 text-center text-white/50">No API keys for this project yet.</CardContent>
+            <CardContent className="p-8 text-center text-neutral-500 dark:text-white/50">No API keys for this project yet.</CardContent>
           </Card>
         )}
         {keys.map((apiKey) => (
@@ -232,8 +232,8 @@ export default function ApiKeysPage() {
                     )}
                     <Badge variant="status" status={apiKey.status === 'revoked' ? 'inactive' : apiKey.status}>{apiKey.status}</Badge>
                   </div>
-                  <p className="mt-1 break-all font-mono text-sm text-white/50">{apiKey.fullKey || apiKey.keyPrefix}</p>
-                  <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-white/40">
+                  <p className="mt-1 break-all font-mono text-sm text-neutral-500 dark:text-white/50">{apiKey.fullKey || apiKey.keyPrefix}</p>
+                  <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-neutral-500 dark:text-white/40">
                     <span>{apiKey.scopes.join(', ')}</span>
                     <span>Created {new Date(apiKey.createdAt).toLocaleString()}</span>
                     <span>Last used {apiKey.lastUsedAt ? new Date(apiKey.lastUsedAt).toLocaleString() : 'Never'}</span>

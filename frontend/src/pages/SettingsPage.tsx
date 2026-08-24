@@ -564,8 +564,8 @@ export default function SettingsPage() {
       className="space-y-6"
     >
       <motion.div variants={itemVariants}>
-        <h1 className="text-2xl font-bold text-white">Settings</h1>
-        <p className="text-white/60">Manage your account and preferences</p>
+        <h1 className="text-2xl font-bold text-neutral-900 dark:text-white">Settings</h1>
+        <p className="text-neutral-500 dark:text-white/60">Manage your account and preferences</p>
       </motion.div>
 
       <motion.div variants={itemVariants}>
@@ -593,7 +593,7 @@ export default function SettingsPage() {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="flex items-center gap-4 mb-6">
-                    <div className="w-20 h-20 overflow-hidden rounded-full bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center text-2xl font-bold text-white">
+                    <div className="w-20 h-20 overflow-hidden rounded-full bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center text-2xl font-bold text-neutral-900 dark:text-white">
                       {profileForm.avatar ? (
                         <img src={profileForm.avatar} alt={profileForm.name || 'User avatar'} className="h-full w-full object-cover" />
                       ) : (
@@ -617,7 +617,7 @@ export default function SettingsPage() {
                       >
                         Change Avatar
                       </Button>
-                      <p className="mt-2 text-xs text-white/40">PNG, JPG, or WebP under 2 MB.</p>
+                      <p className="mt-2 text-xs text-neutral-500 dark:text-white/40">PNG, JPG, or WebP under 2 MB.</p>
                     </div>
                   </div>
                   <Input
@@ -636,7 +636,7 @@ export default function SettingsPage() {
                     value={profileForm.username}
                     onChange={(e) => setProfileForm({ ...profileForm, username: e.target.value })}
                   />
-                  <p className="-mt-2 text-xs text-white/40">You can sign in with either your email or username.</p>
+                  <p className="-mt-2 text-xs text-neutral-500 dark:text-white/40">You can sign in with either your email or username.</p>
                   <Button loading={isSavingProfile} onClick={() => void saveProfile()}>Save Changes</Button>
                 </CardContent>
               </Card>
@@ -700,9 +700,9 @@ export default function SettingsPage() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  {isLoadingTeam && <p className="text-sm text-white/50">Loading team members...</p>}
+                  {isLoadingTeam && <p className="text-sm text-neutral-500 dark:text-white/50">Loading team members...</p>}
                   {!isLoadingTeam && teamMembers.length === 0 && (
-                    <p className="text-sm text-white/50">No team members yet.</p>
+                    <p className="text-sm text-neutral-500 dark:text-white/50">No team members yet.</p>
                   )}
                   {teamMembers.map((member) => {
                     const displayName = member.name || member.userEmail.split('@')[0];
@@ -712,7 +712,7 @@ export default function SettingsPage() {
                     return (
                     <div
                       key={member.id}
-                      className="flex flex-col gap-3 rounded-lg bg-white/5 p-3 sm:flex-row sm:items-center sm:justify-between"
+                      className="flex flex-col gap-3 rounded-lg bg-white dark:bg-white/5 p-3 sm:flex-row sm:items-center sm:justify-between"
                     >
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center text-white font-medium">
@@ -720,7 +720,7 @@ export default function SettingsPage() {
                         </div>
                         <div>
                           <p className="text-white font-medium">{displayName}</p>
-                          <p className="text-sm text-white/50">{member.userEmail}</p>
+                          <p className="text-sm text-neutral-500 dark:text-white/50">{member.userEmail}</p>
                         </div>
                       </div>
                       <div className="flex flex-wrap items-center gap-3">
@@ -732,10 +732,10 @@ export default function SettingsPage() {
                                 <button
                                   type="button"
                                   disabled={isSavingTeam || isCurrentProjectOwner}
-                                  className="inline-flex h-10 min-w-[132px] items-center justify-between gap-2 rounded-lg border border-white/10 bg-white/5 px-3 text-sm font-medium text-white transition-colors hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-60"
+                                  className="inline-flex h-10 min-w-[132px] items-center justify-between gap-2 rounded-lg border border-neutral-200 dark:border-white/10 bg-white dark:bg-white/5 px-3 text-sm font-medium text-white transition-colors hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-60"
                                 >
                                   <span className="capitalize">{member.role}</span>
-                                  <ChevronDown className="h-4 w-4 text-white/60" />
+                                  <ChevronDown className="h-4 w-4 text-neutral-500 dark:text-white/60" />
                                 </button>
                               }
                               items={teamRoles.map((role) => ({
@@ -757,7 +757,7 @@ export default function SettingsPage() {
                             </Button>
                           </>
                         ) : (
-                          <span className="text-sm text-white/40">No access</span>
+                          <span className="text-sm text-neutral-500 dark:text-white/40">No access</span>
                         )}
                       </div>
                     </div>
@@ -779,7 +779,7 @@ export default function SettingsPage() {
                   <div className={`rounded-xl border p-4 transition-colors ${
                     notificationChannels.discord.enabled
                       ? 'border-primary-300/35 bg-primary-500/12 shadow-lg shadow-primary-500/10'
-                      : 'border-white/10 bg-white/5'
+                      : 'border-neutral-200 dark:border-white/10 bg-white dark:bg-white/5'
                   }`}>
                     <div className="flex items-start justify-between gap-4">
                       <div className="flex min-w-0 gap-3">
@@ -811,7 +811,7 @@ export default function SettingsPage() {
                         }`} />
                       </button>
                     </div>
-                    <div className="mt-4 grid gap-2 rounded-lg border border-white/10 bg-black/15 p-3 text-xs text-white/60 sm:grid-cols-3">
+                    <div className="mt-4 grid gap-2 rounded-lg border border-neutral-200 dark:border-white/10 bg-white dark:bg-black/15 p-3 text-xs text-neutral-500 dark:text-white/60 sm:grid-cols-3">
                       <span className="flex items-center gap-1.5"><ShieldCheck className="h-3.5 w-3.5 text-emerald-300" /> Severity badge</span>
                       <span className="flex items-center gap-1.5"><MessageCircle className="h-3.5 w-3.5 text-primary-300" /> Field details</span>
                       <span className="flex items-center gap-1.5"><Link2 className="h-3.5 w-3.5 text-sky-300" /> Dashboard link</span>
@@ -832,7 +832,7 @@ export default function SettingsPage() {
                   <div className={`rounded-xl border p-4 transition-colors ${
                     notificationChannels.email.enabled
                       ? 'border-emerald-300/35 bg-emerald-500/10 shadow-lg shadow-emerald-500/10'
-                      : 'border-white/10 bg-white/5'
+                      : 'border-neutral-200 dark:border-white/10 bg-white dark:bg-white/5'
                   }`}>
                     <div className="flex items-start justify-between gap-4">
                       <div className="flex min-w-0 gap-3">
@@ -876,7 +876,7 @@ export default function SettingsPage() {
                         }`} />
                       </button>
                     </div>
-                    <div className="mt-4 grid gap-2 rounded-lg border border-white/10 bg-black/15 p-3 text-xs text-white/60 sm:grid-cols-3">
+                    <div className="mt-4 grid gap-2 rounded-lg border border-neutral-200 dark:border-white/10 bg-white dark:bg-black/15 p-3 text-xs text-neutral-500 dark:text-white/60 sm:grid-cols-3">
                       <span className="flex items-center gap-1.5"><ShieldCheck className="h-3.5 w-3.5 text-emerald-300" /> HTML summary</span>
                       <span className="flex items-center gap-1.5"><Bell className="h-3.5 w-3.5 text-amber-300" /> Drift context</span>
                       <span className="flex items-center gap-1.5"><Link2 className="h-3.5 w-3.5 text-sky-300" /> Action button</span>
@@ -913,7 +913,7 @@ export default function SettingsPage() {
                     Send Test Alert
                   </Button>
                 </div>
-                <p className="text-sm text-white/50">
+                <p className="text-sm text-neutral-500 dark:text-white/50">
                   Discord sends immediately through your webhook. Email sends server-side through SMTP or Resend to the saved alert address.
                 </p>
               </CardContent>
@@ -935,7 +935,7 @@ export default function SettingsPage() {
       >
         <ModalHeader>
           <h2 className="text-xl font-semibold text-white">Invite Member</h2>
-          <p className="mt-1 text-sm text-white/50">
+          <p className="mt-1 text-sm text-neutral-500 dark:text-white/50">
             Generate a project invite link and login password for this team member.
           </p>
         </ModalHeader>
@@ -949,7 +949,7 @@ export default function SettingsPage() {
             disabled={Boolean(generatedInvite)}
           />
           <div>
-            <p className="mb-2 text-sm font-medium text-white/70">Role</p>
+            <p className="mb-2 text-sm font-medium text-neutral-600 dark:text-white/70">Role</p>
             <div className="grid grid-cols-3 gap-2">
               {teamRoles.map((role) => (
                 <button
@@ -959,7 +959,7 @@ export default function SettingsPage() {
                   className={`rounded-lg border px-3 py-2 text-sm font-medium capitalize transition-colors ${
                     inviteRole === role
                       ? 'border-primary-400/60 bg-primary-500/20 text-white'
-                      : 'border-white/10 bg-white/5 text-white/70 hover:bg-white/10 hover:text-white'
+                      : 'border-neutral-200 dark:border-white/10 bg-white dark:bg-white/5 text-neutral-600 dark:text-white/70 hover:bg-white/10 hover:text-white'
                   }`}
                 >
                   {role}
@@ -1000,7 +1000,7 @@ export default function SettingsPage() {
                 <p className="mb-1 text-xs font-medium uppercase tracking-normal text-primary-200">
                   Sent by
                 </p>
-                <code className="block rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm text-white/80">
+                <code className="block rounded-lg border border-neutral-200 dark:border-white/10 bg-white dark:bg-black/20 px-3 py-2 text-sm text-neutral-800 dark:text-white/80">
                   {generatedInvite.invitedByName} ({generatedInvite.invitedByEmail})
                 </code>
               </div>
@@ -1008,7 +1008,7 @@ export default function SettingsPage() {
                 <p className="mb-1 text-xs font-medium uppercase tracking-normal text-primary-200">
                   Invited email
                 </p>
-                <code className="block rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm text-white/80">
+                <code className="block rounded-lg border border-neutral-200 dark:border-white/10 bg-white dark:bg-black/20 px-3 py-2 text-sm text-neutral-800 dark:text-white/80">
                   {generatedInvite.userEmail}
                 </code>
               </div>
@@ -1061,7 +1061,7 @@ export default function SettingsPage() {
                 </div>
               </div>
               <div className="flex flex-wrap items-center justify-between gap-3">
-                <p className="text-xs text-white/50">Share both details. Access activates only after the member opens the invite, chooses an account option, and enters this password.</p>
+                <p className="text-xs text-neutral-500 dark:text-white/50">Share both details. Access activates only after the member opens the invite, chooses an account option, and enters this password.</p>
                 <Button
                   variant="secondary"
                   size="sm"

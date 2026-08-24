@@ -190,8 +190,8 @@ export default function NotificationsPage() {
     >
       <motion.div variants={itemVariants} className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-white">Notifications</h1>
-          <p className="text-white/60">
+          <h1 className="text-2xl font-bold text-neutral-900 dark:text-white">Notifications</h1>
+          <p className="text-neutral-500 dark:text-white/60">
             {unreadCount > 0 ? `${unreadCount} unread notification${unreadCount > 1 ? 's' : ''}` : 'All caught up!'}
           </p>
         </div>
@@ -261,7 +261,7 @@ export default function NotificationsPage() {
                 className={`px-4 py-2 text-sm font-medium rounded-lg whitespace-nowrap transition-colors ${
                   activeFilter === filter.value
                     ? 'bg-white/10 text-white'
-                    : 'text-white/50 hover:text-white hover:bg-white/5'
+                    : 'text-neutral-500 dark:text-white/50 hover:text-white hover:bg-white dark:bg-white/5'
                 }`}
               >
                 {filter.label}
@@ -271,7 +271,7 @@ export default function NotificationsPage() {
           {paginatedNotifications.length > 0 && (
             <button
               onClick={togglePageSelected}
-              className="inline-flex items-center gap-2 rounded-lg border border-white/10 px-3 py-2 text-sm text-white/65 transition-colors hover:bg-white/5 hover:text-white"
+              className="inline-flex items-center gap-2 rounded-lg border border-white/10 px-3 py-2 text-sm text-white/65 transition-colors hover:bg-white dark:bg-white/5 hover:text-white"
             >
               {allPageSelected ? <CheckSquare className="h-4 w-4 text-primary-300" /> : <Square className="h-4 w-4" />}
               {allPageSelected ? 'Clear page selection' : 'Select visible'}
@@ -289,11 +289,11 @@ export default function NotificationsPage() {
         </div>
       ) : paginatedNotifications.length === 0 ? (
         <motion.div variants={itemVariants} className="text-center py-16">
-          <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-4">
-            <Bell className="w-8 h-8 text-white/30" />
+          <div className="w-16 h-16 bg-white dark:bg-white/5 rounded-full flex items-center justify-center mx-auto mb-4">
+            <Bell className="w-8 h-8 text-neutral-400 dark:text-white/30" />
           </div>
           <h3 className="text-lg font-medium text-white mb-2">No notifications</h3>
-          <p className="text-white/50">
+          <p className="text-neutral-500 dark:text-white/50">
             {activeFilter !== 'all' ? 'No notifications match your filter.' : 'You have no notifications yet.'}
           </p>
         </motion.div>
@@ -328,7 +328,7 @@ export default function NotificationsPage() {
                         <div className="flex items-start justify-between gap-2">
                           <div>
                             <p className="text-white font-medium">{notification.title}</p>
-                            <p className="text-sm text-white/70 mt-0.5">{notification.message}</p>
+                            <p className="text-sm text-neutral-600 dark:text-white/70 mt-0.5">{notification.message}</p>
                           </div>
                           <div className="flex items-center gap-2">
                             {!notification.read && (
@@ -348,7 +348,7 @@ export default function NotificationsPage() {
                                   }
                                 })();
                               }}
-                              className="rounded-md p-1.5 text-white/40 transition-colors hover:bg-red-500/10 hover:text-red-300"
+                              className="rounded-md p-1.5 text-neutral-500 dark:text-white/40 transition-colors hover:bg-red-500/10 hover:text-red-300"
                               aria-label="Delete notification"
                             >
                               <Trash2 className="h-4 w-4" />
@@ -356,7 +356,7 @@ export default function NotificationsPage() {
                           </div>
                         </div>
                         <div className="flex items-center gap-3 mt-2">
-                          <span className="text-xs text-white/40 flex items-center gap-1">
+                          <span className="text-xs text-neutral-500 dark:text-white/40 flex items-center gap-1">
                             <Clock className="w-3 h-3" />
                             {formatRelativeTime(notification.createdAt)}
                           </span>
@@ -378,7 +378,7 @@ export default function NotificationsPage() {
 
       {totalPages > 1 && (
         <motion.div variants={itemVariants} className="flex items-center justify-between">
-          <p className="text-sm text-white/50">
+          <p className="text-sm text-neutral-500 dark:text-white/50">
             Showing {(currentPage - 1) * notificationsPerPage + 1} to {Math.min(currentPage * notificationsPerPage, filteredNotifications.length)} of {filteredNotifications.length}
           </p>
           <div className="flex items-center gap-2">

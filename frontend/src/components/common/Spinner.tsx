@@ -46,7 +46,7 @@ export function Spinner({ size = 'md', text, className, ...props }: SpinnerProps
         />
       </svg>
       {text && (
-        <span className={cn('text-white/50', textSizes[size])}>{text}</span>
+        <span className={cn('text-neutral-500 dark:text-white/50', textSizes[size])}>{text}</span>
       )}
     </div>
   );

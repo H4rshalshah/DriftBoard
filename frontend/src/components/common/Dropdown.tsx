@@ -105,7 +105,7 @@ export function Dropdown({ trigger, items, className, align = 'end' }: DropdownP
             exit={{ opacity: 0, y: -6, scale: 0.97 }}
             transition={{ duration: 0.12 }}
             className={cn(
-              'fixed z-[9999] py-1 bg-[#0a0a0a]/95 backdrop-blur-xl border border-white/[0.06] rounded-lg shadow-2xl shadow-black/40'
+              'fixed z-[9999] py-1 bg-white/95 dark:bg-white dark:bg-[#0a0a0a]/95 backdrop-blur-xl border border-neutral-200 dark:border-white/[0.06] rounded-lg shadow-2xl shadow-black/15 dark:shadow-black/40'
             )}
             style={{
               top: position.top,
@@ -115,8 +115,7 @@ export function Dropdown({ trigger, items, className, align = 'end' }: DropdownP
             }}
           >
             {items.map((item, index) =>
-              item.divider ? (
-                <li key={`divider-${index}`} className="my-1 border-t border-white/[0.06]" />
+              item.divider ? (                        <li key={`divider-${index}`} className="my-1 border-t border-neutral-200 dark:border-white/[0.06]" />
               ) : (
                 <li key={item.value || index}>
                   <button
@@ -126,7 +125,7 @@ export function Dropdown({ trigger, items, className, align = 'end' }: DropdownP
                     }}
                     disabled={item.disabled}
                     className={cn(
-                      'w-full flex items-center gap-2 px-3 py-2 text-sm text-white/60 hover:text-white hover:bg-white/5 transition-colors',
+                      'w-full flex items-center gap-2 px-3 py-2 text-sm text-neutral-600 dark:text-white/60 hover:text-neutral-900 dark:hover:text-white hover:bg-white dark:hover:bg-white/5 transition-colors',
                       'focus:outline-none focus:bg-white/5',
                       'disabled:opacity-40 disabled:cursor-not-allowed'
                     )}
@@ -160,8 +159,8 @@ export function DropdownTrigger({
   return (
     <button
       className={cn(
-        'inline-flex h-10 items-center gap-2 px-3 py-2 text-sm text-white/60 bg-white/[0.03] border border-white/[0.08] rounded-lg',
-        'hover:bg-white/5 hover:border-white/10 transition-all',
+        'inline-flex h-10 items-center gap-2 px-3 py-2 text-sm text-neutral-600 dark:text-white/60 bg-white dark:bg-white/[0.03] border border-neutral-300 dark:border-white/[0.08] rounded-lg',
+        'hover:bg-neutral-200 dark:hover:bg-white/5 hover:border-neutral-400 dark:hover:border-neutral-200 dark:border-white/10 transition-all',
         className
       )}
       {...props}

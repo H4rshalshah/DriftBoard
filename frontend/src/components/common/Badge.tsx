@@ -13,15 +13,15 @@ interface BadgeProps extends HTMLAttributes<HTMLSpanElement> {
 }
 
 const severityStyles: Record<BadgeSeverity, string> = {
-  low: 'badge-severity-low bg-primary-500/12 text-primary-400 border-primary-500/20',
-  medium: 'badge-severity-medium bg-yellow-500/12 text-yellow-400 border-yellow-500/20',
-  breaking: 'badge-severity-breaking bg-red-500/12 text-red-400 border-red-500/20',
+  low: 'badge-severity-low bg-green-50 dark:bg-primary-500/12 text-green-700 dark:text-primary-400 border-green-200 dark:border-primary-500/20',
+  medium: 'badge-severity-medium bg-amber-50 dark:bg-yellow-500/12 text-amber-700 dark:text-yellow-400 border-amber-200 dark:border-yellow-500/20',
+  breaking: 'badge-severity-breaking bg-red-50 dark:bg-red-500/12 text-red-700 dark:text-red-400 border-red-200 dark:border-red-500/20',
 };
 
 const statusStyles: Record<BadgeStatus, string> = {
-  active: 'badge-status-active bg-primary-500/12 text-primary-400 border-primary-500/20',
-  deprecated: 'badge-status-deprecated bg-orange-500/12 text-orange-400 border-orange-500/20',
-  inactive: 'badge-status-inactive bg-white/8 text-white/50 border-white/10',
+  active: 'badge-status-active bg-green-50 dark:bg-primary-500/12 text-green-700 dark:text-primary-400 border-green-200 dark:border-primary-500/20',
+  deprecated: 'badge-status-deprecated bg-orange-50 dark:bg-orange-500/12 text-orange-700 dark:text-orange-400 border-orange-200 dark:border-orange-500/20',
+  inactive: 'badge-status-inactive bg-white dark:bg-white/8 text-neutral-500 dark:text-white/50 border-neutral-200 dark:border-white/10',
 };
 
 const dotColors: Record<BadgeSeverity | BadgeStatus, string> = {

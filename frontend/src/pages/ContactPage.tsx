@@ -267,7 +267,7 @@ export default function ContactPage() {
               </div>
 
               <div>
-                <label htmlFor="contact-subject" className="mb-1.5 block text-sm font-medium text-white/80">
+                <label htmlFor="contact-subject" className="mb-1.5 block text-sm font-medium text-neutral-800 dark:text-white/80">
                   Subject
                 </label>
                 <select
@@ -285,7 +285,7 @@ export default function ContactPage() {
               </div>
 
               <div>
-                <label htmlFor="contact-message" className="mb-1.5 block text-sm font-medium text-white/80">
+                <label htmlFor="contact-message" className="mb-1.5 block text-sm font-medium text-neutral-800 dark:text-white/80">
                   Message
                 </label>
                 <textarea
@@ -295,7 +295,7 @@ export default function ContactPage() {
                   rows={8}
                   placeholder="Tell us what you need help with..."
                   className={cn(
-                    'w-full resize-y rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder:text-white/30 outline-none transition-all duration-200',
+                    'w-full resize-y rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder:text-neutral-400 dark:text-white/30 outline-none transition-all duration-200',
                     'focus:border-white/30 focus:ring-2 focus:ring-white/10',
                     errors.message && 'border-red-500/50 focus:border-red-500/50 focus:ring-red-500/20'
                   )}

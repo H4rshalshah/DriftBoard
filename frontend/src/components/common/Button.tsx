@@ -19,7 +19,7 @@ const variantStyles: Record<ButtonVariant, string> = {
   primary:
     'btn-primary-surface bg-primary-600 hover:bg-primary-500 text-white shadow-sm',
   secondary:
-    'btn-secondary-surface border border-white/10 bg-white/5 text-white/90 hover:bg-white/8 hover:border-white/15',
+    'btn-secondary-surface border border-white/10 bg-white/[0.05] text-white/90 hover:bg-white/[0.08] hover:border-white/15',
   ghost: 'btn-ghost-surface text-white/60 hover:text-white hover:bg-white/5',
   danger: 'bg-red-600 hover:bg-red-500 text-white shadow-sm',
 };

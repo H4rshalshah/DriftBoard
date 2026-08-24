@@ -27,9 +27,9 @@ export function EndpointCard({ endpoint, hasDrift = false, onClick, className }:
       whileHover={{ scale: 1.005 }}
       onClick={() => onClick?.(endpoint)}
       className={cn(
-        'bg-[#0a0a0a] border border-white/[0.06] rounded-xl p-4',
+        'bg-white dark:bg-[#0a0a0a] border border-neutral-200 dark:border-white/[0.06] rounded-xl p-4',
         'cursor-pointer transition-all duration-200',
-        'hover:border-white/[0.1]',
+        'hover:border-neutral-200 dark:border-white/[0.1]',
         hasDrift && 'border-orange-500/20',
         className
       )}
@@ -67,7 +67,7 @@ export function EndpointCard({ endpoint, hasDrift = false, onClick, className }:
         </div>
       </div>
 
-      <div className="flex items-center gap-4 mt-3 pt-3 border-t border-white/[0.06]">
+      <div className="flex items-center gap-4 mt-3 pt-3 border-t border-neutral-200 dark:border-white/[0.06]">
         {endpoint.lastCheckedAt && (
           <div className="flex items-center gap-1.5 text-xs text-white/30">
             <Clock className="w-3 h-3" />

@@ -111,7 +111,7 @@ export default function ResetPasswordPage() {
           <h1 className="text-3xl font-bold text-white mb-2">
             {isResetSuccessful ? 'Password Reset' : 'Set New Password'}
           </h1>
-          <p className="text-white/60">
+          <p className="text-neutral-500 dark:text-neutral-500 dark:text-white/60">
             {isResetSuccessful
               ? 'Your password has been updated successfully'
               : 'Enter your new password below'}
@@ -120,7 +120,7 @@ export default function ResetPasswordPage() {
 
         <motion.div
           variants={itemVariants}
-          className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-8"
+          className="bg-white/5 backdrop-blur-xl border border-neutral-200 dark:border-white/10 rounded-2xl p-8"
         >
           {isResetSuccessful ? (
             <motion.div
@@ -132,7 +132,7 @@ export default function ResetPasswordPage() {
                 <CheckCircle2 className="h-8 w-8 text-emerald-400" />
               </div>
               <p className="text-emerald-300 font-medium text-lg">Password reset successfully.</p>
-              <p className="mt-2 text-white/50 text-sm">Redirecting to sign in...</p>
+              <p className="mt-2 text-neutral-500 dark:text-neutral-500 dark:text-white/50 text-sm">Redirecting to sign in...</p>
             </motion.div>
           ) : (
             <form onSubmit={handleSubmit} className="space-y-5">
@@ -159,7 +159,7 @@ export default function ResetPasswordPage() {
               <div className="space-y-2">
                 <div className="flex items-center gap-2 mb-1">
                   <Mail className="h-4 w-4 text-primary-400" />
-                  <label className="block text-sm font-medium text-white/80">Account Email</label>
+                  <label className="block text-sm font-medium text-neutral-800 dark:text-neutral-800 dark:text-white/80">Account Email</label>
                 </div>
                 <Input
                   type="email"
@@ -173,7 +173,7 @@ export default function ResetPasswordPage() {
               <div className="space-y-2">
                 <div className="flex items-center gap-2 mb-1">
                   <KeyRound className="h-4 w-4 text-primary-400" />
-                  <label className="block text-sm font-medium text-white/80">Reset Code</label>
+                  <label className="block text-sm font-medium text-neutral-800 dark:text-neutral-800 dark:text-white/80">Reset Code</label>
                 </div>
                 <Input
                   type="text"
@@ -187,7 +187,7 @@ export default function ResetPasswordPage() {
               <div className="space-y-2">
                 <div className="flex items-center gap-2 mb-1">
                   <Lock className="h-4 w-4 text-primary-400" />
-                  <label className="block text-sm font-medium text-white/80">New Password</label>
+                  <label className="block text-sm font-medium text-neutral-800 dark:text-neutral-800 dark:text-white/80">New Password</label>
                 </div>
                 <Input
                   type="password"
@@ -201,7 +201,7 @@ export default function ResetPasswordPage() {
               <div className="space-y-2">
                 <div className="flex items-center gap-2 mb-1">
                   <Lock className="h-4 w-4 text-primary-400" />
-                  <label className="block text-sm font-medium text-white/80">Confirm Password</label>
+                  <label className="block text-sm font-medium text-neutral-800 dark:text-neutral-800 dark:text-white/80">Confirm Password</label>
                 </div>
                 <Input
                   type="password"

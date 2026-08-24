@@ -132,7 +132,7 @@ export default function LandingPage() {
   };
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-black text-white">
+    <div className="relative min-h-screen overflow-hidden bg-black dark:bg-black text-neutral-900 dark:text-white">
       <AnimatedBackground intensity="hero" />
 
       <nav className="relative z-10 mx-auto flex max-w-7xl items-center justify-between gap-3 px-5 py-4 sm:px-6 sm:py-5 lg:px-8">
@@ -148,7 +148,7 @@ export default function LandingPage() {
               <button
                 key={id}
                 onClick={() => scrollToSection(id)}
-                className="rounded-lg px-3 py-2 text-sm text-white/45 transition-all hover:text-white/80"
+                className="rounded-lg px-3 py-2 text-sm text-neutral-500 dark:text-white/45 transition-all hover:text-neutral-800 dark:text-white/80"
               >
                 {label}
               </button>
@@ -171,18 +171,18 @@ export default function LandingPage() {
             Live contract drift detection
           </motion.div>
 
-          <motion.h1 variants={itemVariants} className="mx-auto max-w-6xl text-balance text-4xl font-bold leading-[1.08] tracking-tight text-white sm:text-5xl md:text-6xl lg:text-7xl">
+          <motion.h1 variants={itemVariants} className="mx-auto max-w-6xl text-balance text-4xl font-bold leading-[1.08] tracking-tight text-neutral-900 dark:text-white sm:text-5xl md:text-6xl lg:text-7xl">
             API Drift Intelligence to Keep Frontend and Backend in Sync
           </motion.h1>
 
-          <motion.p variants={itemVariants} className="mx-auto mt-6 max-w-3xl text-base leading-7 text-white/45 sm:mt-8 md:text-lg md:leading-7">
+          <motion.p variants={itemVariants} className="mx-auto mt-6 max-w-3xl text-base leading-7 text-neutral-500 dark:text-white/45 sm:mt-8 md:text-lg md:leading-7">
             DriftBoard monitors Express APIs, stores schema snapshots, and streams live diffs before renamed fields break production.
           </motion.p>
 
           <motion.form
             variants={itemVariants}
             onSubmit={requestDemo}
-            className="mx-auto mt-8 flex max-w-2xl flex-col gap-3 rounded-xl border border-white/8 bg-white/[0.03] p-2 backdrop-blur-xl sm:mt-12 sm:flex-row sm:rounded-2xl"
+            className="mx-auto mt-8 flex max-w-2xl flex-col gap-3 rounded-xl border border-neutral-200 dark:border-white/8 bg-white/[0.03] p-2 backdrop-blur-xl sm:mt-12 sm:flex-row sm:rounded-2xl"
           >
             <input
               type="email"
@@ -190,7 +190,7 @@ export default function LandingPage() {
               value={demoEmail}
               onChange={(event) => setDemoEmail(event.target.value)}
               autoComplete="email"
-              className="min-h-[52px] flex-1 rounded-xl bg-transparent px-5 text-white/80 outline-none placeholder:text-white/25"
+              className="min-h-[52px] flex-1 rounded-xl bg-transparent px-5 text-neutral-800 dark:text-white/80 outline-none placeholder:text-neutral-400 dark:text-white/25"
             />
             <Button type="submit" fullWidth size="lg" className="sm:w-[200px]" rightIcon={<ArrowRight className="h-5 w-5" />}>
               Request demo
@@ -200,7 +200,7 @@ export default function LandingPage() {
           <motion.div variants={itemVariants} className="mx-auto mt-6 max-w-2xl">
             <div className="relative flex items-center gap-4 text-sm">
               <div className="h-px flex-1 bg-white/8" />
-              <span className="text-white/25">Or continue with</span>
+              <span className="text-neutral-400 dark:text-white/25">Or continue with</span>
               <div className="h-px flex-1 bg-white/8" />
             </div>
 
@@ -243,26 +243,26 @@ export default function LandingPage() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: false, amount: 0.35 }}
           transition={{ duration: 0.55, ease: 'easeOut' }}
-          className="relative mx-auto mt-10 max-w-6xl overflow-hidden rounded-2xl border border-white/[0.06] bg-black/50 p-4 backdrop-blur-xl sm:mt-12 sm:p-5 md:mt-16 md:rounded-3xl lg:p-6"
+          className="relative mx-auto mt-10 max-w-6xl overflow-hidden rounded-2xl border border-neutral-200 dark:border-white/[0.06] bg-black/50 p-4 backdrop-blur-xl sm:mt-12 sm:p-5 md:mt-16 md:rounded-3xl lg:p-6"
         >
-          <div className="mb-5 flex flex-col gap-3 border-b border-white/[0.06] pb-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="mb-5 flex flex-col gap-3 border-b border-neutral-200 dark:border-white/[0.06] pb-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-3">
               <span className="h-3 w-3 rounded-full bg-red-400" />
               <span className="h-3 w-3 rounded-full bg-emerald-300" />
-              <span className="ml-4 text-sm font-semibold text-white/80">DriftBoard Console</span>
+              <span className="ml-4 text-sm font-semibold text-neutral-800 dark:text-white/80">DriftBoard Console</span>
             </div>
-            <span className="text-sm text-white/35">Live WebSocket feed</span>
+            <span className="text-sm text-neutral-400 dark:text-white/35">Live WebSocket feed</span>
           </div>
 
           <div className="grid gap-5 md:grid-cols-[240px_1fr] lg:gap-6">
-            <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-3 md:rounded-2xl md:p-5">
+            <div className="rounded-xl border border-neutral-200 dark:border-white/[0.06] bg-white/[0.02] p-3 md:rounded-2xl md:p-5">
               <div className="space-y-1">
               {consoleTabs.map((item) => (
                 <motion.button
                   key={item}
                   type="button"
                   onClick={() => setActiveConsoleTab(item)}
-                  className={`w-full rounded-lg px-4 py-3 text-center text-sm transition-all hover:text-white/80 ${activeConsoleTab === item ? 'bg-primary-500/10 text-white' : 'text-white/40 hover:bg-white/[0.03]'}`}
+                  className={`w-full rounded-lg px-4 py-3 text-center text-sm transition-all hover:text-neutral-800 dark:text-white/80 ${activeConsoleTab === item ? 'bg-primary-500/10 text-white' : 'text-neutral-500 dark:text-white/40 hover:bg-white/[0.03]'}`}
                   animate={activeConsoleTab === item ? { boxShadow: ['0 0 0 rgba(34,197,94,0)', '0 0 20px rgba(34,197,94,0.1)', '0 0 0 rgba(34,197,94,0)'] } : undefined}
                   transition={{ duration: 3, repeat: Infinity }}
                 >
@@ -270,15 +270,15 @@ export default function LandingPage() {
                 </motion.button>
               ))}
               </div>
-              <p className="mt-4 grid min-h-[72px] place-items-center rounded-xl border border-white/[0.06] bg-white/[0.02] px-4 py-3 text-center text-xs leading-5 text-white/35">
+              <p className="mt-4 grid min-h-[72px] place-items-center rounded-xl border border-neutral-200 dark:border-white/[0.06] bg-white/[0.02] px-4 py-3 text-center text-xs leading-5 text-neutral-400 dark:text-white/35">
                 {activeConsolePanel.note}
               </p>
             </div>
             <div className="grid gap-3 md:hidden">
               {activeConsolePanel.metrics.slice(0, 2).map(([label, value]) => (
-                <div key={label} className="flex items-center justify-between gap-3 border-b border-white/[0.06] py-3 last:border-b-0">
-                  <span className="text-sm text-white/40">{label}</span>
-                  <span className="text-lg font-bold text-white">{value}</span>
+                <div key={label} className="flex items-center justify-between gap-3 border-b border-neutral-200 dark:border-white/[0.06] py-3 last:border-b-0">
+                  <span className="text-sm text-neutral-500 dark:text-white/40">{label}</span>
+                  <span className="text-lg font-bold text-neutral-900 dark:text-white">{value}</span>
                 </div>
               ))}
             </div>
@@ -293,15 +293,15 @@ export default function LandingPage() {
                 <motion.div
                   key={label}
                   variants={scrollItemVariants}
-                  className="flex min-h-[220px] rounded-2xl border border-white/[0.06] bg-white/[0.02] transition-all hover:-translate-y-1 hover:border-white/[0.1] lg:min-h-[260px]"
+                  className="flex min-h-[220px] rounded-2xl border border-neutral-200 dark:border-white/[0.06] bg-white/[0.02] transition-all hover:-translate-y-1 hover:border-white/[0.1] lg:min-h-[260px]"
                 >
                   <motion.div
                     className="flex min-h-[180px] w-full flex-1 flex-col items-center justify-center p-5 text-center"
                     animate={{ y: [0, index % 2 === 0 ? -4 : 4, 0] }}
                     transition={{ duration: 4 + index, repeat: Infinity, ease: 'easeInOut' }}
                   >
-                    <p className="w-full text-center text-sm text-white/40">{label}</p>
-                    <p className="mt-4 w-full text-center text-3xl font-bold text-white">{value}</p>
+                    <p className="w-full text-center text-sm text-neutral-500 dark:text-white/40">{label}</p>
+                    <p className="mt-4 w-full text-center text-3xl font-bold text-neutral-900 dark:text-white">{value}</p>
                   </motion.div>
                 </motion.div>
               ))}
@@ -320,7 +320,7 @@ export default function LandingPage() {
         >
           <motion.div variants={scrollItemVariants} className="mb-12 max-w-2xl md:mb-14">
             <p className="mb-3 text-sm font-semibold uppercase tracking-[0.16em] text-primary-400">Platform</p>
-            <h2 className="text-3xl font-bold text-white md:text-4xl">Key Features of DriftBoard</h2>
+            <h2 className="text-3xl font-bold text-neutral-900 dark:text-white md:text-4xl">Key Features of DriftBoard</h2>
           </motion.div>
           <div className="grid gap-4 md:grid-cols-2 md:gap-6 lg:grid-cols-4">
             {features.map((feature, index) => (
@@ -328,13 +328,13 @@ export default function LandingPage() {
                 key={feature.title}
                 variants={scrollItemVariants}
                 transition={{ delay: index * 0.06, duration: 0.45, ease: 'easeOut' }}
-                className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-4 backdrop-blur-xl transition-all hover:-translate-y-0.5 hover:border-white/[0.1] md:rounded-2xl md:p-6"
+                className="rounded-xl border border-neutral-200 dark:border-white/[0.06] bg-white/[0.02] p-4 backdrop-blur-xl transition-all hover:-translate-y-0.5 hover:border-white/[0.1] md:rounded-2xl md:p-6"
               >
                 <div className="mb-5 grid h-11 w-11 place-items-center rounded-xl bg-primary-500/10 text-primary-400">
                   <feature.icon className="h-5 w-5" />
                 </div>
-                <h3 className="font-semibold text-white">{feature.title}</h3>
-                <p className="mt-2.5 text-sm leading-6 text-white/40">{feature.description}</p>
+                <h3 className="font-semibold text-neutral-900 dark:text-white">{feature.title}</h3>
+                <p className="mt-2.5 text-sm leading-6 text-neutral-500 dark:text-white/40">{feature.description}</p>
               </motion.div>
             ))}
           </div>
@@ -343,7 +343,7 @@ export default function LandingPage() {
 
       <DemoVideo />
 
-      <footer className="relative z-10 border-t border-white/[0.06] px-5 py-10">
+      <footer className="relative z-10 border-t border-neutral-200 dark:border-white/[0.06] px-5 py-10">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -352,10 +352,10 @@ export default function LandingPage() {
           className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-4 md:flex-row"
         >
           <DriftBoardLogo />
-          <div className="flex flex-col items-center gap-3 text-sm text-white/30 md:items-end">
+          <div className="flex flex-col items-center gap-3 text-sm text-neutral-400 dark:text-white/30 md:items-end">
             <div className="flex items-center gap-4">
-              <Link to="/contact" className="transition-colors hover:text-white/70">Contact</Link>
-              <a href="mailto:h4rshal.workspace@gmail.com" className="transition-colors hover:text-white/70">Support</a>
+              <Link to="/contact" className="transition-colors hover:text-neutral-600 dark:text-white/70">Contact</Link>
+              <a href="mailto:h4rshal.workspace@gmail.com" className="transition-colors hover:text-neutral-600 dark:text-white/70">Support</a>
             </div>
             <p>Copyright 2026 DriftBoard. Built for API contract confidence.</p>
           </div>

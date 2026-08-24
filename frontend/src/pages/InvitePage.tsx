@@ -194,7 +194,7 @@ export default function InvitePage() {
           <h1 className="text-2xl font-bold text-white">Join project</h1>
 
           {invite && (
-            <p className="mt-2 text-sm leading-6 text-white/60">
+            <p className="mt-2 text-sm leading-6 text-neutral-500 dark:text-white/60">
               You were invited as{' '}
               <span className="font-semibold capitalize text-white">{invite.role}</span>{' '}
               to <span className="font-semibold text-white">{projectOrTeamName}</span>.
@@ -202,7 +202,7 @@ export default function InvitePage() {
           )}
 
           {isLoadingInvite && (
-            <p className="mt-2 text-sm text-white/50">Checking invite...</p>
+            <p className="mt-2 text-sm text-neutral-500 dark:text-white/50">Checking invite...</p>
           )}
         </div>
 
@@ -226,7 +226,7 @@ export default function InvitePage() {
                 className={`min-h-[40px] rounded-md px-3 text-sm font-medium transition-colors ${
                   accountMode === 'existing'
                     ? 'bg-primary-500 text-white'
-                    : 'text-white/60 hover:bg-white/10 hover:text-white'
+                    : 'text-neutral-500 dark:text-white/60 hover:bg-white/10 hover:text-white'
                 }`}
               >
                 I have account
@@ -238,7 +238,7 @@ export default function InvitePage() {
                 className={`min-h-[40px] rounded-md px-3 text-sm font-medium transition-colors ${
                   accountMode === 'new'
                     ? 'bg-primary-500 text-white'
-                    : 'text-white/60 hover:bg-white/10 hover:text-white'
+                    : 'text-neutral-500 dark:text-white/60 hover:bg-white/10 hover:text-white'
                 }`}
               >
                 Create account

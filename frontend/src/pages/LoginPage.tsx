@@ -136,7 +136,7 @@ export default function LoginPage() {
       : 'Enter your account email and we will send you a reset link';
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden bg-black">
+    <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden bg-neutral-50 dark:bg-black">
       <motion.div
         className="fixed inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-primary-500/5 via-transparent to-transparent"
         animate={{
@@ -162,7 +162,7 @@ export default function LoginPage() {
           <h1 className="text-3xl font-bold text-white mb-2">
             {oauthLoading ? oauthProviderLabel : title}
           </h1>
-          <p className="text-white/40">
+          <p className="text-neutral-500 dark:text-white/40">
             {oauthLoading ? oauthStatus : subtitle}
           </p>
         </motion.div>
@@ -170,7 +170,7 @@ export default function LoginPage() {
         {oauthLoading ? (
           <motion.div
             variants={itemVariants}
-            className="bg-white/[0.03] backdrop-blur-xl border border-white/[0.06] rounded-2xl p-8 flex flex-col items-center justify-center min-h-[300px]"
+            className="bg-neutral-50 dark:bg-white/[0.03] backdrop-blur-xl border border-neutral-200 dark:border-white/[0.06] rounded-2xl p-8 flex flex-col items-center justify-center min-h-[300px]"
           >
             <div className="relative mb-6">
               <div className="absolute inset-0 rounded-full bg-primary-500/10 animate-pulse" />
@@ -180,7 +180,7 @@ export default function LoginPage() {
             </div>
             <div className="mb-4 flex items-center gap-3">
               <RefreshCw className="h-5 w-5 animate-spin text-primary-400" />
-              <p className="text-lg font-medium text-white/80">Redirecting to {oauthProviderLabel}...</p>
+              <p className="text-lg font-medium text-neutral-800 dark:text-white/80">Redirecting to {oauthProviderLabel}...</p>
             </div>
             <div className="h-1 w-full max-w-xs overflow-hidden rounded-full bg-white/5">
               <motion.div
@@ -190,7 +190,7 @@ export default function LoginPage() {
                 transition={{ duration: 8, ease: 'easeInOut' }}
               />
             </div>
-            <p className="mt-4 text-sm text-white/30">
+            <p className="mt-4 text-sm text-neutral-400 dark:text-white/30">
               Taking you to {oauthProviderLabel} to sign in
             </p>
             <button
@@ -199,7 +199,7 @@ export default function LoginPage() {
                 setOauthLoading(false);
                 setOauthProvider(null);
               }}
-              className="mt-6 text-sm text-white/30 hover:text-white/50 transition-colors"
+              className="mt-6 text-sm text-neutral-400 dark:text-white/30 hover:text-neutral-500 dark:text-white/50 transition-colors"
             >
               Cancel
             </button>
@@ -207,7 +207,7 @@ export default function LoginPage() {
         ) : (
         <motion.div
           variants={itemVariants}
-          className="bg-white/[0.03] backdrop-blur-xl border border-white/[0.06] rounded-2xl p-8"
+          className="bg-neutral-50 dark:bg-white/[0.03] backdrop-blur-xl border border-neutral-200 dark:border-white/[0.06] rounded-2xl p-8"
         >
           <form onSubmit={handleSubmit} className="space-y-5">
             {displayError && (
@@ -258,7 +258,7 @@ export default function LoginPage() {
                       onChange={(e) => setRememberMe(e.target.checked)}
                       className="w-4 h-4 rounded border-white/15 bg-white/5 text-primary-500 focus:ring-primary-500/15"
                     />
-                    <span className="text-sm text-white/45">Remember me</span>
+                    <span className="text-sm text-neutral-500 dark:text-white/45">Remember me</span>
                   </label>
                   <button
                     type="button"
@@ -289,16 +289,16 @@ export default function LoginPage() {
 
           {mode === 'login' && (
             <>
-              <div className="mt-4 rounded-lg border border-white/[0.06] bg-white/[0.02] px-3 py-2 text-xs text-white/35">
+              <div className="mt-4 rounded-lg border border-neutral-200 dark:border-white/[0.06] bg-neutral-50 dark:bg-white/[0.02] px-3 py-2 text-xs text-neutral-400 dark:text-white/35">
                 Demo account: demo@driftboard.dev / Demo1234
               </div>
-              <p className="mt-3 text-xs leading-5 text-white/30">
+              <p className="mt-3 text-xs leading-5 text-neutral-400 dark:text-white/30">
                 Google and GitHub use real OAuth when provider credentials are configured.
               </p>
 
               <div className="my-5 flex items-center gap-4 text-sm">
                 <div className="h-px flex-1 bg-white/8" />
-                <span className="text-white/25">Or continue with</span>
+                <span className="text-neutral-400 dark:text-white/25">Or continue with</span>
                 <div className="h-px flex-1 bg-white/8" />
               </div>
 
@@ -328,7 +328,7 @@ export default function LoginPage() {
         )}
 
         {mode === 'login' && (
-          <motion.p variants={itemVariants} className="text-center mt-6 text-white/40">
+          <motion.p variants={itemVariants} className="text-center mt-6 text-neutral-500 dark:text-white/40">
             Don't have an account?{' '}
             <Link to="/register" className="text-primary-400 hover:text-primary-300 transition-colors">
               Sign up

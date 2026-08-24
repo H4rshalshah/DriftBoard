@@ -49,7 +49,7 @@ export function TabList({ children, className, ...props }: TabListProps) {
   return (
     <div
       className={cn(
-        'flex gap-1 p-1 bg-white/[0.03] rounded-lg border border-white/[0.06]',
+        'flex gap-1 p-1 bg-white dark:bg-white/[0.03] rounded-lg border border-neutral-200 dark:border-white/[0.06]',
         className
       )}
       role="tablist"
@@ -78,8 +78,8 @@ export function Tab({ value, children, className, disabled, ...props }: TabProps
       onClick={() => setActiveTab(value)}
       className={cn(
         'relative z-10 px-4 py-2 text-sm font-medium rounded-md transition-colors',
-        'text-white/50 hover:text-white/80',
-        isActive && 'text-white',
+        'text-neutral-500 dark:text-white/50 hover:text-neutral-800 dark:hover:text-white/80',
+        isActive && 'text-neutral-900 dark:text-white',
         disabled && 'opacity-40 cursor-not-allowed',
         className
       )}
@@ -88,7 +88,7 @@ export function Tab({ value, children, className, disabled, ...props }: TabProps
       {isActive && (
         <motion.div
           layoutId="tab-indicator"
-          className="absolute inset-0 bg-white/[0.06] rounded-md"
+          className="absolute inset-0 bg-white dark:bg-white/[0.06] rounded-md shadow-sm"
           transition={{ type: 'spring', bounce: 0.15, duration: 0.4 }}
         />
       )}

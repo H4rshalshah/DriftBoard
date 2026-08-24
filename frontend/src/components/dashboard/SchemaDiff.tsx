@@ -125,8 +125,8 @@ export function SchemaDiff({
   if (currentGroup) groupedSections.push(currentGroup);
 
   return (
-    <div className={cn('rounded-xl border border-white/[0.06] bg-black overflow-hidden', className)}>
-      <div className="flex items-center justify-between p-3 border-b border-white/[0.06]">
+    <div className={cn('rounded-xl border border-neutral-200 dark:border-white/[0.06] bg-black overflow-hidden', className)}>
+      <div className="flex items-center justify-between p-3 border-b border-neutral-200 dark:border-white/[0.06]">
         <div className="flex items-center gap-2">
           <button
             onClick={() => setActiveSide('old')}
@@ -178,7 +178,7 @@ export function SchemaDiff({
         </AnimatePresence>
       </div>
 
-      <div className="border-t border-white/[0.06]">
+      <div className="border-t border-neutral-200 dark:border-white/[0.06]">
         <div className="p-3">
           <p className="text-xs text-white/40 mb-2">Changes Summary</p>
           <div className="flex flex-wrap gap-2">

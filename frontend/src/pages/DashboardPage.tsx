@@ -568,7 +568,7 @@ export default function DashboardPage() {
       <motion.div variants={itemVariants} className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div>
           <div className="flex items-center gap-3 mb-1">
-            <h1 className="text-2xl font-bold text-white">
+            <h1 className="text-2xl font-bold text-neutral-900 dark:text-white">
               Welcome back, {user?.name?.split(' ')[0] || 'User'}
             </h1>
             <div className="flex items-center gap-2">
@@ -587,15 +587,15 @@ export default function DashboardPage() {
               )}
             </div>
           </div>
-          <p className="text-white/60">
+          <p className="text-neutral-500 dark:text-white/60">
             {currentProject?.name
               ? `${currentProject.name}: ${monitoringStatusText}`
               : 'Connect a project to start monitoring endpoint drift.'}
           </p>
         </div>
         <div className="flex w-full flex-col gap-3 xl:w-auto xl:flex-row xl:flex-wrap xl:items-center xl:justify-end">
-          <div className="dashboard-monitoring-controls flex w-full flex-col gap-2 rounded-lg border border-white/10 bg-white/5 p-2 xl:w-auto xl:flex-row xl:items-center">
-            <div className="grid w-full grid-cols-2 overflow-hidden rounded-md border border-white/10 sm:grid-cols-3 xl:flex xl:w-auto xl:flex-none">
+          <div className="dashboard-monitoring-controls flex w-full flex-col gap-2 rounded-lg border border-neutral-200 dark:border-white/10 bg-white dark:bg-white/5 p-2 xl:w-auto xl:flex-row xl:items-center">
+            <div className="grid w-full grid-cols-2 overflow-hidden rounded-md border border-neutral-200 dark:border-white/10 sm:grid-cols-3 xl:flex xl:w-auto xl:flex-none">
               {monitoringDurations.map((duration) => (
                 <button
                   key={duration.value}
@@ -604,7 +604,7 @@ export default function DashboardPage() {
                   className={`h-9 min-w-0 px-3 text-xs font-medium transition-colors xl:h-8 xl:min-w-[76px] ${
                     monitoringDuration === duration.value
                       ? 'bg-primary-500/30 text-white'
-                      : 'text-white/60 hover:bg-white/10 hover:text-white'
+                      : 'text-neutral-500 dark:text-white/60 hover:bg-white/10 hover:text-white'
                   }`}
                 >
                   {duration.label}
@@ -742,7 +742,7 @@ export default function DashboardPage() {
             </CardHeader>
             <CardContent className="space-y-3">
               {displayEvents.length === 0 ? (
-                <div className="text-center py-8 text-white/40">
+                <div className="text-center py-8 text-neutral-500 dark:text-white/40">
                   <CheckCircle className="w-12 h-12 mx-auto mb-3 opacity-50" />
                   <p>No drift events detected</p>
                 </div>
@@ -765,14 +765,14 @@ export default function DashboardPage() {
                       />
                       <div>
                         <p className="text-sm font-medium text-white">{event.endpointUrl}</p>
-                        <p className="text-xs text-white/50">{event.message}</p>
+                        <p className="text-xs text-neutral-500 dark:text-white/50">{event.message}</p>
                       </div>
                     </div>
                     <div className="flex items-center gap-3">
                       <Badge severity={event.severity as 'low' | 'medium' | 'breaking'}>
                         {event.severity}
                       </Badge>
-                      <span className="text-xs text-white/40 whitespace-nowrap">
+                      <span className="text-xs text-neutral-500 dark:text-white/40 whitespace-nowrap">
                         {formatRelativeTime(event.detectedAt)}
                       </span>
                     </div>
@@ -788,7 +788,7 @@ export default function DashboardPage() {
             <CardHeader>
               <div>
                 <CardTitle>Activity</CardTitle>
-                <span className="text-xs text-white/40">
+                <span className="text-xs text-neutral-500 dark:text-white/40">
                   Last 7 days
                   {isSocketConnected ? ' - live' : ''}
                 </span>
@@ -798,9 +798,9 @@ export default function DashboardPage() {
               </Badge>
             </CardHeader>
             <CardContent>
-              <div className="relative h-40 rounded-lg border border-white/10 bg-black/10 px-3 pb-3 pt-8">
+              <div className="relative h-40 rounded-lg border border-neutral-200 dark:border-white/10 bg-white dark:bg-black/10 px-3 pb-3 pt-8">
                 <div className="absolute inset-x-3 top-1/2 h-px bg-white/10" />
-                <div className="absolute inset-x-3 top-8 h-px bg-white/5" />
+                <div className="absolute inset-x-3 top-8 h-px bg-white dark:bg-white/5" />
                 <div className="grid h-full grid-cols-7 items-end gap-2">
                   {activityData.map((data, index) => {
                     const active = data.changes > 0;
@@ -819,7 +819,7 @@ export default function DashboardPage() {
                               : 'bg-white/10'
                           }`}
                           title={`${data.day}: ${data.changes} activity event${data.changes === 1 ? '' : 's'}`}
-                        />                         <span className={`text-[11px] font-medium ${isToday ? 'text-primary-200' : 'text-white/40'}`}>
+                        />                         <span className={`text-[11px] font-medium ${isToday ? 'text-primary-200' : 'text-neutral-500 dark:text-white/40'}`}>
                           {data.changes}
                         </span>
                       </div>
@@ -829,7 +829,7 @@ export default function DashboardPage() {
               </div>
               <div className="mt-3 grid grid-cols-7 gap-2">
                 {activityData.map((data) => (
-                  <span key={data.date || data.day} className={`min-w-0 text-center text-xs ${data.date === todayKey ? 'font-semibold text-primary-200' : 'text-white/40'}`}>
+                  <span key={data.date || data.day} className={`min-w-0 text-center text-xs ${data.date === todayKey ? 'font-semibold text-primary-200' : 'text-neutral-500 dark:text-white/40'}`}>
                     {data.day}
                   </span>
                 ))}
@@ -868,30 +868,30 @@ export default function DashboardPage() {
       <Modal isOpen={reportOpen} onClose={() => setReportOpen(false)} size="lg">
         <ModalHeader>
           <h2 className="text-xl font-semibold text-white">Report generated</h2>
-          <p className="mt-1 text-sm text-white/60">
+          <p className="mt-1 text-sm text-neutral-500 dark:text-white/60">
             {lastReportAt ? `Created ${new Date(lastReportAt).toLocaleString()}` : 'Your dashboard report is ready.'}
           </p>
         </ModalHeader>
         <ModalBody>
           <div className="grid gap-3 sm:grid-cols-2">
-            <div className="rounded-lg border border-white/10 bg-white/5 p-4">
-              <p className="text-xs text-white/50">Endpoints</p>
-              <p className="mt-2 text-2xl font-bold text-white">{stats.totalEndpoints}</p>
+            <div className="rounded-lg border border-neutral-200 dark:border-white/10 bg-white dark:bg-white/5 p-4">
+              <p className="text-xs text-neutral-500 dark:text-white/50">Endpoints</p>
+              <p className="mt-2 text-2xl font-bold text-neutral-900 dark:text-white">{stats.totalEndpoints}</p>
             </div>
-            <div className="rounded-lg border border-white/10 bg-white/5 p-4">
-              <p className="text-xs text-white/50">Active drifts</p>
-              <p className="mt-2 text-2xl font-bold text-white">{stats.activeDrifts}</p>
+            <div className="rounded-lg border border-neutral-200 dark:border-white/10 bg-white dark:bg-white/5 p-4">
+              <p className="text-xs text-neutral-500 dark:text-white/50">Active drifts</p>
+              <p className="mt-2 text-2xl font-bold text-neutral-900 dark:text-white">{stats.activeDrifts}</p>
             </div>
-            <div className="rounded-lg border border-white/10 bg-white/5 p-4">
-              <p className="text-xs text-white/50">Recent changes</p>
-              <p className="mt-2 text-2xl font-bold text-white">{stats.recentChanges}</p>
+            <div className="rounded-lg border border-neutral-200 dark:border-white/10 bg-white dark:bg-white/5 p-4">
+              <p className="text-xs text-neutral-500 dark:text-white/50">Recent changes</p>
+              <p className="mt-2 text-2xl font-bold text-neutral-900 dark:text-white">{stats.recentChanges}</p>
             </div>
-            <div className="rounded-lg border border-white/10 bg-white/5 p-4">
-              <p className="text-xs text-white/50">API health</p>
-              <p className="mt-2 text-2xl font-bold text-white">{stats.apiHealth}%</p>
+            <div className="rounded-lg border border-neutral-200 dark:border-white/10 bg-white dark:bg-white/5 p-4">
+              <p className="text-xs text-neutral-500 dark:text-white/50">API health</p>
+              <p className="mt-2 text-2xl font-bold text-neutral-900 dark:text-white">{stats.apiHealth}%</p>
             </div>
           </div>
-          <p className="mt-4 text-sm text-white/60">
+          <p className="mt-4 text-sm text-neutral-500 dark:text-white/60">
             A JSON copy was generated for download, and this summary confirms the action completed.
           </p>
         </ModalBody>

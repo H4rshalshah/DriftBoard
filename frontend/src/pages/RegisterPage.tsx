@@ -113,7 +113,7 @@ export default function RegisterPage() {
   const displayError = localError || error;
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden bg-black">
+    <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden bg-neutral-50 dark:bg-black">
       <motion.div
         className="fixed inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-primary-500/5 via-transparent to-transparent"
         animate={{
@@ -137,12 +137,12 @@ export default function RegisterPage() {
             <DriftBoardLogo />
           </Link>
           <h1 className="text-3xl font-bold text-white mb-2">Create an account</h1>
-          <p className="text-white/40">Start monitoring your APIs today</p>
+          <p className="text-neutral-500 dark:text-white/40">Start monitoring your APIs today</p>
         </motion.div>
 
         <motion.div
           variants={itemVariants}
-          className="bg-white/[0.03] backdrop-blur-xl border border-white/[0.06] rounded-2xl p-8"
+          className="bg-neutral-50 dark:bg-white/[0.03] backdrop-blur-xl border border-neutral-200 dark:border-white/[0.06] rounded-2xl p-8"
         >
           <form onSubmit={handleSubmit} className="space-y-4">
             {displayError && (
@@ -205,17 +205,17 @@ export default function RegisterPage() {
                         transition={{ duration: 0.3 }}
                       />
                     </div>
-                    <span className="text-xs text-white/40">{passwordStrength.label}</span>
+                    <span className="text-xs text-neutral-500 dark:text-white/40">{passwordStrength.label}</span>
                   </div>
                   <div className="grid grid-cols-2 gap-2">
                     {passwordRequirements.map((req) => (
                       <div
                         key={req.label}
                         className={`text-xs flex items-center gap-1 ${
-                          req.test(password) ? 'text-primary-400' : 'text-white/25'
+                          req.test(password) ? 'text-primary-400' : 'text-neutral-400 dark:text-white/25'
                         }`}
                       >
-                        <span className={req.test(password) ? 'text-primary-400' : 'text-white/25'}>
+                        <span className={req.test(password) ? 'text-primary-400' : 'text-neutral-400 dark:text-white/25'}>
                           {req.test(password) ? 'OK' : '-'}
                         </span>
                         {req.label}
@@ -243,7 +243,7 @@ export default function RegisterPage() {
                 onChange={(e) => setAcceptTerms(e.target.checked)}
                 className="mt-1 w-4 h-4 rounded border-white/15 bg-white/5 text-primary-500 focus:ring-primary-500/15"
               />
-              <span className="text-sm text-white/45">
+              <span className="text-sm text-neutral-500 dark:text-white/45">
                 I agree to the{' '}
                 <button type="button" className="text-primary-400 hover:text-primary-300">
                   Terms of Service
@@ -262,7 +262,7 @@ export default function RegisterPage() {
 
           <div className="my-5 flex items-center gap-4 text-sm">
             <div className="h-px flex-1 bg-white/8" />
-            <span className="text-white/25">Or continue with</span>
+            <span className="text-neutral-400 dark:text-white/25">Or continue with</span>
             <div className="h-px flex-1 bg-white/8" />
           </div>
 
@@ -288,7 +288,7 @@ export default function RegisterPage() {
           </div>
         </motion.div>
 
-        <motion.p variants={itemVariants} className="text-center mt-6 text-white/40">
+        <motion.p variants={itemVariants} className="text-center mt-6 text-neutral-500 dark:text-white/40">
           Already have an account?{' '}
           <Link to="/login" className="text-primary-400 hover:text-primary-300 transition-colors">
             Sign in

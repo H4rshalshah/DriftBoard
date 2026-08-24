@@ -39,7 +39,7 @@ function EndpointNode({ data }: { data: { endpoint: Endpoint } }) {
         'px-4 py-3 rounded-xl border min-w-[180px] transition-all',
         hasDrift
           ? 'bg-orange-500/8 border-orange-500/30'
-          : 'bg-[#0a0a0a] border-white/[0.08]'
+          : 'bg-white dark:bg-[#0a0a0a] border-neutral-200 dark:border-white/[0.08]'
       )}
     >
       <div className="flex items-center gap-2 mb-2">
@@ -64,7 +64,7 @@ function EndpointNode({ data }: { data: { endpoint: Endpoint } }) {
       <p className="text-xs text-white/40 font-mono truncate">
         {data.endpoint.url}
       </p>
-      <div className="flex items-center gap-1 mt-2 pt-2 border-t border-white/[0.06]">
+      <div className="flex items-center gap-1 mt-2 pt-2 border-t border-neutral-200 dark:border-white/[0.06]">
         <Clock className="w-3 h-3 text-white/25" />
         <span className="text-[10px] text-white/30">
           v{data.endpoint.currentSchemaVersion}
@@ -143,7 +143,7 @@ export function APIGraph({ endpoints, onNodeClick, className }: APIGraphProps) {
   );
 
   return (
-    <div className={cn('rounded-xl border border-white/[0.06] bg-black overflow-hidden', className)}>
+    <div className={cn('rounded-xl border border-neutral-200 dark:border-white/[0.06] bg-black overflow-hidden', className)}>
       <ReactFlow
         nodes={nodes}
         edges={edges}
@@ -165,7 +165,7 @@ export function APIGraph({ endpoints, onNodeClick, className }: APIGraphProps) {
           showZoom
           showFitView
           showInteractive={false}
-          className="!bg-[#0a0a0a] !border-white/[0.08] !rounded-lg"
+          className="!bg-white dark:bg-[#0a0a0a] !border-neutral-200 dark:border-white/[0.08] !rounded-lg"
         />
         <MiniMap
           nodeColor={(node) => {
@@ -173,7 +173,7 @@ export function APIGraph({ endpoints, onNodeClick, className }: APIGraphProps) {
             return endpoint?.lastDriftAt ? '#f97316' : '#22c55e';
           }}
           maskColor="rgba(0,0,0,0.85)"
-          className="!bg-white/[0.03] !border-white/[0.08] !rounded-lg"
+          className="!bg-white/[0.03] !border-neutral-200 dark:border-white/[0.08] !rounded-lg"
         />
       </ReactFlow>
     </div>

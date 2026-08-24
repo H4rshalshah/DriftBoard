@@ -11,9 +11,9 @@ interface CardProps extends Omit<HTMLMotionProps<'div'>, 'className'> {
 }
 
 const variantStyles: Record<CardVariant, string> = {
-  default: 'bg-[#0a0a0a] border border-white/[0.06]',
-  elevated: 'bg-[#0f0f0f] border border-white/[0.08] shadow-xl shadow-black/30',
-  outlined: 'bg-transparent border border-white/10',
+  default: 'bg-white dark:bg-[#0a0a0a] border border-neutral-200 dark:border-white/[0.06]',
+  elevated: 'bg-white dark:bg-[#0f0f0f] border border-neutral-200 dark:border-white/[0.08] shadow-xl shadow-black/10 dark:shadow-black/30',
+  outlined: 'bg-transparent border border-neutral-200 dark:border-white/10',
 };
 
 export const Card = forwardRef<HTMLDivElement, CardProps>(
@@ -27,7 +27,7 @@ export const Card = forwardRef<HTMLDivElement, CardProps>(
         className={cn(
           'rounded-xl p-4 transition-all duration-200',
           variantStyles[variant],
-          'hover:border-white/[0.1]',
+          'hover:border-neutral-300 dark:hover:border-white/[0.1]',
           'hover:[&_img]:scale-105',
           className
         )}
@@ -49,7 +49,7 @@ export const CardHeader = forwardRef<HTMLDivElement, CardHeaderProps>(
   ({ className, children, ...props }, ref) => (
     <div
       ref={ref}
-      className={cn('pb-3 border-b border-white/[0.06] mb-4', className)}
+      className={cn('pb-3 border-b border-neutral-200 dark:border-white/[0.06] mb-4', className)}
       {...props}
     >
       {children}
@@ -67,7 +67,7 @@ export const CardTitle = forwardRef<HTMLHeadingElement, CardTitleProps>(
   ({ className, children, ...props }, ref) => (
     <h3
       ref={ref}
-      className={cn('text-base font-semibold text-white', className)}
+      className={cn('text-base font-semibold text-neutral-900 dark:text-white', className)}
       {...props}
     >
       {children}

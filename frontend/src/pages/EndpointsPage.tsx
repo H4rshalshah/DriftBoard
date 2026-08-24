@@ -399,7 +399,7 @@ export default function EndpointsPage() {
             <span className={`rounded border px-2 py-1 text-xs font-medium ${methodColors[endpoint.method]}`}>{endpoint.method}</span>
             <Dropdown
               trigger={
-                <button className="p-1 text-white/40 transition-colors hover:text-white">
+                <button className="p-1 text-neutral-500 dark:text-white/40 transition-colors hover:text-white">
                   <MoreVertical className="w-4 h-4" />
                 </button>
               }
@@ -410,19 +410,19 @@ export default function EndpointsPage() {
           <h3 className="mb-1 text-lg font-semibold text-white">{endpoint.name}</h3>
           <UrlLink
             url={endpoint.url}
-            className="mb-4 break-all font-mono text-sm text-white/50 underline-offset-4 hover:text-white hover:underline"
+            className="mb-4 break-all font-mono text-sm text-neutral-500 dark:text-white/50 underline-offset-4 hover:text-white hover:underline"
           />
           <div className="mb-4 grid grid-cols-2 gap-2 text-xs">
-            <div className="rounded-lg border border-white/10 bg-white/5 p-2">
-              <p className="text-white/40">Response</p>
+            <div className="rounded-lg border border-neutral-200 dark:border-white/10 bg-white dark:bg-white/5 p-2">
+              <p className="text-neutral-500 dark:text-white/40">Response</p>
               <p className="mt-1 text-white">{endpoint.responseTime ?? 0} ms</p>
             </div>
-            <div className="rounded-lg border border-white/10 bg-white/5 p-2">
-              <p className="text-white/40">Health</p>
+            <div className="rounded-lg border border-neutral-200 dark:border-white/10 bg-white dark:bg-white/5 p-2">
+              <p className="text-neutral-500 dark:text-white/40">Health</p>
               <p className="mt-1 text-white">{endpoint.health ?? 100}%</p>
             </div>
           </div>
-          <div className="mt-auto flex items-center justify-between border-t border-white/10 pt-3">
+          <div className="mt-auto flex items-center justify-between border-t border-neutral-200 dark:border-white/10 pt-3">
             <div className="flex flex-wrap items-center gap-2">
               <Badge severity={status === 'drifted' || status === 'failed' ? 'breaking' : status === 'warning' ? 'medium' : 'low'} showDot>
                 {statusLabels[status]}
@@ -431,14 +431,14 @@ export default function EndpointsPage() {
                 {endpoint.monitoringEnabled === false ? 'Monitoring disabled' : 'Monitoring enabled'}
               </Badge>
             </div>
-            <div className="flex items-center gap-2 text-xs text-white/40">
+            <div className="flex items-center gap-2 text-xs text-neutral-500 dark:text-white/40">
               <span>v{endpoint.currentSchemaVersion}</span>
               <span>.</span>
               <span>{formatRelativeTime(endpoint.lastCheckedAt || endpoint.updatedAt)}</span>
               <button
                 onClick={() => void refreshOne(endpoint)}
                 disabled={isRefreshing || !canEditEndpoints}
-                className="ml-1 rounded p-1 text-white/50 hover:bg-white/10 hover:text-white disabled:opacity-40"
+                className="ml-1 rounded p-1 text-neutral-500 dark:text-white/50 hover:bg-white/10 hover:text-white disabled:opacity-40"
                 aria-label={`Refresh ${endpoint.name}`}
               >
                 <RefreshCw className={`h-3.5 w-3.5 ${isRefreshing ? 'animate-spin' : ''}`} />
@@ -454,8 +454,8 @@ export default function EndpointsPage() {
     <motion.div variants={containerVariants} initial="hidden" animate="visible" className="space-y-6">
       <motion.div variants={itemVariants} className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-white">Endpoints</h1>
-          <p className="text-white/60">Manage and monitor real API endpoints for the active project.</p>
+          <h1 className="text-2xl font-bold text-neutral-900 dark:text-white">Endpoints</h1>
+          <p className="text-neutral-500 dark:text-white/60">Manage and monitor real API endpoints for the active project.</p>
         </div>
         <div className="flex flex-wrap gap-2">
           <Button variant="secondary" leftIcon={<RefreshCw className={`w-4 h-4 ${refreshingId === 'all' ? 'animate-spin' : ''}`} />} onClick={() => void refreshAll()} disabled={!endpoints.length || !canEditEndpoints}>
@@ -495,11 +495,11 @@ export default function EndpointsPage() {
                   ...statuses.map((status) => ({ label: statusLabels[status], value: status, onClick: () => setStatusFilter(status) })),
                 ]}
               />
-              <div className="flex h-10 items-center overflow-hidden rounded-lg border border-white/10">
-                <button onClick={() => setViewMode('grid')} className={`grid h-10 w-10 place-items-center ${viewMode === 'grid' ? 'bg-white/10 text-white' : 'text-white/40 hover:text-white'}`}>
+              <div className="flex h-10 items-center overflow-hidden rounded-lg border border-neutral-200 dark:border-white/10">
+                <button onClick={() => setViewMode('grid')} className={`grid h-10 w-10 place-items-center ${viewMode === 'grid' ? 'bg-white/10 text-white' : 'text-neutral-500 dark:text-white/40 hover:text-white'}`}>
                   <LayoutGrid className="w-4 h-4" />
                 </button>
-                <button onClick={() => setViewMode('list')} className={`grid h-10 w-10 place-items-center ${viewMode === 'list' ? 'bg-white/10 text-white' : 'text-white/40 hover:text-white'}`}>
+                <button onClick={() => setViewMode('list')} className={`grid h-10 w-10 place-items-center ${viewMode === 'list' ? 'bg-white/10 text-white' : 'text-neutral-500 dark:text-white/40 hover:text-white'}`}>
                   <List className="w-4 h-4" />
                 </button>
               </div>
@@ -516,11 +516,11 @@ export default function EndpointsPage() {
         </div>
       ) : paginatedEndpoints.length === 0 ? (
         <motion.div variants={itemVariants} className="py-16 text-center">
-          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-white/5">
-            <Search className="h-8 w-8 text-white/30" />
+          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-white dark:bg-white/5">
+            <Search className="h-8 w-8 text-neutral-400 dark:text-white/30" />
           </div>
           <h3 className="mb-2 text-lg font-medium text-white">No endpoints found</h3>
-          <p className="mb-4 text-white/50">{search || methodFilter || statusFilter ? 'Try adjusting your filters.' : 'Add an endpoint to begin live monitoring.'}</p>
+          <p className="mb-4 text-neutral-500 dark:text-white/50">{search || methodFilter || statusFilter ? 'Try adjusting your filters.' : 'Add an endpoint to begin live monitoring.'}</p>
           <Button onClick={() => void openModal('add')} leftIcon={<Plus className="w-4 h-4" />} disabled={!canEditEndpoints}>
             Add Endpoint
           </Button>
@@ -547,7 +547,7 @@ export default function EndpointsPage() {
                         <p className="font-medium text-white">{endpoint.name}</p>
                         <UrlLink
                           url={endpoint.url}
-                          className="break-all font-mono text-sm text-white/50 underline-offset-4 hover:text-white hover:underline"
+                          className="break-all font-mono text-sm text-neutral-500 dark:text-white/50 underline-offset-4 hover:text-white hover:underline"
                         />
                       </div>
                     </div>
@@ -556,11 +556,11 @@ export default function EndpointsPage() {
                       <Badge severity={endpoint.monitoringEnabled === false ? 'medium' : 'low'}>
                         {endpoint.monitoringEnabled === false ? 'Disabled' : 'Monitoring'}
                       </Badge>
-                      <span className="text-sm text-white/40">v{endpoint.currentSchemaVersion}</span>
+                      <span className="text-sm text-neutral-500 dark:text-white/40">v{endpoint.currentSchemaVersion}</span>
                       <Button variant="ghost" size="sm" leftIcon={<RefreshCw className={`w-4 h-4 ${refreshingId === endpoint.id ? 'animate-spin' : ''}`} />} onClick={() => void refreshOne(endpoint)} disabled={!canEditEndpoints}>
                         Refresh
                       </Button>
-                      <Dropdown trigger={<button className="p-1 text-white/40 hover:text-white"><MoreVertical className="w-4 h-4" /></button>} items={getActions(endpoint)} />
+                      <Dropdown trigger={<button className="p-1 text-neutral-500 dark:text-white/40 hover:text-white"><MoreVertical className="w-4 h-4" /></button>} items={getActions(endpoint)} />
                     </div>
                   </CardContent>
                 </Card>
@@ -572,7 +572,7 @@ export default function EndpointsPage() {
 
       {totalPages > 1 && (
         <motion.div variants={itemVariants} className="flex items-center justify-between">
-          <p className="text-sm text-white/50">
+          <p className="text-sm text-neutral-500 dark:text-white/50">
             Showing {(currentPage - 1) * endpointsPerPage + 1} to {Math.min(currentPage * endpointsPerPage, filteredEndpoints.length)} of {filteredEndpoints.length}
           </p>
           <div className="flex items-center gap-2">
@@ -624,14 +624,14 @@ export default function EndpointsPage() {
               >
                 Refresh / Recheck Endpoint
               </Button>
-              <div className="rounded-lg border border-white/10 bg-white/5 p-3">
-                <p className="text-xs text-white/50">URL</p>
+              <div className="rounded-lg border border-neutral-200 dark:border-white/10 bg-white dark:bg-white/5 p-3">
+                <p className="text-xs text-neutral-500 dark:text-white/50">URL</p>
                 <UrlLink
                   url={selectedEndpoint.url}
                   className="mt-1 block break-all font-mono text-sm font-semibold text-white underline-offset-4 hover:text-primary-200 hover:underline"
                 />
               </div>
-              <pre className="max-h-72 overflow-auto rounded-lg border border-white/10 bg-black/30 p-3 text-xs text-white/70">{stringifyJson(selectedEndpoint.currentSchema, '{}')}</pre>
+              <pre className="max-h-72 overflow-auto rounded-lg border border-neutral-200 dark:border-white/10 bg-black/30 p-3 text-xs text-neutral-600 dark:text-white/70">{stringifyJson(selectedEndpoint.currentSchema, '{}')}</pre>
             </>
           )}
         </ModalBody>
@@ -641,10 +641,10 @@ export default function EndpointsPage() {
         <ModalHeader><h2 className="text-xl font-semibold text-white">{selectedEndpoint?.name || 'Endpoint'} History</h2></ModalHeader>
         <ModalBody className="space-y-3">
           {schemaHistory.length === 0 ? (
-            <p className="rounded-lg border border-white/10 bg-white/5 p-4 text-sm text-white/60">No schema history has been captured for this endpoint yet.</p>
+            <p className="rounded-lg border border-neutral-200 dark:border-white/10 bg-white dark:bg-white/5 p-4 text-sm text-neutral-500 dark:text-white/60">No schema history has been captured for this endpoint yet.</p>
           ) : (
             schemaHistory.map((version) => (
-              <div key={version.id} className="rounded-lg border border-white/10 bg-white/5 p-4">
+              <div key={version.id} className="rounded-lg border border-neutral-200 dark:border-white/10 bg-white dark:bg-white/5 p-4">
                 <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
                   <div>
                     <p className="font-semibold text-white">Version {version.version}</p>
@@ -652,7 +652,7 @@ export default function EndpointsPage() {
                   </div>
                   <Badge severity="low">{version.changelog || 'Schema snapshot'}</Badge>
                 </div>
-                <pre className="max-h-48 overflow-auto rounded-lg bg-black/30 p-3 text-xs text-white/70">{stringifyJson(version.schema, '{}')}</pre>
+                <pre className="max-h-48 overflow-auto rounded-lg bg-black/30 p-3 text-xs text-neutral-600 dark:text-white/70">{stringifyJson(version.schema, '{}')}</pre>
               </div>
             ))
           )}
@@ -678,8 +678,8 @@ export default function EndpointsPage() {
 
 function Detail({ label, value, mono = false }: { label: string; value: string; mono?: boolean }) {
   return (
-    <div className="rounded-lg border border-white/10 bg-white/5 p-3">
-      <p className="text-xs text-white/50">{label}</p>
+    <div className="rounded-lg border border-neutral-200 dark:border-white/10 bg-white dark:bg-white/5 p-3">
+      <p className="text-xs text-neutral-500 dark:text-white/50">{label}</p>
       <p className={`mt-1 text-sm font-semibold text-white ${mono ? 'break-all font-mono' : ''}`}>{value}</p>
     </div>
   );
@@ -696,13 +696,13 @@ function EndpointFormFields({ form, setForm }: { form: EndpointForm; setForm: Re
         </p>
       </div>
       <div>
-        <label className="mb-1.5 block text-sm font-medium text-white/80">Method</label>
+        <label className="mb-1.5 block text-sm font-medium text-neutral-800 dark:text-white/80">Method</label>
         <div className="flex flex-wrap gap-2">
           {methods.map((method) => (
             <button
               key={method}
               onClick={() => setForm((current) => ({ ...current, method }))}
-              className={`rounded-lg border px-3 py-2 text-sm transition-colors ${method === form.method ? 'border-white/20 bg-white/10 text-white' : 'border-white/10 text-white/60 hover:border-white/20'}`}
+              className={`rounded-lg border px-3 py-2 text-sm transition-colors ${method === form.method ? 'border-white/20 bg-white/10 text-white' : 'border-neutral-200 dark:border-white/10 text-neutral-500 dark:text-white/60 hover:border-white/20'}`}
             >
               {method}
             </button>
@@ -711,7 +711,7 @@ function EndpointFormFields({ form, setForm }: { form: EndpointForm; setForm: Re
       </div>
       <div className="grid gap-3 sm:grid-cols-[1fr_140px]">
         <Input label="Monitoring frequency" placeholder="5m" value={form.frequency} onChange={(event) => setForm((current) => ({ ...current, frequency: event.target.value }))} />
-        <label className="flex items-end gap-2 pb-2 text-sm text-white/70">
+        <label className="flex items-end gap-2 pb-2 text-sm text-neutral-600 dark:text-white/70">
           <input
             type="checkbox"
             checked={form.monitoringEnabled}
@@ -724,7 +724,7 @@ function EndpointFormFields({ form, setForm }: { form: EndpointForm; setForm: Re
       <JsonTextArea label="Headers (JSON)" value={form.headers} onChange={(headers) => setForm((current) => ({ ...current, headers }))} placeholder='{"Authorization":"Bearer token"}' />
       <JsonTextArea label="Body (JSON, optional)" value={form.body} onChange={(body) => setForm((current) => ({ ...current, body }))} placeholder='{"sample": true}' />
       <JsonTextArea label="Initial Schema (JSON, optional)" value={form.schema} onChange={(schema) => setForm((current) => ({ ...current, schema }))} placeholder='Leave empty to capture from the first successful response' />
-      <div className="flex items-start gap-3 rounded-lg border border-white/10 bg-white/5 p-4 text-sm leading-6 text-white/55">
+      <div className="flex items-start gap-3 rounded-lg border border-neutral-200 dark:border-white/10 bg-white dark:bg-white/5 p-4 text-sm leading-6 text-white/55">
         <CheckCircle className="mt-0.5 h-4 w-4 shrink-0 text-green-400" />
         <span className="min-w-0">
           Headers, Body, and manual Initial Schema must be complete JSON objects. Leave Initial Schema empty to let DriftBoard capture the baseline automatically from the first successful response.
@@ -737,9 +737,9 @@ function EndpointFormFields({ form, setForm }: { form: EndpointForm; setForm: Re
 function JsonTextArea({ label, value, onChange, placeholder }: { label: string; value: string; onChange: (value: string) => void; placeholder: string }) {
   return (
     <div>
-      <label className="mb-1.5 block text-sm font-medium text-white/80">{label}</label>
+      <label className="mb-1.5 block text-sm font-medium text-neutral-800 dark:text-white/80">{label}</label>
       <textarea
-        className="h-28 w-full resize-none rounded-lg border border-white/10 bg-white/5 px-4 py-2 font-mono text-sm text-white focus:border-white/30 focus:outline-none"
+        className="h-28 w-full resize-none rounded-lg border border-neutral-200 dark:border-white/10 bg-white dark:bg-white/5 px-4 py-2 font-mono text-sm text-white focus:border-white/30 focus:outline-none"
         placeholder={placeholder}
         value={value}
         onChange={(event) => onChange(event.target.value)}

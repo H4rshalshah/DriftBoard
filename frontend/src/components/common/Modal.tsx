@@ -88,7 +88,7 @@ export function Modal({
             variants={modalVariants}
             transition={{ duration: 0.15, ease: 'easeOut' }}
             className={cn(
-              'modal-surface relative flex max-h-[calc(100vh-2.5rem)] w-full flex-col overflow-hidden rounded-xl border border-white/[0.06] shadow-2xl backdrop-blur-xl sm:max-h-[calc(100vh-4rem)]',
+              'modal-surface relative flex max-h-[calc(100vh-2.5rem)] w-full flex-col overflow-hidden rounded-xl border border-neutral-200 dark:border-neutral-200 dark:border-white/[0.06] shadow-2xl backdrop-blur-xl sm:max-h-[calc(100vh-4rem)]',
               sizeStyles[size],
               className
             )}
@@ -97,7 +97,7 @@ export function Modal({
             {showCloseButton && (
               <button
                 onClick={onClose}
-                className="absolute top-4 right-4 p-1.5 rounded-lg text-white/30 hover:text-white/70 hover:bg-white/5 transition-colors"
+                className="absolute top-4 right-4 p-1.5 rounded-lg text-neutral-400 dark:text-white/30 hover:text-neutral-600 dark:hover:text-white/70 hover:bg-white dark:hover:bg-white/5 transition-colors"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -142,7 +142,7 @@ interface ModalFooterProps extends HTMLAttributes<HTMLDivElement> {
 export function ModalFooter({ className, children, ...props }: ModalFooterProps) {
   return (
     <div
-      className={cn('shrink-0 border-t border-white/[0.06] px-6 py-5 sm:px-8 flex justify-end gap-4', className)}
+      className={cn('shrink-0 border-t border-neutral-200 dark:border-neutral-200 dark:border-white/[0.06] px-6 py-5 sm:px-8 flex justify-end gap-4', className)}
       {...props}
     >
       {children}

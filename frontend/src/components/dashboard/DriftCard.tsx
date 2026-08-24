@@ -48,9 +48,9 @@ export function DriftCard({ event, onAcknowledge, onClick, className }: DriftCar
       whileHover={{ scale: 1.005 }}
       onClick={() => onClick?.(event)}
       className={cn(
-        'bg-[#0a0a0a] border border-white/[0.06] rounded-xl',
+        'bg-white dark:bg-[#0a0a0a] border border-neutral-200 dark:border-white/[0.06] rounded-xl',
         'border-l-4 cursor-pointer transition-all duration-200',
-        'hover:border-white/[0.1]',
+        'hover:border-neutral-200 dark:border-white/[0.1]',
         severityColors[event.severity],
         className
       )}
@@ -93,7 +93,7 @@ export function DriftCard({ event, onAcknowledge, onClick, className }: DriftCar
           </div>
         </div>
 
-        <div className="flex items-center gap-4 mt-4 pt-3 border-t border-white/[0.06]">
+        <div className="flex items-center gap-4 mt-4 pt-3 border-t border-neutral-200 dark:border-white/[0.06]">
           <div className="flex items-center gap-1.5 text-xs text-primary-400">
             <Plus className="w-3 h-3" />
             <span>{addedCount}</span>
