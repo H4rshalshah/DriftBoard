@@ -447,7 +447,7 @@ export default function Sidebar() {
                   onClick={() => setSidebarOpen(false)}
                   className={cn(
                     'flex items-center gap-3 px-3 py-2 rounded-lg',
-                    'transition-all duration-150 group relative',
+                    'transition-all duration-200 ease-out group relative',
                     isActive
                       ? 'bg-green-50 dark:bg-primary-500/8 text-green-700 dark:text-primary-400'
                       : 'text-neutral-500 dark:text-white/40 hover:text-neutral-800 dark:hover:text-neutral-700 dark:text-white/70 hover:bg-neutral-50 dark:hover:bg-white dark:bg-white/[0.03]'

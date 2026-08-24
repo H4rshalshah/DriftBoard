@@ -25,9 +25,9 @@ export const Card = forwardRef<HTMLDivElement, CardProps>(
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.25 }}
         className={cn(
-          'rounded-xl p-4 transition-all duration-200',
+          'rounded-xl p-4 transition-all duration-200 ease-out',
           variantStyles[variant],
-          'hover:border-neutral-300 dark:hover:border-white/[0.1]',
+          'hover:border-neutral-300 dark:hover:border-white/[0.1] hover:shadow-md hover:shadow-black/5 dark:hover:shadow-black/20',
           'hover:[&_img]:scale-105',
           className
         )}

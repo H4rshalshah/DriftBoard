@@ -172,7 +172,7 @@ export default function LandingPage() {
           </motion.div>
 
           <motion.h1 variants={itemVariants} className="mx-auto max-w-6xl text-balance text-4xl font-bold leading-[1.08] tracking-tight text-neutral-900 dark:text-white sm:text-5xl md:text-6xl lg:text-7xl">
-            API Drift Intelligence to Keep Frontend and Backend in Sync
+            API Drift Intelligence to Keep Frontend and <span className="bg-gradient-to-r from-primary-500 to-primary-400 bg-clip-text text-transparent">Backend</span> in Sync
           </motion.h1>
 
           <motion.p variants={itemVariants} className="mx-auto mt-6 max-w-3xl text-base leading-7 text-neutral-500 dark:text-white/45 sm:mt-8 md:text-lg md:leading-7">

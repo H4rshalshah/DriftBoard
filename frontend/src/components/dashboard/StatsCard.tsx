@@ -69,7 +69,7 @@ export function StatsCard({
       </div>
 
       <div className="mb-2">
-        <span className="text-3xl font-bold text-white">
+        <span className="text-3xl font-bold text-white dark:text-white">
           {loading ? '...' : typeof value === 'number' ? value.toLocaleString() : value}
         </span>
       </div>

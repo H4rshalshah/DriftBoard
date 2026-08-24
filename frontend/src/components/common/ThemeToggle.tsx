@@ -26,8 +26,8 @@ export function ThemeToggle({ className }: ThemeToggleProps) {
     >
       <motion.span
         layout
-        transition={{ type: 'spring', stiffness: 420, damping: 28 }}
-        className="grid h-7 w-7 place-items-center rounded-full bg-white text-black shadow-lg"
+        transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+        className="grid h-7 w-7 place-items-center rounded-full bg-white text-black shadow-lg shadow-black/10"
       >
         {isDark ? <Moon className="h-4 w-4 text-primary-500" /> : <Sun className="h-4 w-4 text-amber-500" />}
       </motion.span>

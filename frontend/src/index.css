@@ -454,14 +454,19 @@ html.light .shadow-black\/50 { --tw-shadow: 0 16px 40px rgba(0, 0, 0, 0.14); box
   }
 
   .skeleton-shimmer {
-    background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.03) 50%, transparent 100%);
+    background: linear-gradient(90deg, transparent 0%, rgba(34, 197, 94, 0.04) 40%, rgba(34, 197, 94, 0.06) 50%, rgba(34, 197, 94, 0.04) 60%, transparent 100%);
     background-size: 200% 100%;
-    animation: shimmer 1.8s infinite;
+    animation: shimmer 2s ease-in-out infinite;
   }
 
   @keyframes shimmer {
     0% { background-position: 200% 0; }
     100% { background-position: -200% 0; }
+  }
+
+  html.light .skeleton-shimmer {
+    background: linear-gradient(90deg, transparent 0%, rgba(34, 197, 94, 0.06) 40%, rgba(34, 197, 94, 0.1) 50%, rgba(34, 197, 94, 0.06) 60%, transparent 100%);
+    background-size: 200% 100%;
   }
 
   @keyframes fade-up {

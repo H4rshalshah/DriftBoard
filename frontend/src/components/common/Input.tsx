@@ -68,7 +68,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
             type={inputType}
             className={cn(
               'w-full bg-white dark:bg-white/[0.03] border border-neutral-300 dark:border-white/[0.08] rounded-lg text-neutral-900 dark:text-white placeholder:text-neutral-400 dark:placeholder:text-white/25',
-              'focus:outline-none focus:border-primary-500/40 focus:ring-1 focus:ring-primary-500/10',
+              'focus:outline-none focus:border-primary-500/50 focus:ring-2 focus:ring-primary-500/15 focus:shadow-[0_0_0_3px_rgba(34,197,94,0.08)]',
               'transition-all duration-200',
               sizeStyles[size],
               leftIcon && 'pl-10',
