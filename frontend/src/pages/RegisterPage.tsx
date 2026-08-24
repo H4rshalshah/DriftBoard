@@ -142,7 +142,7 @@ export default function RegisterPage() {
 
         <motion.div
           variants={itemVariants}
-          className="bg-neutral-50 dark:bg-white dark:bg-white/[0.03] backdrop-blur-xl border border-neutral-200 dark:border-white/[0.06] rounded-2xl p-8"
+          className="bg-white dark:bg-white/[0.03] backdrop-blur-xl border border-neutral-200 dark:border-white/[0.06] rounded-2xl p-8"
         >
           <form onSubmit={handleSubmit} className="space-y-4">
             {displayError && (

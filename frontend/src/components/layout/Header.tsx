@@ -128,7 +128,7 @@ export default function Header() {
               animate={{
                 borderColor: searchFocused ? 'rgba(34, 197, 94, 0.3)' : 'rgba(255, 255, 255, 0.06)',
               }}
-              className="flex w-full items-center gap-2 rounded-lg border bg-neutral-50 dark:bg-white dark:bg-white/[0.03] px-3 py-2 transition-colors duration-200"
+              className="flex w-full items-center gap-2 rounded-lg border bg-white dark:bg-white/[0.03] px-3 py-2 transition-colors duration-200"
             >
               <Search className="h-4 w-4 text-neutral-400 dark:text-white/30" />
               <input
@@ -138,7 +138,7 @@ export default function Header() {
                 onFocus={() => setSearchFocused(true)}
                 onBlur={() => setSearchFocused(false)}
               />
-              <kbd className="hidden rounded bg-neutral-200 dark:bg-white dark:bg-white/[0.06] px-2 py-0.5 text-[11px] text-neutral-500 dark:text-white/30 lg:inline-flex">
+              <kbd className="hidden rounded bg-white dark:bg-white/[0.06] px-2 py-0.5 text-[11px] text-neutral-500 dark:text-white/30 lg:inline-flex">
                 Ctrl K
               </kbd>
             </motion.div>

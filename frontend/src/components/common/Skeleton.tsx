@@ -11,10 +11,10 @@ interface SkeletonProps extends HTMLAttributes<HTMLDivElement> {
 }
 
 const variantStyles: Record<SkeletonVariant, string> = {
-  text: 'rounded bg-neutral-200 dark:bg-white/[0.04]',
-  card: 'rounded-xl bg-neutral-200 dark:bg-white/[0.04]',
-  image: 'rounded-lg bg-neutral-200 dark:bg-white/[0.04]',
-  avatar: 'rounded-full bg-neutral-200 dark:bg-white/[0.04]',
+  text: 'rounded bg-gray-100 dark:bg-white/[0.04]',
+  card: 'rounded-xl bg-gray-100 dark:bg-white/[0.04]',
+  image: 'rounded-lg bg-gray-100 dark:bg-white/[0.04]',
+  avatar: 'rounded-full bg-gray-100 dark:bg-white/[0.04]',
 };
 
 export function Skeleton({
@@ -32,7 +32,7 @@ export function Skeleton({
           <div
             key={i}
             className={cn(
-              'h-4 bg-neutral-200 dark:bg-white/[0.04] rounded relative overflow-hidden',
+              'h-4 bg-gray-100 dark:bg-white/[0.04] rounded relative overflow-hidden',
               i === lines - 1 && 'w-3/4',
               className
             )}
@@ -49,7 +49,7 @@ export function Skeleton({
   return (
     <div
       className={cn(
-        'bg-neutral-200 dark:bg-white/[0.04] relative overflow-hidden',
+        'bg-gray-100 dark:bg-white/[0.04] relative overflow-hidden',
         variantStyles[variant],
         className
       )}

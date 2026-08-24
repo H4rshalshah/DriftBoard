@@ -31,18 +31,18 @@ export function RouteLoading({ message = 'Loading...' }: RouteLoadingProps) {
 export function PageLoading() {
   return (
     <div className="space-y-4 p-6">
-      <div className="h-7 w-3/4 animate-pulse rounded-lg bg-neutral-200 dark:bg-white/[0.04]" />
-      <div className="h-4 w-1/2 animate-pulse rounded-lg bg-neutral-200 dark:bg-white/[0.04]" />
+      <div className="h-7 w-3/4 animate-pulse rounded-lg bg-gray-100 dark:bg-white/[0.04]" />
+      <div className="h-4 w-1/2 animate-pulse rounded-lg bg-gray-100 dark:bg-white/[0.04]" />
       <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
         {[...Array(4)].map((_, i) => (
           <div
             key={i}
-            className="h-32 animate-pulse rounded-xl bg-neutral-200 dark:bg-white/[0.04]"
+            className="h-32 animate-pulse rounded-xl bg-gray-100 dark:bg-white/[0.04]"
             style={{ animationDelay: `${i * 100}ms` }}
           />
         ))}
       </div>
-      <div className="mt-4 h-64 animate-pulse rounded-xl bg-neutral-200 dark:bg-white/[0.04]" />
+      <div className="mt-4 h-64 animate-pulse rounded-xl bg-gray-100 dark:bg-white/[0.04]" />
     </div>
   );
 }

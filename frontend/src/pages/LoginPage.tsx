@@ -170,7 +170,7 @@ export default function LoginPage() {
         {oauthLoading ? (
           <motion.div
             variants={itemVariants}
-            className="bg-neutral-50 dark:bg-white dark:bg-white/[0.03] backdrop-blur-xl border border-neutral-200 dark:border-white/[0.06] rounded-2xl p-8 flex flex-col items-center justify-center min-h-[300px]"
+            className="bg-white dark:bg-white/[0.03] backdrop-blur-xl border border-neutral-200 dark:border-white/[0.06] rounded-2xl p-8 flex flex-col items-center justify-center min-h-[300px]"
           >
             <div className="relative mb-6">
               <div className="absolute inset-0 rounded-full bg-primary-500/10 animate-pulse" />
@@ -207,7 +207,7 @@ export default function LoginPage() {
         ) : (
         <motion.div
           variants={itemVariants}
-          className="bg-neutral-50 dark:bg-white dark:bg-white/[0.03] backdrop-blur-xl border border-neutral-200 dark:border-white/[0.06] rounded-2xl p-8"
+          className="bg-white dark:bg-white/[0.03] backdrop-blur-xl border border-neutral-200 dark:border-white/[0.06] rounded-2xl p-8"
         >
           <form onSubmit={handleSubmit} className="space-y-5">
             {displayError && (
@@ -289,7 +289,7 @@ export default function LoginPage() {
 
           {mode === 'login' && (
             <>
-              <div className="mt-4 rounded-lg border border-neutral-200 dark:border-white/[0.06] bg-neutral-50 dark:bg-white dark:bg-white/[0.02] px-3 py-2 text-xs text-neutral-400 dark:text-white/35">
+              <div className="mt-4 rounded-lg border border-neutral-200 dark:border-white/[0.06] bg-white dark:bg-white/[0.02] px-3 py-2 text-xs text-neutral-400 dark:text-white/35">
                 Demo account: demo@driftboard.dev / Demo1234
               </div>
               <p className="mt-3 text-xs leading-5 text-neutral-400 dark:text-white/30">

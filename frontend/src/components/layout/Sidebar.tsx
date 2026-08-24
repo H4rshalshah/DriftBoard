@@ -571,7 +571,7 @@ export default function Sidebar() {
                   ))}
                   {canOpenProjectSetup && (
                     <>
-                      <div className="my-1 h-px bg-neutral-200 dark:bg-white dark:bg-white/[0.06]" />
+                      <div className="my-1 h-px bg-white dark:bg-white/[0.06]" />
                       <button
                         onClick={openProjectSetup}
                         disabled={isCreating}
@@ -682,7 +682,7 @@ export default function Sidebar() {
                   'rounded-lg border p-3 text-left transition-colors',
                   sourceType === 'folder'
                     ? 'border-primary-500/40 bg-primary-500/8 text-white'
-                    : 'border-neutral-200 dark:border-white/[0.06] bg-neutral-50 dark:bg-white dark:bg-white/[0.02] text-neutral-600 dark:text-white/60 hover:bg-neutral-50 dark:hover:bg-white dark:bg-white/5'
+                    : 'border-neutral-200 dark:border-white/[0.06] bg-white dark:bg-white/[0.02] text-neutral-600 dark:text-white/60 hover:bg-neutral-50 dark:hover:bg-white dark:bg-white/5'
                 )}
               >
                 <FolderOpen className="mb-1.5 h-5 w-5 text-primary-400" />
@@ -696,7 +696,7 @@ export default function Sidebar() {
                   'rounded-lg border p-3 text-left transition-colors',
                   sourceType === 'repository'
                     ? 'border-primary-500/40 bg-primary-500/8 text-white'
-                    : 'border-neutral-200 dark:border-white/[0.06] bg-neutral-50 dark:bg-white dark:bg-white/[0.02] text-neutral-600 dark:text-white/60 hover:bg-neutral-50 dark:hover:bg-white dark:bg-white/5'
+                    : 'border-neutral-200 dark:border-white/[0.06] bg-white dark:bg-white/[0.02] text-neutral-600 dark:text-white/60 hover:bg-neutral-50 dark:hover:bg-white dark:bg-white/5'
                 )}
               >
                 <GitBranch className="mb-1.5 h-5 w-5 text-primary-400" />
@@ -707,8 +707,8 @@ export default function Sidebar() {
           </div>
 
           {sourceType === 'folder' ? (
-            <div className="rounded-lg border border-neutral-200 dark:border-white/[0.06] bg-neutral-50 dark:bg-white dark:bg-white/[0.02] p-4">
-              <label className="flex cursor-pointer flex-col items-center justify-center rounded-lg border border-dashed border-neutral-200 dark:border-neutral-200 dark:border-white/10 px-4 py-5 text-center transition-colors hover:border-primary-500/30 hover:bg-neutral-50 dark:bg-white dark:bg-white/[0.02]">
+            <div className="rounded-lg border border-neutral-200 dark:border-white/[0.06] bg-white dark:bg-white/[0.02] p-4">
+              <label className="flex cursor-pointer flex-col items-center justify-center rounded-lg border border-dashed border-neutral-200 dark:border-neutral-200 dark:border-white/10 px-4 py-5 text-center transition-colors hover:border-primary-500/30 hover:bg-white dark:bg-white/[0.02]">
                 <FolderOpen className="mb-2 h-6 w-6 text-primary-400" />
                 <span className="text-sm font-medium text-white">
                   {selectedSourceName || 'Choose project folder'}
@@ -724,7 +724,7 @@ export default function Sidebar() {
                   {...({ webkitdirectory: '', directory: '' } as Record<string, string>)}
                 />
               </label>
-              <label className="mt-3 flex cursor-pointer items-center justify-center rounded-lg border border-neutral-200 dark:border-white/[0.06] bg-neutral-50 dark:bg-white dark:bg-white/[0.02] px-4 py-3 text-sm font-medium text-neutral-600 dark:text-white/60 transition-colors hover:border-primary-500/25 hover:bg-neutral-50 dark:hover:bg-white dark:bg-white/5">
+              <label className="mt-3 flex cursor-pointer items-center justify-center rounded-lg border border-neutral-200 dark:border-white/[0.06] bg-white dark:bg-white/[0.02] px-4 py-3 text-sm font-medium text-neutral-600 dark:text-white/60 transition-colors hover:border-primary-500/25 hover:bg-neutral-50 dark:hover:bg-white dark:bg-white/5">
                 Choose JSON/OpenAPI files
                 <input
                   type="file"
