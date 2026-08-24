@@ -450,7 +450,7 @@ export default function Sidebar() {
                     'transition-all duration-150 group relative',
                     isActive
                       ? 'bg-green-50 dark:bg-primary-500/8 text-green-700 dark:text-primary-400'
-                      : 'text-neutral-500 dark:text-white/40 hover:text-neutral-800 dark:hover:text-neutral-700 dark:text-white/70 hover:bg-neutral-50 dark:hover:bg-white/[0.03]'
+                      : 'text-neutral-500 dark:text-white/40 hover:text-neutral-800 dark:hover:text-neutral-700 dark:text-white/70 hover:bg-neutral-50 dark:hover:bg-white dark:bg-white/[0.03]'
                   )}
                 >
                   {isActive && (
@@ -479,7 +479,7 @@ export default function Sidebar() {
               disabled={isCreating}
               className={cn(
                 'grid h-11 w-full place-items-center rounded-lg bg-white dark:bg-white/[0.03] text-primary-600 dark:text-primary-400',
-                'transition-colors duration-150 hover:bg-neutral-200 dark:hover:bg-white/5 hover:text-primary-700 dark:hover:text-neutral-800 dark:text-white/80',
+                'transition-colors duration-150 hover:bg-neutral-100 dark:hover:bg-white/5 hover:text-primary-700 dark:hover:text-neutral-800 dark:text-white/80',
                 'disabled:cursor-not-allowed disabled:opacity-40'
               )}
               aria-label="Create project"
@@ -503,7 +503,7 @@ export default function Sidebar() {
                 setUserMenuOpen(false);
               }}
               className={cn(
-                'w-full flex items-center justify-between gap-2 px-3 py-2',                  'bg-white dark:bg-white/[0.03] hover:bg-neutral-200 dark:hover:bg-white/5 rounded-lg',
+                'w-full flex items-center justify-between gap-2 px-3 py-2',                  'bg-white dark:bg-white/[0.03] hover:bg-neutral-100 dark:hover:bg-white/5 rounded-lg',
                   'text-sm text-neutral-500 dark:text-white/50 transition-colors duration-150'
               )}
             >
@@ -538,7 +538,7 @@ export default function Sidebar() {
                       key={project.id}
                       className={cn(
                         'flex w-full items-center gap-2 px-3 py-2 text-sm',
-                        'hover:bg-neutral-50 dark:hover:bg-white/5 transition-colors duration-150',
+                        'hover:bg-neutral-50 dark:hover:bg-white dark:bg-white/5 transition-colors duration-150',
                         currentProject?.id === project.id ? 'text-primary-400' : 'text-neutral-600 dark:text-white/60'
                       )}
                     >
@@ -571,11 +571,11 @@ export default function Sidebar() {
                   ))}
                   {canOpenProjectSetup && (
                     <>
-                      <div className="my-1 h-px bg-neutral-200 dark:bg-white/[0.06]" />
+                      <div className="my-1 h-px bg-neutral-200 dark:bg-white dark:bg-white/[0.06]" />
                       <button
                         onClick={openProjectSetup}
                         disabled={isCreating}
-                        className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-primary-400 transition-colors duration-150 hover:bg-neutral-50 dark:hover:bg-white/5 disabled:cursor-not-allowed disabled:opacity-40"
+                        className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-primary-400 transition-colors duration-150 hover:bg-neutral-50 dark:hover:bg-white dark:bg-white/5 disabled:cursor-not-allowed disabled:opacity-40"
                       >
                         <Plus className="h-4 w-4" />
                         {isCreating ? 'Creating...' : 'Create your project'}
@@ -596,7 +596,7 @@ export default function Sidebar() {
             }}
             className={cn(
               'flex items-center gap-3 w-full p-2 rounded-lg',
-              'hover:bg-neutral-50 dark:hover:bg-white/[0.03] transition-colors duration-150',
+              'hover:bg-neutral-50 dark:hover:bg-white dark:bg-white/[0.03] transition-colors duration-150',
               effectiveCollapsed && 'justify-center'
             )}
           >
@@ -636,7 +636,7 @@ export default function Sidebar() {
                   }}
                   className={cn(
                     'flex items-center gap-2 w-full px-3 py-2 text-sm',
-                    'text-neutral-500 dark:text-white/50 hover:bg-white dark:hover:bg-white/5 hover:text-red-500 dark:hover:text-red-400',
+                    'text-neutral-500 dark:text-white/50 hover:bg-neutral-100 dark:hover:bg-white/5 hover:text-red-500 dark:hover:text-red-400',
                     'transition-colors duration-150'
                   )}
                 >
@@ -682,7 +682,7 @@ export default function Sidebar() {
                   'rounded-lg border p-3 text-left transition-colors',
                   sourceType === 'folder'
                     ? 'border-primary-500/40 bg-primary-500/8 text-white'
-                    : 'border-neutral-200 dark:border-white/[0.06] bg-neutral-50 dark:bg-white/[0.02] text-neutral-600 dark:text-white/60 hover:bg-neutral-50 dark:hover:bg-white/5'
+                    : 'border-neutral-200 dark:border-white/[0.06] bg-neutral-50 dark:bg-white dark:bg-white/[0.02] text-neutral-600 dark:text-white/60 hover:bg-neutral-50 dark:hover:bg-white dark:bg-white/5'
                 )}
               >
                 <FolderOpen className="mb-1.5 h-5 w-5 text-primary-400" />
@@ -696,7 +696,7 @@ export default function Sidebar() {
                   'rounded-lg border p-3 text-left transition-colors',
                   sourceType === 'repository'
                     ? 'border-primary-500/40 bg-primary-500/8 text-white'
-                    : 'border-neutral-200 dark:border-white/[0.06] bg-neutral-50 dark:bg-white/[0.02] text-neutral-600 dark:text-white/60 hover:bg-neutral-50 dark:hover:bg-white/5'
+                    : 'border-neutral-200 dark:border-white/[0.06] bg-neutral-50 dark:bg-white dark:bg-white/[0.02] text-neutral-600 dark:text-white/60 hover:bg-neutral-50 dark:hover:bg-white dark:bg-white/5'
                 )}
               >
                 <GitBranch className="mb-1.5 h-5 w-5 text-primary-400" />
@@ -707,8 +707,8 @@ export default function Sidebar() {
           </div>
 
           {sourceType === 'folder' ? (
-            <div className="rounded-lg border border-neutral-200 dark:border-white/[0.06] bg-neutral-50 dark:bg-white/[0.02] p-4">
-              <label className="flex cursor-pointer flex-col items-center justify-center rounded-lg border border-dashed border-neutral-200 dark:border-neutral-200 dark:border-white/10 px-4 py-5 text-center transition-colors hover:border-primary-500/30 hover:bg-neutral-50 dark:bg-white/[0.02]">
+            <div className="rounded-lg border border-neutral-200 dark:border-white/[0.06] bg-neutral-50 dark:bg-white dark:bg-white/[0.02] p-4">
+              <label className="flex cursor-pointer flex-col items-center justify-center rounded-lg border border-dashed border-neutral-200 dark:border-neutral-200 dark:border-white/10 px-4 py-5 text-center transition-colors hover:border-primary-500/30 hover:bg-neutral-50 dark:bg-white dark:bg-white/[0.02]">
                 <FolderOpen className="mb-2 h-6 w-6 text-primary-400" />
                 <span className="text-sm font-medium text-white">
                   {selectedSourceName || 'Choose project folder'}
@@ -724,7 +724,7 @@ export default function Sidebar() {
                   {...({ webkitdirectory: '', directory: '' } as Record<string, string>)}
                 />
               </label>
-              <label className="mt-3 flex cursor-pointer items-center justify-center rounded-lg border border-neutral-200 dark:border-white/[0.06] bg-neutral-50 dark:bg-white/[0.02] px-4 py-3 text-sm font-medium text-neutral-600 dark:text-white/60 transition-colors hover:border-primary-500/25 hover:bg-neutral-50 dark:hover:bg-white/5">
+              <label className="mt-3 flex cursor-pointer items-center justify-center rounded-lg border border-neutral-200 dark:border-white/[0.06] bg-neutral-50 dark:bg-white dark:bg-white/[0.02] px-4 py-3 text-sm font-medium text-neutral-600 dark:text-white/60 transition-colors hover:border-primary-500/25 hover:bg-neutral-50 dark:hover:bg-white dark:bg-white/5">
                 Choose JSON/OpenAPI files
                 <input
                   type="file"

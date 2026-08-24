@@ -173,7 +173,7 @@ export function APIGraph({ endpoints, onNodeClick, className }: APIGraphProps) {
             return endpoint?.lastDriftAt ? '#f97316' : '#22c55e';
           }}
           maskColor="rgba(0,0,0,0.85)"
-          className="!bg-white/[0.03] !border-neutral-200 dark:border-white/[0.08] !rounded-lg"
+          className="!bg-white dark:bg-white/[0.03] !border-neutral-200 dark:border-white/[0.08] !rounded-lg"
         />
       </ReactFlow>
     </div>

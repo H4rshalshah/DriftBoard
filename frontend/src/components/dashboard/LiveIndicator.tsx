@@ -13,7 +13,7 @@ export function LiveIndicator({ isConnected = false, label, className }: LiveInd
     <div
       className={cn(
         'inline-flex items-center gap-2 px-3 py-1.5 rounded-full',
-        'bg-white/[0.03] border border-white/[0.06]',
+        'bg-white dark:bg-white/[0.03] border border-white/[0.06]',
         className
       )}
     >

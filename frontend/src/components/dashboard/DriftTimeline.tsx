@@ -117,7 +117,7 @@ export function DriftTimeline({
                   initial={{ height: 0, opacity: 0 }}
                   animate={{ height: 'auto', opacity: 1 }}
                   exit={{ height: 0, opacity: 0 }}
-                  className="relative ml-4 pl-6 border-l border-white/10"
+                  className="relative ml-4 pl-6 border-l border-neutral-200 dark:border-white/10"
                 >
                   <div className="absolute left-0 top-0 bottom-0 w-0.5 bg-gradient-to-b from-white/20 to-transparent" />
 
@@ -168,7 +168,7 @@ export function DriftTimeline({
                                 initial={{ height: 0, opacity: 0 }}
                                 animate={{ height: 'auto', opacity: 1 }}
                                 exit={{ height: 0, opacity: 0 }}
-                                className="mt-2 p-3 bg-white/5 rounded-lg"
+                                className="mt-2 p-3 bg-white dark:bg-white/5 rounded-lg"
                               >
                                 <p className="text-xs text-white/60 mb-2">
                                   {event.message || `${event.changes.length} changes detected`}

@@ -67,7 +67,7 @@ export function DriftCard({ event, onAcknowledge, onClick, className }: DriftCar
               >
                 {event.severity.toUpperCase()}
               </span>
-              <span className="px-2 py-0.5 text-[11px] font-medium rounded-md bg-white/5 text-white/60">
+              <span className="px-2 py-0.5 text-[11px] font-medium rounded-md bg-white dark:bg-white/5 text-white/60">
                 {event.endpointName}
               </span>
             </div>

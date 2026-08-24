@@ -95,9 +95,9 @@ export function DemoVideo() {
 
         <motion.div
           variants={scrollItemVariants}
-          className="relative overflow-hidden rounded-xl border border-white/10 bg-black/50 shadow-xl shadow-primary-500/10 backdrop-blur-xl md:rounded-2xl md:shadow-2xl md:shadow-primary-500/10"
+          className="relative overflow-hidden rounded-xl border border-neutral-200 dark:border-white/10 bg-black/20 dark:bg-black/30 dark:bg-black/50 shadow-xl shadow-primary-500/10 backdrop-blur-xl md:rounded-2xl md:shadow-2xl md:shadow-primary-500/10"
         >
-          <div className="flex items-center justify-between border-b border-white/10 px-4 py-3 md:px-5">
+          <div className="flex items-center justify-between border-b border-neutral-200 dark:border-white/10 px-4 py-3 md:px-5">
             <div className="flex items-center gap-2">
               <span className="h-3 w-3 rounded-full bg-red-400" />
               <span className="h-3 w-3 rounded-full bg-orange-400" />
@@ -128,9 +128,9 @@ export function DemoVideo() {
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: [0.55, 1, 0.55], x: 0 }}
                   transition={{ delay: index * 0.45, duration: 3, repeat: Infinity, repeatDelay: 1.2 }}
-                  className="grid grid-cols-[58px_1fr] items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-3 py-3 sm:grid-cols-[72px_1fr_auto] sm:gap-3 sm:rounded-xl sm:px-4"
+                  className="grid grid-cols-[58px_1fr] items-center gap-2 rounded-lg border border-neutral-200 dark:border-white/10 bg-white dark:bg-white/5 px-3 py-3 sm:grid-cols-[72px_1fr_auto] sm:gap-3 sm:rounded-xl sm:px-4"
                 >
-                  <span className="rounded-md border border-white/10 px-2 py-1 text-xs font-bold text-white">
+                  <span className="rounded-md border border-neutral-200 dark:border-white/10 px-2 py-1 text-xs font-bold text-white">
                     {row.method}
                   </span>
                   <span className="font-mono text-sm text-white/70">{row.path}</span>
@@ -150,7 +150,7 @@ export function DemoVideo() {
               </div>
               <div className="grid gap-2 sm:grid-cols-3">
                 {['email optional', 'alert sent', 'key active'].map((item, index) => (
-                  <div key={item} className="flex items-center gap-2 rounded-lg bg-black/20 px-3 py-2 text-xs text-white/70">
+                  <div key={item} className="flex items-center gap-2 rounded-lg bg-black/5 dark:bg-black/10 dark:bg-black/20 px-3 py-2 text-xs text-white/70">
                     {index === 1 ? <Bell className="h-3.5 w-3.5" /> : <CheckCircle2 className="h-3.5 w-3.5" />}
                     {item}
                   </div>
@@ -159,7 +159,7 @@ export function DemoVideo() {
             </motion.div>
           </div>
 
-          <div className="border-t border-white/10 px-4 py-4 md:px-6 md:py-6">
+          <div className="border-t border-neutral-200 dark:border-white/10 px-4 py-4 md:px-6 md:py-6">
             <div className="grid gap-3 md:grid-cols-2 md:gap-4 xl:grid-cols-4">
               <motion.div
                 className="flex min-h-[132px] flex-col items-center justify-center rounded-lg border border-primary-300/20 bg-primary-500/10 px-4 py-4 text-center shadow-lg shadow-primary-500/10 md:min-h-[168px] md:rounded-xl md:px-5 md:py-6"
@@ -193,7 +193,7 @@ export function DemoVideo() {
               {updateEvents.map((event, index) => (
                 <motion.div
                   key={event.text}
-                  className="flex min-h-[116px] flex-col items-center justify-center rounded-lg border border-white/10 bg-white/5 px-4 py-4 text-center md:min-h-[168px] md:rounded-xl md:px-5 md:py-6"
+                  className="flex min-h-[116px] flex-col items-center justify-center rounded-lg border border-neutral-200 dark:border-white/10 bg-white dark:bg-white/5 px-4 py-4 text-center md:min-h-[168px] md:rounded-xl md:px-5 md:py-6"
                   animate={{ opacity: [0.76, 1, 0.76], y: [0, -3, 0] }}
                   transition={{ delay: index * 0.35, duration: 3.2, repeat: Infinity, ease: 'easeInOut' }}
                 >

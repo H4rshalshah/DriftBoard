@@ -631,7 +631,7 @@ export default function EndpointsPage() {
                   className="mt-1 block break-all font-mono text-sm font-semibold text-white underline-offset-4 hover:text-primary-200 hover:underline"
                 />
               </div>
-              <pre className="max-h-72 overflow-auto rounded-lg border border-neutral-200 dark:border-white/10 bg-black/30 p-3 text-xs text-neutral-600 dark:text-white/70">{stringifyJson(selectedEndpoint.currentSchema, '{}')}</pre>
+              <pre className="max-h-72 overflow-auto rounded-lg border border-neutral-200 dark:border-white/10 bg-black/20 dark:bg-black/30 p-3 text-xs text-neutral-600 dark:text-white/70">{stringifyJson(selectedEndpoint.currentSchema, '{}')}</pre>
             </>
           )}
         </ModalBody>
@@ -652,7 +652,7 @@ export default function EndpointsPage() {
                   </div>
                   <Badge severity="low">{version.changelog || 'Schema snapshot'}</Badge>
                 </div>
-                <pre className="max-h-48 overflow-auto rounded-lg bg-black/30 p-3 text-xs text-neutral-600 dark:text-white/70">{stringifyJson(version.schema, '{}')}</pre>
+                <pre className="max-h-48 overflow-auto rounded-lg bg-black/20 dark:bg-black/30 p-3 text-xs text-neutral-600 dark:text-white/70">{stringifyJson(version.schema, '{}')}</pre>
               </div>
             ))
           )}

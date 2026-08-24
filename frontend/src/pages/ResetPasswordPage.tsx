@@ -120,7 +120,7 @@ export default function ResetPasswordPage() {
 
         <motion.div
           variants={itemVariants}
-          className="bg-white/5 backdrop-blur-xl border border-neutral-200 dark:border-white/10 rounded-2xl p-8"
+          className="bg-white dark:bg-white/5 backdrop-blur-xl border border-neutral-200 dark:border-white/10 rounded-2xl p-8"
         >
           {isResetSuccessful ? (
             <motion.div

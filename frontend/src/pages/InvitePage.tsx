@@ -214,12 +214,12 @@ export default function InvitePage() {
 
         {invite && !isLoadingInvite && (
           <form onSubmit={submitInvite} className="space-y-5">
-            <div className="rounded-lg border border-white/10 bg-white/5 px-3 py-2">
+            <div className="rounded-lg border border-white/10 bg-white dark:bg-white/5 px-3 py-2">
               <p className="text-xs text-white/45">Invited email</p>
               <p className="mt-1 text-sm font-medium text-white">{invite.email}</p>
             </div>
 
-            <div className="grid grid-cols-2 gap-2 rounded-lg border border-white/10 bg-white/5 p-1">
+            <div className="grid grid-cols-2 gap-2 rounded-lg border border-white/10 bg-white dark:bg-white/5 p-1">
               <button
                 type="button"
                 onClick={() => setAccountMode('existing')}

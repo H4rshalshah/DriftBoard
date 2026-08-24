@@ -142,7 +142,7 @@ export default function RegisterPage() {
 
         <motion.div
           variants={itemVariants}
-          className="bg-neutral-50 dark:bg-white/[0.03] backdrop-blur-xl border border-neutral-200 dark:border-white/[0.06] rounded-2xl p-8"
+          className="bg-neutral-50 dark:bg-white dark:bg-white/[0.03] backdrop-blur-xl border border-neutral-200 dark:border-white/[0.06] rounded-2xl p-8"
         >
           <form onSubmit={handleSubmit} className="space-y-4">
             {displayError && (
@@ -197,7 +197,7 @@ export default function RegisterPage() {
               {password.length > 0 && (
                 <div className="mt-3 space-y-2">
                   <div className="flex items-center gap-2">
-                    <div className="flex-1 h-1 bg-white/5 rounded-full overflow-hidden">
+                    <div className="flex-1 h-1 bg-white dark:bg-white/5 rounded-full overflow-hidden">
                       <motion.div
                         className={`h-full ${passwordStrength.color}`}
                         initial={{ width: 0 }}
@@ -241,7 +241,7 @@ export default function RegisterPage() {
                 type="checkbox"
                 checked={acceptTerms}
                 onChange={(e) => setAcceptTerms(e.target.checked)}
-                className="mt-1 w-4 h-4 rounded border-white/15 bg-white/5 text-primary-500 focus:ring-primary-500/15"
+                className="mt-1 w-4 h-4 rounded border-white/15 bg-white dark:bg-white/5 text-primary-500 focus:ring-primary-500/15"
               />
               <span className="text-sm text-neutral-500 dark:text-white/45">
                 I agree to the{' '}

@@ -182,7 +182,7 @@ export default function LandingPage() {
           <motion.form
             variants={itemVariants}
             onSubmit={requestDemo}
-            className="mx-auto mt-8 flex max-w-2xl flex-col gap-3 rounded-xl border border-neutral-200 dark:border-white/8 bg-white/[0.03] p-2 backdrop-blur-xl sm:mt-12 sm:flex-row sm:rounded-2xl"
+            className="mx-auto mt-8 flex max-w-2xl flex-col gap-3 rounded-xl border border-neutral-200 dark:border-white/8 bg-white dark:bg-white/[0.03] p-2 backdrop-blur-xl sm:mt-12 sm:flex-row sm:rounded-2xl"
           >
             <input
               type="email"
@@ -243,7 +243,7 @@ export default function LandingPage() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: false, amount: 0.35 }}
           transition={{ duration: 0.55, ease: 'easeOut' }}
-          className="relative mx-auto mt-10 max-w-6xl overflow-hidden rounded-2xl border border-neutral-200 dark:border-white/[0.06] bg-black/50 p-4 backdrop-blur-xl sm:mt-12 sm:p-5 md:mt-16 md:rounded-3xl lg:p-6"
+          className="relative mx-auto mt-10 max-w-6xl overflow-hidden rounded-2xl border border-neutral-200 dark:border-white/[0.06] bg-black/20 dark:bg-black/30 dark:bg-black/50 p-4 backdrop-blur-xl sm:mt-12 sm:p-5 md:mt-16 md:rounded-3xl lg:p-6"
         >
           <div className="mb-5 flex flex-col gap-3 border-b border-neutral-200 dark:border-white/[0.06] pb-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-3">
@@ -255,14 +255,14 @@ export default function LandingPage() {
           </div>
 
           <div className="grid gap-5 md:grid-cols-[240px_1fr] lg:gap-6">
-            <div className="rounded-xl border border-neutral-200 dark:border-white/[0.06] bg-white/[0.02] p-3 md:rounded-2xl md:p-5">
+            <div className="rounded-xl border border-neutral-200 dark:border-white/[0.06] bg-white dark:bg-white/[0.02] p-3 md:rounded-2xl md:p-5">
               <div className="space-y-1">
               {consoleTabs.map((item) => (
                 <motion.button
                   key={item}
                   type="button"
                   onClick={() => setActiveConsoleTab(item)}
-                  className={`w-full rounded-lg px-4 py-3 text-center text-sm transition-all hover:text-neutral-800 dark:text-white/80 ${activeConsoleTab === item ? 'bg-primary-500/10 text-white' : 'text-neutral-500 dark:text-white/40 hover:bg-white/[0.03]'}`}
+                  className={`w-full rounded-lg px-4 py-3 text-center text-sm transition-all hover:text-neutral-800 dark:text-white/80 ${activeConsoleTab === item ? 'bg-primary-500/10 text-white' : 'text-neutral-500 dark:text-white/40 hover:bg-white dark:bg-white/[0.03]'}`}
                   animate={activeConsoleTab === item ? { boxShadow: ['0 0 0 rgba(34,197,94,0)', '0 0 20px rgba(34,197,94,0.1)', '0 0 0 rgba(34,197,94,0)'] } : undefined}
                   transition={{ duration: 3, repeat: Infinity }}
                 >
@@ -270,7 +270,7 @@ export default function LandingPage() {
                 </motion.button>
               ))}
               </div>
-              <p className="mt-4 grid min-h-[72px] place-items-center rounded-xl border border-neutral-200 dark:border-white/[0.06] bg-white/[0.02] px-4 py-3 text-center text-xs leading-5 text-neutral-400 dark:text-white/35">
+              <p className="mt-4 grid min-h-[72px] place-items-center rounded-xl border border-neutral-200 dark:border-white/[0.06] bg-white dark:bg-white/[0.02] px-4 py-3 text-center text-xs leading-5 text-neutral-400 dark:text-white/35">
                 {activeConsolePanel.note}
               </p>
             </div>
@@ -293,7 +293,7 @@ export default function LandingPage() {
                 <motion.div
                   key={label}
                   variants={scrollItemVariants}
-                  className="flex min-h-[220px] rounded-2xl border border-neutral-200 dark:border-white/[0.06] bg-white/[0.02] transition-all hover:-translate-y-1 hover:border-white/[0.1] lg:min-h-[260px]"
+                  className="flex min-h-[220px] rounded-2xl border border-neutral-200 dark:border-white/[0.06] bg-white dark:bg-white/[0.02] transition-all hover:-translate-y-1 hover:border-white/[0.1] lg:min-h-[260px]"
                 >
                   <motion.div
                     className="flex min-h-[180px] w-full flex-1 flex-col items-center justify-center p-5 text-center"
@@ -328,7 +328,7 @@ export default function LandingPage() {
                 key={feature.title}
                 variants={scrollItemVariants}
                 transition={{ delay: index * 0.06, duration: 0.45, ease: 'easeOut' }}
-                className="rounded-xl border border-neutral-200 dark:border-white/[0.06] bg-white/[0.02] p-4 backdrop-blur-xl transition-all hover:-translate-y-0.5 hover:border-white/[0.1] md:rounded-2xl md:p-6"
+                className="rounded-xl border border-neutral-200 dark:border-white/[0.06] bg-white dark:bg-white/[0.02] p-4 backdrop-blur-xl transition-all hover:-translate-y-0.5 hover:border-white/[0.1] md:rounded-2xl md:p-6"
               >
                 <div className="mb-5 grid h-11 w-11 place-items-center rounded-xl bg-primary-500/10 text-primary-400">
                   <feature.icon className="h-5 w-5" />

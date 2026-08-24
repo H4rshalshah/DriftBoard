@@ -192,7 +192,7 @@ export function SchemaDiff({
                       'flex items-center gap-1 px-2 py-1 rounded text-xs',
                       group.type === 'added' && 'bg-primary-500/8 text-primary-400',
                       group.type === 'removed' && 'bg-red-500/8 text-red-400',
-                      group.type === 'unchanged' && 'bg-white/5 text-white/40'
+                      group.type === 'unchanged' && 'bg-white dark:bg-white/5 text-white/40'
                     )}
                   >
                     {isExpanded ? (

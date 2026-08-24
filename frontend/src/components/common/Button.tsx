@@ -19,8 +19,8 @@ const variantStyles: Record<ButtonVariant, string> = {
   primary:
     'btn-primary-surface bg-primary-600 hover:bg-primary-500 text-white shadow-sm',
   secondary:
-    'btn-secondary-surface border border-white/10 bg-white/[0.05] text-white/90 hover:bg-white/[0.08] hover:border-white/15',
-  ghost: 'btn-ghost-surface text-white/60 hover:text-white hover:bg-white/5',
+    'btn-secondary-surface border border-neutral-200 dark:border-white/10 bg-white dark:bg-white/[0.05] text-white/90 hover:bg-neutral-100 dark:hover:bg-white/[0.08] hover:border-neutral-300 dark:hover:border-white/15',
+  ghost: 'btn-ghost-surface text-white/60 hover:text-white hover:bg-neutral-100 dark:hover:bg-white/5',
   danger: 'bg-red-600 hover:bg-red-500 text-white shadow-sm',
 };
 

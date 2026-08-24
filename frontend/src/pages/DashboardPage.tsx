@@ -798,7 +798,7 @@ export default function DashboardPage() {
               </Badge>
             </CardHeader>
             <CardContent>
-              <div className="relative h-40 rounded-lg border border-neutral-200 dark:border-white/10 bg-white dark:bg-black/10 px-3 pb-3 pt-8">
+              <div className="relative h-40 rounded-lg border border-neutral-200 dark:border-white/10 bg-white dark:bg-black/5 dark:bg-black/10 px-3 pb-3 pt-8">
                 <div className="absolute inset-x-3 top-1/2 h-px bg-white/10" />
                 <div className="absolute inset-x-3 top-8 h-px bg-white dark:bg-white/5" />
                 <div className="grid h-full grid-cols-7 items-end gap-2">

@@ -274,7 +274,7 @@ export default function ContactPage() {
                   id="contact-subject"
                   value={form.subject}
                   onChange={(event) => updateField('subject', event.target.value as ContactSubject)}
-                  className="min-h-[44px] w-full rounded-lg border border-white/10 bg-white/5 px-4 py-2 text-sm text-white outline-none transition-all duration-200 focus:border-white/30 focus:ring-2 focus:ring-white/10"
+                  className="min-h-[44px] w-full rounded-lg border border-white/10 bg-white dark:bg-white/5 px-4 py-2 text-sm text-white outline-none transition-all duration-200 focus:border-white/30 focus:ring-2 focus:ring-white/10"
                 >
                   {subjectOptions.map((option) => (
                     <option key={option.value} value={option.value} className="bg-black text-white">
@@ -295,7 +295,7 @@ export default function ContactPage() {
                   rows={8}
                   placeholder="Tell us what you need help with..."
                   className={cn(
-                    'w-full resize-y rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder:text-neutral-400 dark:text-white/30 outline-none transition-all duration-200',
+                    'w-full resize-y rounded-lg border border-white/10 bg-white dark:bg-white/5 px-4 py-3 text-sm text-white placeholder:text-neutral-400 dark:text-white/30 outline-none transition-all duration-200',
                     'focus:border-white/30 focus:ring-2 focus:ring-white/10',
                     errors.message && 'border-red-500/50 focus:border-red-500/50 focus:ring-red-500/20'
                   )}
@@ -358,7 +358,7 @@ export default function ContactPage() {
                       target="_blank"
                       rel="noreferrer"
                       className={cn(
-                        'inline-flex min-h-[44px] min-w-0 items-center justify-start gap-2.5 rounded-lg border bg-white/5 px-3 py-2 text-sm font-medium transition-all hover:-translate-y-0.5',
+                        'inline-flex min-h-[44px] min-w-0 items-center justify-start gap-2.5 rounded-lg border bg-white dark:bg-white/5 px-3 py-2 text-sm font-medium transition-all hover:-translate-y-0.5',
                         link.className
                       )}
                     >

@@ -792,7 +792,7 @@ export default function DriftEventsPage() {
                               className="mt-4 pt-4 border-t border-neutral-200 dark:border-white/10"
                             >
                               <div className="space-y-4">
-                                <div className="relative rounded-2xl border border-neutral-200 dark:border-white/10 bg-black/30 p-4 font-mono text-sm leading-7 text-white/85">
+                                <div className="relative rounded-2xl border border-neutral-200 dark:border-white/10 bg-black/20 dark:bg-black/30 p-4 font-mono text-sm leading-7 text-white/85">
                                   <button
                                     type="button"
                                     onClick={() =>
@@ -822,7 +822,7 @@ export default function DriftEventsPage() {
                                   <p><span className="text-white">Time:</span> {formatRelativeTime(event.detectedAt)}</p>
                                 </div>
 
-                                <div className="relative rounded-2xl border border-neutral-200 dark:border-white/10 bg-black/30 p-4">
+                                <div className="relative rounded-2xl border border-neutral-200 dark:border-white/10 bg-black/20 dark:bg-black/30 p-4">
                                   <button
                                     type="button"
                                     onClick={() =>

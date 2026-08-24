@@ -125,8 +125,8 @@ export function Dropdown({ trigger, items, className, align = 'end' }: DropdownP
                     }}
                     disabled={item.disabled}
                     className={cn(
-                      'w-full flex items-center gap-2 px-3 py-2 text-sm text-neutral-600 dark:text-white/60 hover:text-neutral-900 dark:hover:text-white hover:bg-white dark:hover:bg-white/5 transition-colors',
-                      'focus:outline-none focus:bg-white/5',
+                      'w-full flex items-center gap-2 px-3 py-2 text-sm text-neutral-600 dark:text-white/60 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-white/5 transition-colors',
+                      'focus:outline-none focus:bg-neutral-100 dark:focus:bg-white/5',
                       'disabled:opacity-40 disabled:cursor-not-allowed'
                     )}
                   >
@@ -160,7 +160,7 @@ export function DropdownTrigger({
     <button
       className={cn(
         'inline-flex h-10 items-center gap-2 px-3 py-2 text-sm text-neutral-600 dark:text-white/60 bg-white dark:bg-white/[0.03] border border-neutral-300 dark:border-white/[0.08] rounded-lg',
-        'hover:bg-neutral-200 dark:hover:bg-white/5 hover:border-neutral-400 dark:hover:border-neutral-200 dark:border-white/10 transition-all',
+        'hover:bg-neutral-100 dark:hover:bg-white/5 hover:border-neutral-400 dark:hover:border-neutral-200 dark:border-white/10 transition-all',
         className
       )}
       {...props}

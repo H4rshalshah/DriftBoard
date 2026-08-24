@@ -100,7 +100,7 @@ export default function Header() {
         <div className="flex min-w-0 items-center gap-4">
           <button
             onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="grid h-10 w-10 place-items-center rounded-lg text-neutral-400 dark:text-white/40 transition-colors hover:bg-white dark:hover:bg-white/5 hover:text-neutral-700 dark:hover:text-white/70 lg:hidden"
+            className="grid h-10 w-10 place-items-center rounded-lg text-neutral-400 dark:text-white/40 transition-colors hover:bg-white dark:hover:bg-white dark:bg-white/5 hover:text-neutral-700 dark:hover:text-white/70 lg:hidden"
             aria-label="Toggle sidebar"
           >
             <Menu className="h-5 w-5" />
@@ -128,7 +128,7 @@ export default function Header() {
               animate={{
                 borderColor: searchFocused ? 'rgba(34, 197, 94, 0.3)' : 'rgba(255, 255, 255, 0.06)',
               }}
-              className="flex w-full items-center gap-2 rounded-lg border bg-neutral-50 dark:bg-white/[0.03] px-3 py-2 transition-colors duration-200"
+              className="flex w-full items-center gap-2 rounded-lg border bg-neutral-50 dark:bg-white dark:bg-white/[0.03] px-3 py-2 transition-colors duration-200"
             >
               <Search className="h-4 w-4 text-neutral-400 dark:text-white/30" />
               <input
@@ -138,7 +138,7 @@ export default function Header() {
                 onFocus={() => setSearchFocused(true)}
                 onBlur={() => setSearchFocused(false)}
               />
-              <kbd className="hidden rounded bg-neutral-200 dark:bg-white/[0.06] px-2 py-0.5 text-[11px] text-neutral-500 dark:text-white/30 lg:inline-flex">
+              <kbd className="hidden rounded bg-neutral-200 dark:bg-white dark:bg-white/[0.06] px-2 py-0.5 text-[11px] text-neutral-500 dark:text-white/30 lg:inline-flex">
                 Ctrl K
               </kbd>
             </motion.div>
@@ -149,7 +149,7 @@ export default function Header() {
           <div className="relative" ref={notificationsRef}>
             <button
               onClick={() => setNotificationsOpen(!notificationsOpen)}
-              className="relative rounded-lg p-2 text-neutral-400 dark:text-white/40 transition-colors hover:bg-white dark:hover:bg-white/5 hover:text-neutral-700 dark:hover:text-white/70"
+              className="relative rounded-lg p-2 text-neutral-400 dark:text-white/40 transition-colors hover:bg-white dark:hover:bg-white dark:bg-white/5 hover:text-neutral-700 dark:hover:text-white/70"
               aria-label="Open notifications"
             >
               <Bell className="h-5 w-5" />
@@ -218,7 +218,7 @@ export default function Header() {
           <div className="relative" ref={userMenuRef}>
             <button
               onClick={() => setUserMenuOpen(!userMenuOpen)}
-              className="flex items-center gap-2 rounded-lg p-1.5 transition-colors hover:bg-white/5"
+              className="flex items-center gap-2 rounded-lg p-1.5 transition-colors hover:bg-white dark:bg-white/5"
               aria-label="Open user menu"
             >
               <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary-600 text-sm font-medium text-white">
@@ -238,7 +238,7 @@ export default function Header() {
                     <p className="text-sm font-medium text-neutral-800 dark:text-white/80">{user?.name}</p>
                     <p className="text-xs text-neutral-500 dark:text-white/30">{user?.email}</p>
                   </div>
-                  <Link to="/app/settings" onClick={() => setUserMenuOpen(false)} className="block px-4 py-2 text-sm text-neutral-600 dark:text-white/50 transition-colors hover:bg-white dark:hover:bg-white/5">
+                  <Link to="/app/settings" onClick={() => setUserMenuOpen(false)} className="block px-4 py-2 text-sm text-neutral-600 dark:text-white/50 transition-colors hover:bg-white dark:hover:bg-white dark:bg-white/5">
                     Settings
                   </Link>
                   <button
@@ -246,7 +246,7 @@ export default function Header() {
                       logout();
                       setUserMenuOpen(false);
                     }}
-                    className="w-full px-4 py-2 text-left text-sm text-red-400 transition-colors hover:bg-white/5"
+                    className="w-full px-4 py-2 text-left text-sm text-red-400 transition-colors hover:bg-white dark:bg-white/5"
                   >
                     Logout
                   </button>

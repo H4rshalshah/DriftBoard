@@ -811,7 +811,7 @@ export default function SettingsPage() {
                         }`} />
                       </button>
                     </div>
-                    <div className="mt-4 grid gap-2 rounded-lg border border-neutral-200 dark:border-white/10 bg-white dark:bg-black/15 p-3 text-xs text-neutral-500 dark:text-white/60 sm:grid-cols-3">
+                    <div className="mt-4 grid gap-2 rounded-lg border border-neutral-200 dark:border-white/10 bg-white dark:bg-black/8 dark:bg-black/15 p-3 text-xs text-neutral-500 dark:text-white/60 sm:grid-cols-3">
                       <span className="flex items-center gap-1.5"><ShieldCheck className="h-3.5 w-3.5 text-emerald-300" /> Severity badge</span>
                       <span className="flex items-center gap-1.5"><MessageCircle className="h-3.5 w-3.5 text-primary-300" /> Field details</span>
                       <span className="flex items-center gap-1.5"><Link2 className="h-3.5 w-3.5 text-sky-300" /> Dashboard link</span>
@@ -876,7 +876,7 @@ export default function SettingsPage() {
                         }`} />
                       </button>
                     </div>
-                    <div className="mt-4 grid gap-2 rounded-lg border border-neutral-200 dark:border-white/10 bg-white dark:bg-black/15 p-3 text-xs text-neutral-500 dark:text-white/60 sm:grid-cols-3">
+                    <div className="mt-4 grid gap-2 rounded-lg border border-neutral-200 dark:border-white/10 bg-white dark:bg-black/8 dark:bg-black/15 p-3 text-xs text-neutral-500 dark:text-white/60 sm:grid-cols-3">
                       <span className="flex items-center gap-1.5"><ShieldCheck className="h-3.5 w-3.5 text-emerald-300" /> HTML summary</span>
                       <span className="flex items-center gap-1.5"><Bell className="h-3.5 w-3.5 text-amber-300" /> Drift context</span>
                       <span className="flex items-center gap-1.5"><Link2 className="h-3.5 w-3.5 text-sky-300" /> Action button</span>
@@ -1000,7 +1000,7 @@ export default function SettingsPage() {
                 <p className="mb-1 text-xs font-medium uppercase tracking-normal text-primary-200">
                   Sent by
                 </p>
-                <code className="block rounded-lg border border-neutral-200 dark:border-white/10 bg-white dark:bg-black/20 px-3 py-2 text-sm text-neutral-800 dark:text-white/80">
+                <code className="block rounded-lg border border-neutral-200 dark:border-white/10 bg-white dark:bg-black/5 dark:bg-black/10 dark:bg-black/20 px-3 py-2 text-sm text-neutral-800 dark:text-white/80">
                   {generatedInvite.invitedByName} ({generatedInvite.invitedByEmail})
                 </code>
               </div>
@@ -1008,7 +1008,7 @@ export default function SettingsPage() {
                 <p className="mb-1 text-xs font-medium uppercase tracking-normal text-primary-200">
                   Invited email
                 </p>
-                <code className="block rounded-lg border border-neutral-200 dark:border-white/10 bg-white dark:bg-black/20 px-3 py-2 text-sm text-neutral-800 dark:text-white/80">
+                <code className="block rounded-lg border border-neutral-200 dark:border-white/10 bg-white dark:bg-black/5 dark:bg-black/10 dark:bg-black/20 px-3 py-2 text-sm text-neutral-800 dark:text-white/80">
                   {generatedInvite.userEmail}
                 </code>
               </div>

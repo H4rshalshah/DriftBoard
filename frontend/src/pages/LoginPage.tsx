@@ -170,7 +170,7 @@ export default function LoginPage() {
         {oauthLoading ? (
           <motion.div
             variants={itemVariants}
-            className="bg-neutral-50 dark:bg-white/[0.03] backdrop-blur-xl border border-neutral-200 dark:border-white/[0.06] rounded-2xl p-8 flex flex-col items-center justify-center min-h-[300px]"
+            className="bg-neutral-50 dark:bg-white dark:bg-white/[0.03] backdrop-blur-xl border border-neutral-200 dark:border-white/[0.06] rounded-2xl p-8 flex flex-col items-center justify-center min-h-[300px]"
           >
             <div className="relative mb-6">
               <div className="absolute inset-0 rounded-full bg-primary-500/10 animate-pulse" />
@@ -182,7 +182,7 @@ export default function LoginPage() {
               <RefreshCw className="h-5 w-5 animate-spin text-primary-400" />
               <p className="text-lg font-medium text-neutral-800 dark:text-white/80">Redirecting to {oauthProviderLabel}...</p>
             </div>
-            <div className="h-1 w-full max-w-xs overflow-hidden rounded-full bg-white/5">
+            <div className="h-1 w-full max-w-xs overflow-hidden rounded-full bg-white dark:bg-white/5">
               <motion.div
                 className="h-full rounded-full bg-primary-500"
                 initial={{ width: '0%' }}
@@ -207,7 +207,7 @@ export default function LoginPage() {
         ) : (
         <motion.div
           variants={itemVariants}
-          className="bg-neutral-50 dark:bg-white/[0.03] backdrop-blur-xl border border-neutral-200 dark:border-white/[0.06] rounded-2xl p-8"
+          className="bg-neutral-50 dark:bg-white dark:bg-white/[0.03] backdrop-blur-xl border border-neutral-200 dark:border-white/[0.06] rounded-2xl p-8"
         >
           <form onSubmit={handleSubmit} className="space-y-5">
             {displayError && (
@@ -256,7 +256,7 @@ export default function LoginPage() {
                       type="checkbox"
                       checked={rememberMe}
                       onChange={(e) => setRememberMe(e.target.checked)}
-                      className="w-4 h-4 rounded border-white/15 bg-white/5 text-primary-500 focus:ring-primary-500/15"
+                      className="w-4 h-4 rounded border-white/15 bg-white dark:bg-white/5 text-primary-500 focus:ring-primary-500/15"
                     />
                     <span className="text-sm text-neutral-500 dark:text-white/45">Remember me</span>
                   </label>
@@ -289,7 +289,7 @@ export default function LoginPage() {
 
           {mode === 'login' && (
             <>
-              <div className="mt-4 rounded-lg border border-neutral-200 dark:border-white/[0.06] bg-neutral-50 dark:bg-white/[0.02] px-3 py-2 text-xs text-neutral-400 dark:text-white/35">
+              <div className="mt-4 rounded-lg border border-neutral-200 dark:border-white/[0.06] bg-neutral-50 dark:bg-white dark:bg-white/[0.02] px-3 py-2 text-xs text-neutral-400 dark:text-white/35">
                 Demo account: demo@driftboard.dev / Demo1234
               </div>
               <p className="mt-3 text-xs leading-5 text-neutral-400 dark:text-white/30">
