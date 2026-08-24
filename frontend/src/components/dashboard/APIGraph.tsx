@@ -23,8 +23,8 @@ interface APIGraphProps {
 }
 
 const methodColors: Record<string, string> = {
-  GET: '#3b82f6',
-  POST: '#22c55e',
+  GET: '#22c55e',
+  POST: '#16a34a',
   PUT: '#f97316',
   PATCH: '#eab308',
   DELETE: '#ef4444',
@@ -32,7 +32,6 @@ const methodColors: Record<string, string> = {
 
 function EndpointNode({ data }: { data: { endpoint: Endpoint } }) {
   const hasDrift = !!data.endpoint.lastDriftAt;
-  const severityColor = hasDrift ? '#f97316' : '#22c55e';
 
   return (
     <div
@@ -40,7 +39,7 @@ function EndpointNode({ data }: { data: { endpoint: Endpoint } }) {
         'px-4 py-3 rounded-xl border-2 min-w-[180px] transition-all',
         hasDrift
           ? 'bg-orange-500/10 border-orange-500/50 shadow-lg shadow-orange-500/20'
-          : 'bg-white/5 border-white/20'
+          : 'bg-[#0D0D0D] border-[#2A2A2A]'
       )}
     >
       <div className="flex items-center gap-2 mb-2">
@@ -56,7 +55,7 @@ function EndpointNode({ data }: { data: { endpoint: Endpoint } }) {
         {hasDrift ? (
           <AlertTriangle className="w-4 h-4 text-orange-400" />
         ) : (
-          <CheckCircle className="w-4 h-4 text-green-400" />
+          <CheckCircle className="w-4 h-4 text-primary-400" />
         )}
       </div>
       <p className="text-sm font-medium text-white truncate mb-1">
@@ -65,7 +64,7 @@ function EndpointNode({ data }: { data: { endpoint: Endpoint } }) {
       <p className="text-xs text-white/50 font-mono truncate">
         {data.endpoint.url}
       </p>
-      <div className="flex items-center gap-1 mt-2 pt-2 border-t border-white/10">
+      <div className="flex items-center gap-1 mt-2 pt-2 border-t border-[#202020]">
         <Clock className="w-3 h-3 text-white/30" />
         <span className="text-[10px] text-white/40">
           v{data.endpoint.currentSchemaVersion}
@@ -99,7 +98,6 @@ export function APIGraph({ endpoints, onNodeClick, className }: APIGraphProps) {
     const relationships = new Map<string, string[]>();
 
     endpoints.forEach((endpoint) => {
-      const urlParts = endpoint.url.split('/').filter(Boolean);
       endpoints.forEach((target) => {
         if (endpoint.id !== target.id && target.url.includes(endpoint.url.split('/')[1] || '')) {
           const existing = relationships.get(endpoint.id) || [];
@@ -119,10 +117,10 @@ export function APIGraph({ endpoints, onNodeClick, className }: APIGraphProps) {
           target: targetId,
           type: 'smoothstep',
           animated: true,
-          style: { stroke: 'rgba(139, 92, 246, 0.4)', strokeWidth: 2 },
+          style: { stroke: 'rgba(34, 197, 94, 0.35)', strokeWidth: 2 },
           markerEnd: {
             type: MarkerType.ArrowClosed,
-            color: 'rgba(139, 92, 246, 0.4)',
+            color: 'rgba(34, 197, 94, 0.35)',
           },
         });
       });
@@ -145,7 +143,7 @@ export function APIGraph({ endpoints, onNodeClick, className }: APIGraphProps) {
   );
 
   return (
-    <div className={cn('rounded-xl border border-white/10 bg-[#0a0a0f] overflow-hidden', className)}>
+    <div className={cn('rounded-xl border border-[#202020] bg-[#050505] overflow-hidden', className)}>
       <ReactFlow
         nodes={nodes}
         edges={edges}
@@ -162,7 +160,7 @@ export function APIGraph({ endpoints, onNodeClick, className }: APIGraphProps) {
           animated: true,
         }}
       >
-        <Background color="rgba(255,255,255,0.05)" gap={20} size={1} />
+        <Background color="rgba(255,255,255,0.04)" gap={20} size={1} />
         <Controls
           showZoom
           showFitView

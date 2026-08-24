@@ -73,8 +73,8 @@ interface TeamInvite {
 
 const roleColors = {
   owner: 'bg-amber-500/20 text-amber-300 border-amber-400/30',
-  admin: 'bg-purple-500/20 text-purple-400 border-purple-500/30',
-  member: 'bg-blue-500/20 text-blue-400 border-blue-500/30',
+  admin: 'bg-primary-500/20 text-primary-400 border-primary-500/30',
+  member: 'bg-primary-500/20 text-primary-400 border-primary-500/30',
   viewer: 'bg-gray-500/20 text-gray-400 border-gray-500/30',
 };
 
@@ -593,7 +593,7 @@ export default function SettingsPage() {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="flex items-center gap-4 mb-6">
-                    <div className="w-20 h-20 overflow-hidden rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-2xl font-bold text-white">
+                    <div className="w-20 h-20 overflow-hidden rounded-full bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center text-2xl font-bold text-white">
                       {profileForm.avatar ? (
                         <img src={profileForm.avatar} alt={profileForm.name || 'User avatar'} className="h-full w-full object-cover" />
                       ) : (
@@ -715,7 +715,7 @@ export default function SettingsPage() {
                       className="flex flex-col gap-3 rounded-lg bg-white/5 p-3 sm:flex-row sm:items-center sm:justify-between"
                     >
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-white font-medium">
+                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center text-white font-medium">
                           {displayName.charAt(0).toUpperCase()}
                         </div>
                         <div>
@@ -778,7 +778,7 @@ export default function SettingsPage() {
                 <div className="grid gap-4 xl:grid-cols-2">
                   <div className={`rounded-xl border p-4 transition-colors ${
                     notificationChannels.discord.enabled
-                      ? 'border-indigo-300/35 bg-indigo-500/12 shadow-lg shadow-indigo-500/10'
+                      ? 'border-primary-300/35 bg-primary-500/12 shadow-lg shadow-primary-500/10'
                       : 'border-white/10 bg-white/5'
                   }`}>
                     <div className="flex items-start justify-between gap-4">
@@ -789,7 +789,7 @@ export default function SettingsPage() {
                         <div className="min-w-0">
                           <div className="flex flex-wrap items-center gap-2">
                             <p className="text-base font-semibold text-white">Discord</p>
-                            <Badge className="border-indigo-400/30 bg-indigo-500/15 text-indigo-200">
+                            <Badge className="border-primary-400/30 bg-primary-500/15 text-primary-200">
                               Team channel
                             </Badge>
                           </div>
@@ -802,7 +802,7 @@ export default function SettingsPage() {
                         disabled={!canUpdateNotificationSettings}
                         onClick={() => setNotificationChannels((current) => ({ ...current, discord: { ...current.discord, enabled: !current.discord.enabled } }))}
                         className={`h-7 w-14 flex-shrink-0 rounded-full p-1 transition-colors ${
-                          notificationChannels.discord.enabled ? 'bg-indigo-500' : 'bg-white/10'
+                          notificationChannels.discord.enabled ? 'bg-primary-500' : 'bg-white/10'
                         } disabled:cursor-not-allowed disabled:opacity-50`}
                         aria-label="Toggle Discord notifications"
                       >
@@ -813,7 +813,7 @@ export default function SettingsPage() {
                     </div>
                     <div className="mt-4 grid gap-2 rounded-lg border border-white/10 bg-black/15 p-3 text-xs text-white/60 sm:grid-cols-3">
                       <span className="flex items-center gap-1.5"><ShieldCheck className="h-3.5 w-3.5 text-emerald-300" /> Severity badge</span>
-                      <span className="flex items-center gap-1.5"><MessageCircle className="h-3.5 w-3.5 text-indigo-300" /> Field details</span>
+                      <span className="flex items-center gap-1.5"><MessageCircle className="h-3.5 w-3.5 text-primary-300" /> Field details</span>
                       <span className="flex items-center gap-1.5"><Link2 className="h-3.5 w-3.5 text-sky-300" /> Dashboard link</span>
                     </div>
                     {notificationChannels.discord.enabled && (
@@ -997,7 +997,7 @@ export default function SettingsPage() {
                 </div>
               )}
               <div>
-                <p className="mb-1 text-xs font-medium uppercase tracking-normal text-indigo-200">
+                <p className="mb-1 text-xs font-medium uppercase tracking-normal text-primary-200">
                   Sent by
                 </p>
                 <code className="block rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm text-white/80">
@@ -1005,7 +1005,7 @@ export default function SettingsPage() {
                 </code>
               </div>
               <div>
-                <p className="mb-1 text-xs font-medium uppercase tracking-normal text-indigo-200">
+                <p className="mb-1 text-xs font-medium uppercase tracking-normal text-primary-200">
                   Invited email
                 </p>
                 <code className="block rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm text-white/80">
@@ -1013,7 +1013,7 @@ export default function SettingsPage() {
                 </code>
               </div>
               <div>
-                <p className="mb-1 flex items-center gap-2 text-xs font-medium uppercase tracking-normal text-indigo-200">
+                <p className="mb-1 flex items-center gap-2 text-xs font-medium uppercase tracking-normal text-primary-200">
                   <Link2 className="h-3.5 w-3.5" />
                   Invite link
                 </p>
@@ -1041,7 +1041,7 @@ export default function SettingsPage() {
                 )}
               </div>
               <div>
-                <p className="mb-1 flex items-center gap-2 text-xs font-medium uppercase tracking-normal text-indigo-200">
+                <p className="mb-1 flex items-center gap-2 text-xs font-medium uppercase tracking-normal text-primary-200">
                   <KeyRound className="h-3.5 w-3.5" />
                   Login password
                 </p>

@@ -72,7 +72,7 @@ export default function Header() {
       case 'drift':
         return <AlertCircle className="h-4 w-4 text-amber-400" />;
       case 'schema':
-        return <FileWarning className="h-4 w-4 text-blue-400" />;
+        return <FileWarning className="h-4 w-4 text-primary-400" />;
       case 'system':
         return <Info className="h-4 w-4 text-gray-400" />;
       default:
@@ -92,7 +92,7 @@ export default function Header() {
   return (
     <header
       className={cn(
-        'app-header-surface fixed right-0 top-0 z-30 h-16 border-b border-white/0 backdrop-blur-lg transition-all duration-300',
+        'app-header-surface fixed right-0 top-0 z-30 h-16 backdrop-blur-lg transition-all duration-300',
         sidebarCollapsed ? 'left-0 lg:left-[96px]' : 'left-0 lg:left-[260px]'
       )}
     >
@@ -100,7 +100,7 @@ export default function Header() {
         <div className="flex min-w-0 items-center gap-4">
           <button
             onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="grid h-10 w-10 place-items-center rounded-lg text-gray-400 transition-colors hover:bg-white/10 hover:text-white lg:hidden"
+            className="grid h-10 w-10 place-items-center rounded-lg text-gray-400 transition-colors hover:bg-white/5 hover:text-white lg:hidden"
             aria-label="Toggle sidebar"
           >
             <Menu className="h-5 w-5" />
@@ -126,7 +126,7 @@ export default function Header() {
           <div className="relative hidden min-w-[220px] max-w-sm flex-1 md:block">
             <motion.div
               animate={{
-                borderColor: searchFocused ? 'rgba(99, 102, 241, 0.5)' : 'rgba(255, 255, 255, 0.1)',
+                borderColor: searchFocused ? 'rgba(34, 197, 94, 0.4)' : 'rgba(255, 255, 255, 0.08)',
               }}
               className="flex w-full items-center gap-2 rounded-lg border bg-white/5 px-3 py-2 transition-colors duration-200"
             >
@@ -149,7 +149,7 @@ export default function Header() {
           <div className="relative" ref={notificationsRef}>
             <button
               onClick={() => setNotificationsOpen(!notificationsOpen)}
-              className="relative rounded-lg p-2 text-gray-400 transition-colors hover:bg-white/10 hover:text-white"
+              className="relative rounded-lg p-2 text-gray-400 transition-colors hover:bg-white/5 hover:text-white"
               aria-label="Open notifications"
             >
               <Bell className="h-5 w-5" />
@@ -218,7 +218,7 @@ export default function Header() {
           <div className="relative" ref={userMenuRef}>
             <button
               onClick={() => setUserMenuOpen(!userMenuOpen)}
-              className="flex items-center gap-2 rounded-lg p-1.5 transition-colors hover:bg-white/10"
+              className="flex items-center gap-2 rounded-lg p-1.5 transition-colors hover:bg-white/5"
               aria-label="Open user menu"
             >
               <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-primary text-sm font-medium text-white">
@@ -232,13 +232,13 @@ export default function Header() {
                   initial={{ opacity: 0, y: -10, scale: 0.95 }}
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, y: -10, scale: 0.95 }}
-                  className="absolute right-0 top-full mt-2 w-48 overflow-hidden rounded-xl border border-white/10 bg-glass-dark shadow-xl"
+                  className="absolute right-0 top-full mt-2 w-48 overflow-hidden rounded-xl border border-[#202020] bg-[#0D0D0D] shadow-xl"
                 >
-                  <div className="border-b border-white/10 px-4 py-3">
+                  <div className="border-b border-[#202020] px-4 py-3">
                     <p className="text-sm font-medium text-white">{user?.name}</p>
                     <p className="text-xs text-gray-500">{user?.email}</p>
                   </div>
-                  <Link to="/app/settings" onClick={() => setUserMenuOpen(false)} className="block px-4 py-2 text-sm text-gray-300 transition-colors hover:bg-white/10">
+                  <Link to="/app/settings" onClick={() => setUserMenuOpen(false)} className="block px-4 py-2 text-sm text-gray-300 transition-colors hover:bg-white/5">
                     Settings
                   </Link>
                   <button
@@ -246,7 +246,7 @@ export default function Header() {
                       logout();
                       setUserMenuOpen(false);
                     }}
-                    className="w-full px-4 py-2 text-left text-sm text-red-400 transition-colors hover:bg-white/10"
+                    className="w-full px-4 py-2 text-left text-sm text-red-400 transition-colors hover:bg-white/5"
                   >
                     Logout
                   </button>

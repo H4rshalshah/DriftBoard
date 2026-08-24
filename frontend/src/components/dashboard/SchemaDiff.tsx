@@ -111,16 +111,16 @@ export function SchemaDiff({
         base: 'vs-dark' as const,
         inherit: true,
         rules: [
-          { token: '', foreground: 'ffffff', background: '1a1a2e' },
+          { token: '', foreground: 'ffffff', background: '0D0D0D' },
           { token: 'comment', foreground: '6a9955' },
           { token: 'string', foreground: 'ce9178' },
           { token: 'number', foreground: 'b5cea8' },
           { token: 'keyword', foreground: '569cd6' },
         ],
         colors: {
-          'editor.background': '#0d0d1a',
+          'editor.background': '#0D0D0D',
           'editor.foreground': '#ffffff',
-          'editor.lineHighlightBackground': '#1a1a2e',
+          'editor.lineHighlightBackground': '#151515',
         },
       };
     }
@@ -128,16 +128,16 @@ export function SchemaDiff({
       base: 'vs-dark' as const,
       inherit: true,
       rules: [
-        { token: '', foreground: 'ffffff', background: '1a1a2e' },
+        { token: '', foreground: 'ffffff', background: '0D0D0D' },
         { token: 'comment', foreground: '6a9955' },
         { token: 'string', foreground: 'ce9178' },
         { token: 'number', foreground: 'b5cea8' },
         { token: 'keyword', foreground: '569cd6' },
       ],
       colors: {
-        'editor.background': '#0d1117',
+        'editor.background': '#090909',
         'editor.foreground': '#ffffff',
-        'editor.lineHighlightBackground': '#161b22',
+        'editor.lineHighlightBackground': '#111111',
       },
     };
   };
@@ -157,15 +157,15 @@ export function SchemaDiff({
   if (currentGroup) groupedSections.push(currentGroup);
 
   return (
-    <div className={cn('rounded-xl border border-white/10 bg-white/5 overflow-hidden', className)}>
-      <div className="flex items-center justify-between p-3 border-b border-white/10">
+    <div className={cn('rounded-xl border border-[#202020] bg-[#0D0D0D] overflow-hidden', className)}>
+      <div className="flex items-center justify-between p-3 border-b border-[#202020]">
         <div className="flex items-center gap-2">
           <button
             onClick={() => setActiveSide('old')}
             className={cn(
               'px-3 py-1.5 text-sm rounded-lg transition-colors',
               activeSide === 'old'
-                ? 'bg-purple-500/20 text-purple-400'
+                ? 'bg-primary-500/20 text-primary-400'
                 : 'text-white/50 hover:text-white/80'
             )}
           >
@@ -176,7 +176,7 @@ export function SchemaDiff({
             className={cn(
               'px-3 py-1.5 text-sm rounded-lg transition-colors',
               activeSide === 'new'
-                ? 'bg-green-500/20 text-green-400'
+                ? 'bg-primary-500/20 text-primary-400'
                 : 'text-white/50 hover:text-white/80'
             )}
           >
@@ -210,7 +210,7 @@ export function SchemaDiff({
         </AnimatePresence>
       </div>
 
-      <div className="border-t border-white/10">
+      <div className="border-t border-[#202020]">
         <div className="p-3">
           <p className="text-xs text-white/50 mb-2">Changes Summary</p>
           <div className="flex flex-wrap gap-2">
@@ -222,7 +222,7 @@ export function SchemaDiff({
                     onClick={() => toggleSection(idx)}
                     className={cn(
                       'flex items-center gap-1 px-2 py-1 rounded text-xs',
-                      group.type === 'added' && 'bg-green-500/10 text-green-400',
+                      group.type === 'added' && 'bg-primary-500/10 text-primary-400',
                       group.type === 'removed' && 'bg-red-500/10 text-red-400',
                       group.type === 'unchanged' && 'bg-white/5 text-white/50'
                     )}

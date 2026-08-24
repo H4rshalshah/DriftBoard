@@ -162,7 +162,7 @@ export default function ApiKeysPage() {
     <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="space-y-5 sm:space-y-6">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div className="min-w-0">
-          <p className="mb-2 text-sm font-semibold uppercase tracking-[0.18em] text-indigo-300">Security</p>
+          <p className="mb-2 text-sm font-semibold uppercase tracking-[0.18em] text-primary-300">Security</p>
           <h1 className="text-2xl font-bold text-white sm:text-3xl">API Keys</h1>
           <p className="mt-1 max-w-2xl text-sm leading-6 text-white/60 sm:text-base">
             {currentProject ? `Create and manage keys for ${currentProject.name}.` : 'Connect a project before creating live API keys.'}
@@ -215,7 +215,7 @@ export default function ApiKeysPage() {
           <Card key={apiKey.id}>
             <CardContent className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
               <div className="flex min-w-0 items-start gap-4">
-                <div className="grid h-11 w-11 flex-shrink-0 place-items-center rounded-xl bg-indigo-500/15 text-indigo-200">
+                <div className="grid h-11 w-11 flex-shrink-0 place-items-center rounded-xl bg-primary-500/15 text-primary-200">
                   <ShieldCheck className="h-5 w-5" />
                 </div>
                 <div className="min-w-0">

@@ -574,7 +574,7 @@ export default function DashboardPage() {
             <div className="flex items-center gap-2">
               <LiveIndicator isConnected={isProjectConnected} />
               {isSocketConnected && (
-                <span className="inline-flex items-center gap-1 rounded-full border border-indigo-400/20 bg-indigo-500/10 px-2.5 py-1 text-[10px] font-medium text-indigo-300">
+                <span className="inline-flex items-center gap-1 rounded-full border border-primary-400/20 bg-primary-500/10 px-2.5 py-1 text-[10px] font-medium text-primary-300">
                   <Wifi className="h-3 w-3" />
                   Live
                 </span>
@@ -728,8 +728,8 @@ export default function DashboardPage() {
                       initial={{ opacity: 0, scale: 0 }}
                       animate={{ opacity: 1, scale: 1 }}
                     >
-                      <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-indigo-400 opacity-75" />
-                      <span className="relative inline-flex h-2 w-2 rounded-full bg-indigo-500" />
+                      <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary-400 opacity-75" />
+                      <span className="relative inline-flex h-2 w-2 rounded-full bg-primary-500" />
                     </motion.span>
                   )}
                 </div>
@@ -760,7 +760,7 @@ export default function DashboardPage() {
                             ? 'bg-red-500'
                             : event.severity === 'medium'
                             ? 'bg-yellow-500'
-                            : 'bg-blue-500'
+                            : 'bg-primary-500'
                         }`}
                       />
                       <div>
@@ -793,7 +793,7 @@ export default function DashboardPage() {
                   {isSocketConnected ? ' - live' : ''}
                 </span>
               </div>
-              <Badge className="border-indigo-400/25 bg-indigo-500/15 text-indigo-200">
+              <Badge className="border-primary-400/25 bg-primary-500/15 text-primary-200">
                 {totalActivity} event{totalActivity === 1 ? '' : 's'}
               </Badge>
             </CardHeader>
@@ -815,12 +815,11 @@ export default function DashboardPage() {
                           transition={{ delay: index * 0.08, duration: 0.55, ease: 'easeOut' }}
                           className={`w-full max-w-[28px] rounded-t-md ${
                             active
-                              ? 'bg-gradient-to-t from-indigo-500 to-cyan-300 shadow-lg shadow-indigo-500/20'
+                              ? 'bg-gradient-to-t from-primary-600 to-primary-400 shadow-lg shadow-primary-500/20'
                               : 'bg-white/10'
                           }`}
                           title={`${data.day}: ${data.changes} activity event${data.changes === 1 ? '' : 's'}`}
-                        />
-                        <span className={`text-[11px] font-medium ${isToday ? 'text-indigo-200' : 'text-white/40'}`}>
+                        />                         <span className={`text-[11px] font-medium ${isToday ? 'text-primary-200' : 'text-white/40'}`}>
                           {data.changes}
                         </span>
                       </div>
@@ -830,7 +829,7 @@ export default function DashboardPage() {
               </div>
               <div className="mt-3 grid grid-cols-7 gap-2">
                 {activityData.map((data) => (
-                  <span key={data.date || data.day} className={`min-w-0 text-center text-xs ${data.date === todayKey ? 'font-semibold text-indigo-200' : 'text-white/40'}`}>
+                  <span key={data.date || data.day} className={`min-w-0 text-center text-xs ${data.date === todayKey ? 'font-semibold text-primary-200' : 'text-white/40'}`}>
                     {data.day}
                   </span>
                 ))}

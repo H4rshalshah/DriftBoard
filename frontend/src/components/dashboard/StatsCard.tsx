@@ -44,8 +44,8 @@ export function StatsCard({
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       className={cn(
-        'bg-white/5 backdrop-blur-md border border-white/10 rounded-xl p-4',
-        'transition-all duration-300 hover:border-white/20 hover:shadow-lg hover:shadow-white/5',
+        'bg-[#0D0D0D] backdrop-blur-md border border-[#202020] rounded-xl p-4',
+        'transition-all duration-300 hover:border-primary-500/30 hover:shadow-lg hover:shadow-primary-500/5',
         className
       )}
     >
@@ -55,7 +55,7 @@ export function StatsCard({
           <div
             className={cn(
               'flex items-center gap-1 text-xs font-medium',
-              trendIsPositive ? 'text-green-400' : 'text-red-400'
+              trendIsPositive ? 'text-primary-400' : 'text-red-400'
             )}
           >
             {trendDirection === 'up' ? (
@@ -82,14 +82,14 @@ export function StatsCard({
             <AreaChart data={sparklineData}>
               <defs>
                 <linearGradient id={`sparkline-${displayLabel}`} x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="rgba(139, 92, 246, 0.3)" />
-                  <stop offset="100%" stopColor="rgba(139, 92, 246, 0)" />
+                  <stop offset="0%" stopColor="rgba(34, 197, 94, 0.3)" />
+                  <stop offset="100%" stopColor="rgba(34, 197, 94, 0)" />
                 </linearGradient>
               </defs>
               <Area
                 type="monotone"
                 dataKey="value"
-                stroke="rgba(139, 92, 246, 0.5)"
+                stroke="rgba(34, 197, 94, 0.5)"
                 strokeWidth={1.5}
                 fill={`url(#sparkline-${displayLabel})`}
               />

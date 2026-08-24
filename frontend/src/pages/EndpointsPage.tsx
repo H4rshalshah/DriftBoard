@@ -43,7 +43,7 @@ const methods = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'] as const;
 const statuses = ['healthy', 'warning', 'drifted', 'failed', 'disabled'] as const;
 
 const methodColors: Record<Endpoint['method'], string> = {
-  GET: 'bg-blue-500/20 text-blue-400 border-blue-500/30',
+  GET: 'bg-primary-500/20 text-primary-400 border-primary-500/30',
   POST: 'bg-green-500/20 text-green-400 border-green-500/30',
   PUT: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30',
   PATCH: 'bg-orange-500/20 text-orange-400 border-orange-500/30',
@@ -628,7 +628,7 @@ export default function EndpointsPage() {
                 <p className="text-xs text-white/50">URL</p>
                 <UrlLink
                   url={selectedEndpoint.url}
-                  className="mt-1 block break-all font-mono text-sm font-semibold text-white underline-offset-4 hover:text-indigo-200 hover:underline"
+                  className="mt-1 block break-all font-mono text-sm font-semibold text-white underline-offset-4 hover:text-primary-200 hover:underline"
                 />
               </div>
               <pre className="max-h-72 overflow-auto rounded-lg border border-white/10 bg-black/30 p-3 text-xs text-white/70">{stringifyJson(selectedEndpoint.currentSchema, '{}')}</pre>
@@ -716,7 +716,7 @@ function EndpointFormFields({ form, setForm }: { form: EndpointForm; setForm: Re
             type="checkbox"
             checked={form.monitoringEnabled}
             onChange={(event) => setForm((current) => ({ ...current, monitoringEnabled: event.target.checked }))}
-            className="h-4 w-4 accent-indigo-500"
+            className="h-4 w-4 accent-primary-500"
           />
           Monitoring
         </label>

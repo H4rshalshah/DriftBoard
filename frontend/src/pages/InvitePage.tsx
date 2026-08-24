@@ -281,7 +281,7 @@ export default function InvitePage() {
                 <button
                   type="button"
                   onClick={() => void requestPasswordReset()}
-                  className="block text-left text-xs text-indigo-400 transition-colors hover:text-indigo-300"
+                  className="block text-left text-xs text-primary-400 transition-colors hover:text-primary-300"
                 >
                   Forgot your password? Reset it here
                 </button>

@@ -9,17 +9,17 @@ module.exports = {
       colors: {
         border: 'rgba(255, 255, 255, 0.1)',
         primary: {
-          50: '#eef2ff',
-          100: '#e0e7ff',
-          200: '#c7d2fe',
-          300: '#a5b4fc',
-          400: '#818cf8',
-          500: '#6366f1',
-          600: '#4f46e5',
-          700: '#4338ca',
-          800: '#3730a3',
-          900: '#312e81',
-          950: '#1e1b4b',
+          50: '#f0fdf4',
+          100: '#dcfce7',
+          200: '#bbf7d0',
+          300: '#86efac',
+          400: '#4ade80',
+          500: '#22c55e',
+          600: '#16a34a',
+          700: '#15803d',
+          800: '#166534',
+          900: '#14532d',
+          950: '#052e16',
         },
         glass: {
           light: 'rgba(255, 255, 255, 0.1)',
@@ -27,9 +27,9 @@ module.exports = {
         },
       },
       backgroundImage: {
-        'gradient-primary': 'linear-gradient(135deg, #4338ca 0%, #6d28d9 50%, #7e22ce 100%)',
-        'gradient-secondary': 'linear-gradient(135deg, #0ea5e9 0%, #06b6d4 100%)',
-        'gradient-dark': 'linear-gradient(180deg, #070715 0%, #111022 100%)',
+        'gradient-primary': 'linear-gradient(135deg, #15803d 0%, #16a34a 50%, #22c55e 100%)',
+        'gradient-secondary': 'linear-gradient(135deg, #059669 0%, #10b981 100%)',
+        'gradient-dark': 'linear-gradient(180deg, #050505 0%, #090909 100%)',
       },
       fontFamily: {
         sans: ['Inter', 'system-ui', 'sans-serif'],
@@ -66,8 +66,8 @@ module.exports = {
           '50%': { transform: 'translateY(-20px)' },
         },
         glow: {
-          '0%': { boxShadow: '0 0 5px rgba(99, 102, 241, 0.5)' },
-          '100%': { boxShadow: '0 0 20px rgba(99, 102, 241, 0.8)' },
+          '0%': { boxShadow: '0 0 5px rgba(34, 197, 94, 0.3)' },
+          '100%': { boxShadow: '0 0 20px rgba(34, 197, 94, 0.5)' },
         },
       },
       backdropBlur: {
@@ -76,8 +76,8 @@ module.exports = {
       boxShadow: {
         'glass': '0 4px 30px rgba(0, 0, 0, 0.1)',
         'glass-dark': '0 4px 30px rgba(0, 0, 0, 0.3)',
-        'glow-primary': '0 0 40px rgba(99, 102, 241, 0.4)',
-        'glow-secondary': '0 0 40px rgba(6, 182, 212, 0.4)',
+        'glow-primary': '0 0 40px rgba(34, 197, 94, 0.3)',
+        'glow-secondary': '0 0 40px rgba(16, 185, 129, 0.3)',
       },
     },
   },

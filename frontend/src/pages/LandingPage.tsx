@@ -166,8 +166,8 @@ export default function LandingPage() {
 
       <section className="relative z-10 mx-auto max-w-7xl px-5 pb-18 pt-12 sm:px-6 sm:pb-20 sm:pt-16 md:pb-28 md:pt-28 lg:px-8">
         <motion.div variants={containerVariants} initial="hidden" animate="visible" className="mx-auto max-w-5xl text-center">
-          <motion.div variants={itemVariants} className="mb-6 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/10 px-4 py-2 text-xs text-indigo-100 shadow-inner sm:mb-8 sm:px-5 sm:text-sm">
-            <ShieldCheck className="h-4 w-4 text-indigo-300" />
+          <motion.div variants={itemVariants} className="mb-6 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/10 px-4 py-2 text-xs text-primary-100 shadow-inner sm:mb-8 sm:px-5 sm:text-sm">
+            <ShieldCheck className="h-4 w-4 text-primary-300" />
             Live contract drift detection
           </motion.div>
 
@@ -175,14 +175,14 @@ export default function LandingPage() {
             API Drift Intelligence to Keep Frontend and Backend in Sync
           </motion.h1>
 
-          <motion.p variants={itemVariants} className="mx-auto mt-6 max-w-3xl text-base leading-7 text-indigo-100/70 sm:mt-8 md:text-xl md:leading-8">
+          <motion.p variants={itemVariants} className="mx-auto mt-6 max-w-3xl text-base leading-7 text-primary-100/70 sm:mt-8 md:text-xl md:leading-8">
             DriftBoard monitors Express APIs, stores schema snapshots, and streams beautiful live diffs before renamed fields break production.
           </motion.p>
 
           <motion.form
             variants={itemVariants}
             onSubmit={requestDemo}
-            className="mx-auto mt-8 flex max-w-2xl flex-col gap-3 rounded-xl border border-white/10 bg-white/10 p-2 shadow-2xl shadow-indigo-500/10 backdrop-blur-xl sm:mt-12 sm:flex-row sm:rounded-2xl"
+            className="mx-auto mt-8 flex max-w-2xl flex-col gap-3 rounded-xl border border-white/10 bg-white/10 p-2 shadow-2xl shadow-primary-500/10 backdrop-blur-xl sm:mt-12 sm:flex-row sm:rounded-2xl"
           >
             <input
               type="email"
@@ -243,7 +243,7 @@ export default function LandingPage() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: false, amount: 0.35 }}
           transition={{ duration: 0.64, ease: 'easeOut' }}
-          className="relative mx-auto mt-10 max-w-6xl overflow-hidden rounded-2xl border border-indigo-300/25 bg-slate-950/70 p-4 shadow-2xl shadow-indigo-500/15 backdrop-blur-xl sm:mt-12 sm:p-5 md:mt-16 md:rounded-3xl lg:p-6"
+          className="relative mx-auto mt-10 max-w-6xl overflow-hidden rounded-2xl border border-primary-300/25 bg-slate-950/70 p-4 shadow-2xl shadow-primary-500/10 backdrop-blur-xl sm:mt-12 sm:p-5 md:mt-16 md:rounded-3xl lg:p-6"
         >
           <div className="mb-5 flex flex-col gap-3 border-b border-white/10 pb-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-3">
@@ -251,7 +251,7 @@ export default function LandingPage() {
               <span className="h-3 w-3 rounded-full bg-emerald-300" />
               <span className="ml-4 text-sm font-semibold text-white">DriftBoard Console</span>
             </div>
-            <span className="text-sm text-indigo-100/70">Live WebSocket feed</span>
+            <span className="text-sm text-primary-100/70">Live WebSocket feed</span>
           </div>
 
           <div className="grid gap-5 md:grid-cols-[240px_1fr] lg:gap-6">
@@ -262,22 +262,22 @@ export default function LandingPage() {
                   key={item}
                   type="button"
                   onClick={() => setActiveConsoleTab(item)}
-                  className={`w-full rounded-xl px-4 py-3 text-center text-sm transition-all hover:translate-x-1 hover:bg-white/10 hover:text-white ${activeConsoleTab === item ? 'bg-indigo-500/20 text-white' : 'text-white/50'}`}
-                  animate={activeConsoleTab === item ? { boxShadow: ['0 0 0 rgba(99,102,241,0)', '0 0 28px rgba(99,102,241,0.22)', '0 0 0 rgba(99,102,241,0)'] } : undefined}
+                  className={`w-full rounded-xl px-4 py-3 text-center text-sm transition-all hover:translate-x-1 hover:bg-white/10 hover:text-white ${activeConsoleTab === item ? 'bg-primary-500/20 text-white' : 'text-white/50'}`}
+                  animate={activeConsoleTab === item ? { boxShadow: ['0 0 0 rgba(34,197,94,0)', '0 0 28px rgba(34,197,94,0.22)', '0 0 0 rgba(34,197,94,0)'] } : undefined}
                   transition={{ duration: 2.8, repeat: Infinity }}
                 >
                   {item}
                 </motion.button>
               ))}
               </div>
-              <p className="mt-4 grid min-h-[76px] place-items-center rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-center text-xs leading-5 text-indigo-100/65">
+              <p className="mt-4 grid min-h-[76px] place-items-center rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-center text-xs leading-5 text-primary-100/65">
                 {activeConsolePanel.note}
               </p>
             </div>
             <div className="grid gap-3 md:hidden">
               {activeConsolePanel.metrics.slice(0, 2).map(([label, value]) => (
                 <div key={label} className="flex items-center justify-between gap-3 border-b border-white/10 py-3 last:border-b-0">
-                  <span className="text-sm text-indigo-100/65">{label}</span>
+                  <span className="text-sm text-primary-100/65">{label}</span>
                   <span className="text-lg font-bold text-white">{value}</span>
                 </div>
               ))}
@@ -293,14 +293,14 @@ export default function LandingPage() {
                 <motion.div
                   key={label}
                   variants={scrollItemVariants}
-                  className="flex min-h-[220px] rounded-2xl border border-white/10 bg-white/5 transition-all hover:-translate-y-1 hover:border-indigo-400/30 hover:bg-white/10 lg:min-h-[260px]"
+                  className="flex min-h-[220px] rounded-2xl border border-white/10 bg-white/5 transition-all hover:-translate-y-1 hover:border-primary-400/30 hover:bg-white/10 lg:min-h-[260px]"
                 >
                   <motion.div
                     className="flex min-h-[180px] w-full flex-1 flex-col items-center justify-center p-5 text-center"
                     animate={{ y: [0, index % 2 === 0 ? -5 : 5, 0] }}
                     transition={{ duration: 4 + index, repeat: Infinity, ease: 'easeInOut' }}
                   >
-                    <p className="w-full text-center text-sm text-indigo-100/65">{label}</p>
+                    <p className="w-full text-center text-sm text-primary-100/65">{label}</p>
                     <p className="mt-4 w-full text-center text-3xl font-bold text-white">{value}</p>
                   </motion.div>
                 </motion.div>
@@ -319,7 +319,7 @@ export default function LandingPage() {
           className="mx-auto max-w-7xl"
         >
           <motion.div variants={scrollItemVariants} className="mb-12 max-w-2xl md:mb-14">
-            <p className="mb-3 text-sm font-semibold uppercase tracking-[0.18em] text-indigo-300">Platform</p>
+            <p className="mb-3 text-sm font-semibold uppercase tracking-[0.18em] text-primary-300">Platform</p>
             <h2 className="text-3xl font-bold text-white md:text-4xl">Key Features of DriftBoard</h2>
           </motion.div>
           <div className="grid gap-4 md:grid-cols-2 md:gap-6 lg:grid-cols-4">
@@ -328,9 +328,9 @@ export default function LandingPage() {
                 key={feature.title}
                 variants={scrollItemVariants}
                 transition={{ delay: index * 0.08, duration: 0.52, ease: 'easeOut' }}
-                className="rounded-xl border border-white/10 bg-white/5 p-4 backdrop-blur-xl transition-all hover:-translate-y-1 hover:border-indigo-400/30 hover:bg-white/10 hover:shadow-lg hover:shadow-indigo-500/10 md:rounded-2xl md:p-6"
+                className="rounded-xl border border-white/10 bg-white/5 p-4 backdrop-blur-xl transition-all hover:-translate-y-1 hover:border-primary-400/30 hover:bg-white/10 hover:shadow-lg hover:shadow-primary-500/10 md:rounded-2xl md:p-6"
               >
-                <div className="mb-5 grid h-12 w-12 place-items-center rounded-xl bg-indigo-500/15 text-indigo-200">
+                <div className="mb-5 grid h-12 w-12 place-items-center rounded-xl bg-primary-500/15 text-primary-200">
                   <feature.icon className="h-6 w-6" />
                 </div>
                 <h3 className="font-semibold text-white">{feature.title}</h3>

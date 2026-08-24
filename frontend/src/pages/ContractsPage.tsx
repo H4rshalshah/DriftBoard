@@ -60,7 +60,7 @@ type DriftReport = {
 };
 
 const methodClasses: Record<string, string> = {
-  GET: 'border-blue-400/30 bg-blue-500/15 text-blue-200',
+  GET: 'border-primary-400/30 bg-primary-500/15 text-primary-200',
   POST: 'border-emerald-400/30 bg-emerald-500/15 text-emerald-200',
   PUT: 'border-yellow-400/30 bg-yellow-500/15 text-yellow-200',
   PATCH: 'border-orange-400/30 bg-orange-500/15 text-orange-200',

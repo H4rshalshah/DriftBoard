@@ -383,7 +383,7 @@ export default function Sidebar() {
     <motion.aside
       className={cn(
         'fixed left-0 top-0 h-screen z-40',
-        'app-sidebar-surface backdrop-blur-lg border-r border-white/0',
+        'app-sidebar-surface backdrop-blur-lg',
         'flex flex-col transition-transform duration-300 lg:transition-colors',
         sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
       )}
@@ -394,7 +394,7 @@ export default function Sidebar() {
     >
       <div
         className={cn(
-          'relative flex h-16 items-center border-b border-white/0 p-3',
+          'relative flex h-16 items-center border-b border-[#202020] p-3',
           effectiveCollapsed ? 'justify-start gap-5 pl-4 pr-3' : 'justify-between pr-16'
         )}
       >
@@ -449,8 +449,8 @@ export default function Sidebar() {
                     'flex items-center gap-3 px-3 py-2.5 rounded-lg',
                     'transition-all duration-200 group relative',
                     isActive
-                      ? 'bg-primary-500/20 text-primary-400'
-                      : 'text-gray-400 hover:text-white hover:bg-white/10'
+                      ? 'bg-primary-500/10 text-primary-400'
+                      : 'text-gray-400 hover:text-white hover:bg-white/5'
                   )}
                 >
                   {isActive && (
@@ -471,7 +471,7 @@ export default function Sidebar() {
         </nav>
       </div>
 
-      <div className={cn('border-t border-white/0 p-3', effectiveCollapsed && 'px-2')}>
+      <div className={cn('border-t border-[#202020] p-3', effectiveCollapsed && 'px-2')}>
         {effectiveCollapsed && (
           <div className="relative mb-2">
             <button
@@ -528,7 +528,7 @@ export default function Sidebar() {
                   initial={{ opacity: 0, y: -10 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -10 }}
-                  className="sidebar-menu-surface relative z-[55] mt-2 overflow-hidden rounded-lg border border-white/10 py-1 shadow-2xl"
+                  className="sidebar-menu-surface relative z-[55] mt-2 overflow-hidden rounded-lg py-1 shadow-2xl"
                 >
                   {projects.length === 0 && (
                     <div className="px-3 py-2 text-sm text-gray-400">
@@ -540,7 +540,7 @@ export default function Sidebar() {
                       key={project.id}
                       className={cn(
                         'flex w-full items-center gap-2 px-3 py-2 text-sm',
-                        'hover:bg-white/10 transition-colors duration-150',
+                        'hover:bg-white/5 transition-colors duration-150',
                         currentProject?.id === project.id ? 'text-primary-400' : 'text-gray-300'
                       )}
                     >
@@ -573,11 +573,11 @@ export default function Sidebar() {
                   ))}
                   {canOpenProjectSetup && (
                     <>
-                      <div className="my-1 h-px bg-white/10" />
+                      <div className="my-1 h-px bg-[#202020]" />
                       <button
                         onClick={openProjectSetup}
                         disabled={isCreating}
-                        className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-primary-300 transition-colors duration-150 hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-60"
+                        className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-primary-300 transition-colors duration-150 hover:bg-white/5 disabled:cursor-not-allowed disabled:opacity-60"
                       >
                         <Plus className="h-4 w-4" />
                         {isCreating ? 'Creating...' : 'Create your project'}
@@ -598,7 +598,7 @@ export default function Sidebar() {
             }}
             className={cn(
               'flex items-center gap-3 w-full p-2 rounded-lg',
-              'hover:bg-white/10 transition-colors duration-200',
+              'hover:bg-white/5 transition-colors duration-200',
               effectiveCollapsed && 'justify-center'
             )}
           >
@@ -627,7 +627,7 @@ export default function Sidebar() {
                 exit={{ opacity: 0, y: -10 }}
                 className={cn(
                   'sidebar-menu-surface absolute bottom-full z-[60] mb-2 w-full py-1',
-                  'overflow-hidden rounded-lg border border-white/10 shadow-2xl',
+                  'overflow-hidden rounded-lg shadow-2xl',
                   effectiveCollapsed ? 'left-0' : 'left-0'
                 )}
               >
@@ -638,7 +638,7 @@ export default function Sidebar() {
                   }}
                   className={cn(
                     'flex items-center gap-2 w-full px-3 py-2 text-sm',
-                    'text-gray-300 hover:bg-white/10 hover:text-red-400',
+                    'text-gray-300 hover:bg-white/5 hover:text-red-400',
                     'transition-colors duration-150'
                   )}
                 >
@@ -683,8 +683,8 @@ export default function Sidebar() {
                 className={cn(
                   'rounded-lg border p-3 text-left transition-colors',
                   sourceType === 'folder'
-                    ? 'border-primary-400/60 bg-primary-500/15 text-white'
-                    : 'border-white/10 bg-white/5 text-white/70 hover:bg-white/10'
+                    ? 'border-primary-400/60 bg-primary-500/10 text-white'
+                    : 'border-[#242424] bg-white/5 text-white/70 hover:bg-white/5'
                 )}
               >
                 <FolderOpen className="mb-1.5 h-5 w-5 text-primary-300" />
@@ -697,8 +697,8 @@ export default function Sidebar() {
                 className={cn(
                   'rounded-lg border p-3 text-left transition-colors',
                   sourceType === 'repository'
-                    ? 'border-primary-400/60 bg-primary-500/15 text-white'
-                    : 'border-white/10 bg-white/5 text-white/70 hover:bg-white/10'
+                    ? 'border-primary-400/60 bg-primary-500/10 text-white'
+                    : 'border-[#242424] bg-white/5 text-white/70 hover:bg-white/5'
                 )}
               >
                 <GitBranch className="mb-1.5 h-5 w-5 text-primary-300" />
@@ -709,7 +709,7 @@ export default function Sidebar() {
           </div>
 
           {sourceType === 'folder' ? (
-            <div className="rounded-lg border border-white/10 bg-white/5 p-4">
+            <div className="rounded-lg border border-[#242424] bg-white/5 p-4">
               <label className="flex cursor-pointer flex-col items-center justify-center rounded-lg border border-dashed border-white/15 px-4 py-5 text-center transition-colors hover:border-primary-400/50 hover:bg-white/5">
                 <FolderOpen className="mb-2 h-6 w-6 text-primary-300" />
                 <span className="text-sm font-medium text-white">
@@ -766,12 +766,12 @@ export default function Sidebar() {
           )}
 
           {setupStatus && (
-            <div className="rounded-lg border border-emerald-500/25 bg-emerald-500/10 px-3 py-2 text-xs text-emerald-300">
+            <div className="rounded-lg border border-primary-500/25 bg-primary-500/10 px-3 py-2 text-xs text-primary-300">
               {setupStatus}
             </div>
           )}
 
-          <div className="flex items-start gap-2 rounded-lg border border-primary-400/20 bg-primary-500/10 p-3 text-xs leading-5 text-indigo-100/75">
+          <div className="flex items-start gap-2 rounded-lg border border-primary-400/20 bg-primary-500/8 p-3 text-xs leading-5 text-primary-100/75">
             <CheckCircle2 className="mt-0.5 h-4 w-4 flex-shrink-0 text-primary-300" />
             <span>
               Once both fields are complete, DriftBoard creates the workspace, reads the selected project source, and starts monitoring endpoint schemas and drift errors for that project.

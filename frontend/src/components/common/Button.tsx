@@ -17,12 +17,12 @@ interface ButtonProps extends Omit<HTMLMotionProps<'button'>, 'size'> {
 
 const variantStyles: Record<ButtonVariant, string> = {
   primary:
-    'btn-primary-surface bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-400 hover:to-purple-400 text-white shadow-lg shadow-indigo-500/25',
+    'btn-primary-surface bg-gradient-to-r from-primary-600 to-primary-500 hover:from-primary-500 hover:to-primary-400 text-white shadow-lg shadow-primary-500/20',
   secondary:
     'btn-secondary-surface border border-white/20 bg-white/5 text-white hover:bg-white/10 hover:border-white/30',
   ghost: 'btn-ghost-surface text-white/70 hover:text-white hover:bg-white/5',
   danger:
-    'bg-red-500/80 hover:bg-red-500 text-white shadow-lg shadow-red-500/25',
+    'bg-red-500/80 hover:bg-red-500 text-white shadow-lg shadow-red-500/20',
 };
 
 const sizeStyles: Record<ButtonSize, string> = {
@@ -54,7 +54,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         whileTap={{ scale: disabled || loading ? 1 : 0.98 }}
         className={cn(
           'inline-flex items-center justify-center rounded-lg font-medium transition-all duration-200',
-          'focus:outline-none focus:ring-2 focus:ring-white/20 focus:ring-offset-2 focus:ring-offset-gray-900',
+          'focus:outline-none focus:ring-2 focus:ring-primary-500/30 focus:ring-offset-2 focus:ring-offset-gray-900',
           'disabled:opacity-50 disabled:cursor-not-allowed',
           variantStyles[variant],
           sizeStyles[size],

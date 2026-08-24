@@ -29,7 +29,7 @@ export function ThemeToggle({ className }: ThemeToggleProps) {
         transition={{ type: 'spring', stiffness: 420, damping: 28 }}
         className="grid h-7 w-7 place-items-center rounded-full bg-white text-slate-950 shadow-lg"
       >
-        {isDark ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4 text-amber-500" />}
+        {isDark ? <Moon className="h-4 w-4 text-primary-500" /> : <Sun className="h-4 w-4 text-amber-500" />}
       </motion.span>
     </button>
   );

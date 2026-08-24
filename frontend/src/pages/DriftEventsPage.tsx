@@ -660,7 +660,7 @@ export default function DriftEventsPage() {
               {activeTab === tab.value && (
                 <motion.div
                   layoutId="severity-indicator"
-                  className="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-500"
+                  className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary-500"
                 />
               )}
             </button>
@@ -672,7 +672,7 @@ export default function DriftEventsPage() {
         <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="flex items-center justify-between p-3 bg-indigo-500/10 border border-indigo-500/20 rounded-lg"
+          className="flex items-center justify-between p-3 bg-primary-500/10 border border-primary-500/20 rounded-lg"
         >
           <span className="text-sm text-white/80">
             {selectedEvents.size} event{selectedEvents.size > 1 ? 's' : ''} selected
@@ -737,14 +737,14 @@ export default function DriftEventsPage() {
                         type="checkbox"
                         checked={selectedEvents.has(event.id)}
                         onChange={() => toggleEventSelection(event.id)}
-                        className="mt-1 w-4 h-4 rounded border-white/20 bg-white/5 text-indigo-500 focus:ring-indigo-500/20"
+                        className="mt-1 w-4 h-4 rounded border-white/20 bg-white/5 text-primary-500 focus:ring-primary-500/20"
                       />
                       <div className="flex-1">
                         <div className="flex items-start justify-between gap-4">
                           <div>
                             <div className="flex items-center gap-2 mb-1">
                               <span className={`px-2 py-0.5 text-xs font-medium rounded border ${
-                                event.method === 'GET' ? 'bg-blue-500/20 text-blue-400 border-blue-500/30' :
+                                event.method === 'GET' ? 'bg-primary-500/20 text-primary-400 border-primary-500/30' :
                                 event.method === 'POST' ? 'bg-green-500/20 text-green-400 border-green-500/30' :
                                 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30'
                               }`}>

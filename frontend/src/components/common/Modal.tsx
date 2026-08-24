@@ -78,7 +78,7 @@ export function Modal({
             exit="hidden"
             variants={backdropVariants}
             transition={{ duration: 0.2 }}
-            className="modal-backdrop absolute inset-0 bg-black/60 backdrop-blur-sm"
+            className="modal-backdrop absolute inset-0 bg-black/70 backdrop-blur-sm"
             onClick={closeOnBackdrop ? onClose : undefined}
           />
           <motion.div
@@ -88,7 +88,7 @@ export function Modal({
             variants={modalVariants}
             transition={{ duration: 0.2, ease: 'easeOut' }}
             className={cn(
-              'modal-surface relative flex max-h-[calc(100vh-2.5rem)] w-full flex-col overflow-hidden rounded-xl border border-white/10 shadow-2xl backdrop-blur-xl sm:max-h-[calc(100vh-4rem)]',
+              'modal-surface relative flex max-h-[calc(100vh-2.5rem)] w-full flex-col overflow-hidden rounded-xl border border-[#252525] shadow-2xl backdrop-blur-xl sm:max-h-[calc(100vh-4rem)]',
               sizeStyles[size],
               className
             )}
@@ -142,7 +142,7 @@ interface ModalFooterProps extends HTMLAttributes<HTMLDivElement> {
 export function ModalFooter({ className, children, ...props }: ModalFooterProps) {
   return (
     <div
-      className={cn('shrink-0 border-t border-white/10 px-6 py-5 sm:px-8 flex justify-end gap-4', className)}
+      className={cn('shrink-0 border-t border-[#202020] px-6 py-5 sm:px-8 flex justify-end gap-4', className)}
       {...props}
     >
       {children}

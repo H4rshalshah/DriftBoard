@@ -55,8 +55,8 @@ const typeIcons = {
 
 const typeColors = {
   drift: 'bg-red-500/20 text-red-400 border-red-500/30',
-  schema: 'bg-blue-500/20 text-blue-400 border-blue-500/30',
-  system: 'bg-purple-500/20 text-purple-400 border-purple-500/30',
+  schema: 'bg-primary-500/20 text-primary-400 border-primary-500/30',
+  system: 'bg-primary-500/20 text-primary-400 border-primary-500/30',
   member: 'bg-green-500/20 text-green-400 border-green-500/30',
   team: 'bg-green-500/20 text-green-400 border-green-500/30',
 };
@@ -273,7 +273,7 @@ export default function NotificationsPage() {
               onClick={togglePageSelected}
               className="inline-flex items-center gap-2 rounded-lg border border-white/10 px-3 py-2 text-sm text-white/65 transition-colors hover:bg-white/5 hover:text-white"
             >
-              {allPageSelected ? <CheckSquare className="h-4 w-4 text-indigo-300" /> : <Square className="h-4 w-4" />}
+              {allPageSelected ? <CheckSquare className="h-4 w-4 text-primary-300" /> : <Square className="h-4 w-4" />}
               {allPageSelected ? 'Clear page selection' : 'Select visible'}
             </button>
           )}
@@ -319,7 +319,7 @@ export default function NotificationsPage() {
                         className="mt-2 rounded-md p-1 text-white/45 transition-colors hover:bg-white/10 hover:text-white"
                         aria-label={selectedIds.includes(notification.id) ? 'Deselect notification' : 'Select notification'}
                       >
-                        {selectedIds.includes(notification.id) ? <CheckSquare className="h-5 w-5 text-indigo-300" /> : <Square className="h-5 w-5" />}
+                        {selectedIds.includes(notification.id) ? <CheckSquare className="h-5 w-5 text-primary-300" /> : <Square className="h-5 w-5" />}
                       </button>
                       <div className={`w-10 h-10 rounded-lg flex items-center justify-center border ${typeColors[notification.type]}`}>
                         <IconComponent className="w-5 h-5" />
@@ -332,7 +332,7 @@ export default function NotificationsPage() {
                           </div>
                           <div className="flex items-center gap-2">
                             {!notification.read && (
-                              <div className="w-2 h-2 rounded-full bg-indigo-500 flex-shrink-0" />
+                              <div className="w-2 h-2 rounded-full bg-primary-500 flex-shrink-0" />
                             )}
                             <button
                               onClick={(event) => {

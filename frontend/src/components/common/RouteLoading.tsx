@@ -9,12 +9,12 @@ export function RouteLoading({ message = 'Loading...' }: RouteLoadingProps) {
     <div className="flex min-h-[60vh] flex-col items-center justify-center px-4">
       <div className="relative mb-6">
         {/* Outer ring */}
-        <div className="h-16 w-16 animate-[spin_2s_linear_infinite] rounded-full border-[3px] border-white/10 border-t-indigo-500" />
+        <div className="h-16 w-16 animate-[spin_2s_linear_infinite] rounded-full border-[3px] border-white/10 border-t-primary-500" />
         {/* Inner ring */}
-        <div className="absolute left-1/2 top-1/2 h-10 w-10 -translate-x-1/2 -translate-y-1/2 animate-[spin_1.5s_linear_infinite_reverse] rounded-full border-[2px] border-transparent border-b-purple-400" />
+        <div className="absolute left-1/2 top-1/2 h-10 w-10 -translate-x-1/2 -translate-y-1/2 animate-[spin_1.5s_linear_infinite_reverse] rounded-full border-[2px] border-transparent border-b-primary-400" />
         {/* Core dot */}
         <motion.div
-          className="absolute left-1/2 top-1/2 h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full bg-gradient-to-r from-indigo-400 to-purple-400"
+          className="absolute left-1/2 top-1/2 h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary-500"
           animate={{ scale: [1, 1.3, 1], opacity: [0.7, 1, 0.7] }}
           transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut' }}
         />

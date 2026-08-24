@@ -26,7 +26,7 @@ export function Spinner({ size = 'md', text, className, ...props }: SpinnerProps
   return (
     <div className={cn('inline-flex items-center gap-2', className)} {...props}>
       <svg
-        className={cn('animate-spin text-white/70', sizeStyles[size])}
+        className={cn('animate-spin text-primary-500', sizeStyles[size])}
         xmlns="http://www.w3.org/2000/svg"
         fill="none"
         viewBox="0 0 24 24"

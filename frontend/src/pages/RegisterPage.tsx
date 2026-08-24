@@ -37,7 +37,7 @@ function getPasswordStrength(password: string): { score: number; label: string; 
   if (password.length === 0) return { score: 0, label: '', color: '' };
   if (passed <= 1) return { score: 25, label: 'Weak', color: 'bg-red-500' };
   if (passed === 2) return { score: 50, label: 'Fair', color: 'bg-yellow-500' };
-  if (passed === 3) return { score: 75, label: 'Good', color: 'bg-blue-500' };
+  if (passed === 3) return { score: 75, label: 'Good', color: 'bg-primary-500' };
   return { score: 100, label: 'Strong', color: 'bg-green-500' };
 }
 
@@ -115,12 +115,12 @@ export default function RegisterPage() {
   return (
     <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden">
       <motion.div
-        className="fixed inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-indigo-500/10 via-transparent to-transparent"
+        className="fixed inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-primary-500/10 via-transparent to-transparent"
         animate={{
           background: [
-            'radial-gradient(ellipse_at_top,_var(--tw-gradient-stops)) from-indigo-500/10 via-transparent to-transparent',
-            'radial-gradient(ellipse_at_top,_var(--tw-gradient-stops)) from-purple-500/10 via-transparent to-transparent',
-            'radial-gradient(ellipse_at_top,_var(--tw-gradient-stops)) from-indigo-500/10 via-transparent to-transparent',
+            'radial-gradient(ellipse_at_top,_var(--tw-gradient-stops)) from-primary-500/10 via-transparent to-transparent',
+            'radial-gradient(ellipse_at_top,_var(--tw-gradient-stops)) from-primary-600/8 via-transparent to-transparent',
+            'radial-gradient(ellipse_at_top,_var(--tw-gradient-stops)) from-primary-500/10 via-transparent to-transparent',
           ],
         }}
         transition={{ duration: 8, repeat: Infinity }}
@@ -241,15 +241,15 @@ export default function RegisterPage() {
                 type="checkbox"
                 checked={acceptTerms}
                 onChange={(e) => setAcceptTerms(e.target.checked)}
-                className="mt-1 w-4 h-4 rounded border-white/20 bg-white/5 text-indigo-500 focus:ring-indigo-500/20"
+                className="mt-1 w-4 h-4 rounded border-white/20 bg-white/5 text-primary-500 focus:ring-primary-500/20"
               />
               <span className="text-sm text-white/60">
                 I agree to the{' '}
-                <button type="button" className="text-indigo-400 hover:text-indigo-300">
+                <button type="button" className="text-primary-400 hover:text-primary-300">
                   Terms of Service
                 </button>{' '}
                 and{' '}
-                <button type="button" className="text-indigo-400 hover:text-indigo-300">
+                <button type="button" className="text-primary-400 hover:text-primary-300">
                   Privacy Policy
                 </button>
               </span>
@@ -290,7 +290,7 @@ export default function RegisterPage() {
 
         <motion.p variants={itemVariants} className="text-center mt-6 text-white/60">
           Already have an account?{' '}
-          <Link to="/login" className="text-indigo-400 hover:text-indigo-300 transition-colors">
+          <Link to="/login" className="text-primary-400 hover:text-primary-300 transition-colors">
             Sign in
           </Link>
         </motion.p>

@@ -138,12 +138,12 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden">
       <motion.div
-        className="fixed inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-indigo-500/10 via-transparent to-transparent"
+        className="fixed inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-primary-500/10 via-transparent to-transparent"
         animate={{
           background: [
-            'radial-gradient(ellipse_at_top,_var(--tw-gradient-stops)) from-indigo-500/10 via-transparent to-transparent',
-            'radial-gradient(ellipse_at_top,_var(--tw-gradient-stops)) from-purple-500/10 via-transparent to-transparent',
-            'radial-gradient(ellipse_at_top,_var(--tw-gradient-stops)) from-indigo-500/10 via-transparent to-transparent',
+            'radial-gradient(ellipse_at_top,_var(--tw-gradient-stops)) from-primary-500/10 via-transparent to-transparent',
+            'radial-gradient(ellipse_at_top,_var(--tw-gradient-stops)) from-primary-600/8 via-transparent to-transparent',
+            'radial-gradient(ellipse_at_top,_var(--tw-gradient-stops)) from-primary-500/10 via-transparent to-transparent',
           ],
         }}
         transition={{ duration: 8, repeat: Infinity }}
@@ -173,18 +173,18 @@ export default function LoginPage() {
             className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-8 flex flex-col items-center justify-center min-h-[300px]"
           >
             <div className="relative mb-6">
-              <div className="absolute inset-0 rounded-full bg-gradient-to-r from-indigo-500/20 to-purple-500/20 animate-pulse" />
-              <div className="relative flex h-20 w-20 items-center justify-center rounded-full border-2 border-indigo-400/30 bg-indigo-500/10">
-                <Shield className="h-10 w-10 text-indigo-400" />
+              <div className="absolute inset-0 rounded-full bg-gradient-to-r from-primary-500/20 to-primary-600/15 animate-pulse" />
+              <div className="relative flex h-20 w-20 items-center justify-center rounded-full border-2 border-primary-400/30 bg-primary-500/10">
+                <Shield className="h-10 w-10 text-primary-400" />
               </div>
             </div>
             <div className="mb-4 flex items-center gap-3">
-              <RefreshCw className="h-5 w-5 animate-spin text-indigo-400" />
+              <RefreshCw className="h-5 w-5 animate-spin text-primary-400" />
               <p className="text-lg font-medium text-white">Redirecting to {oauthProviderLabel}...</p>
             </div>
             <div className="h-1.5 w-full max-w-xs overflow-hidden rounded-full bg-white/10">
               <motion.div
-                className="h-full rounded-full bg-gradient-to-r from-indigo-400 to-purple-400"
+                className="h-full rounded-full bg-gradient-to-r from-primary-500 to-primary-400"
                 initial={{ width: '0%' }}
                 animate={{ width: '100%' }}
                 transition={{ duration: 8, ease: 'easeInOut' }}
@@ -256,7 +256,7 @@ export default function LoginPage() {
                       type="checkbox"
                       checked={rememberMe}
                       onChange={(e) => setRememberMe(e.target.checked)}
-                      className="w-4 h-4 rounded border-white/20 bg-white/5 text-indigo-500 focus:ring-indigo-500/20"
+                      className="w-4 h-4 rounded border-white/20 bg-white/5 text-primary-500 focus:ring-primary-500/20"
                     />
                     <span className="text-sm text-white/60">Remember me</span>
                   </label>
@@ -268,7 +268,7 @@ export default function LoginPage() {
                       setSuccessMessage('');
                       clearError();
                     }}
-                    className="text-sm text-indigo-400 hover:text-indigo-300 transition-colors"
+                    className="text-sm text-primary-400 hover:text-primary-300 transition-colors"
                   >
                     Forgot password?
                   </button>
@@ -330,7 +330,7 @@ export default function LoginPage() {
         {mode === 'login' && (
           <motion.p variants={itemVariants} className="text-center mt-6 text-white/60">
             Don't have an account?{' '}
-            <Link to="/register" className="text-indigo-400 hover:text-indigo-300 transition-colors">
+            <Link to="/register" className="text-primary-400 hover:text-primary-300 transition-colors">
               Sign up
             </Link>
           </motion.p>

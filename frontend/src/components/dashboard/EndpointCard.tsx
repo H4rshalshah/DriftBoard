@@ -12,8 +12,8 @@ interface EndpointCardProps {
 }
 
 const methodColors: Record<Endpoint['method'], string> = {
-  GET: 'bg-blue-500/20 text-blue-400 border-blue-500/30',
-  POST: 'bg-green-500/20 text-green-400 border-green-500/30',
+  GET: 'bg-primary-500/20 text-primary-400 border-primary-500/30',
+  POST: 'bg-primary-500/15 text-primary-300 border-primary-500/25',
   PUT: 'bg-orange-500/20 text-orange-400 border-orange-500/30',
   PATCH: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30',
   DELETE: 'bg-red-500/20 text-red-400 border-red-500/30',
@@ -27,9 +27,9 @@ export function EndpointCard({ endpoint, hasDrift = false, onClick, className }:
       whileHover={{ scale: 1.01 }}
       onClick={() => onClick?.(endpoint)}
       className={cn(
-        'bg-white/5 backdrop-blur-md border border-white/10 rounded-xl p-4',
+        'bg-[#0D0D0D] backdrop-blur-md border border-[#202020] rounded-xl p-4',
         'cursor-pointer transition-all duration-300',
-        'hover:border-white/20 hover:shadow-lg hover:shadow-white/5',
+        'hover:border-primary-500/30 hover:shadow-lg hover:shadow-primary-500/5',
         hasDrift && 'border-orange-500/30',
         className
       )}
@@ -56,7 +56,7 @@ export function EndpointCard({ endpoint, hasDrift = false, onClick, className }:
               </span>
             )}
             {!hasDrift && endpoint.lastCheckedAt && (
-              <span className="px-2 py-0.5 text-xs font-medium rounded-md bg-green-500/20 text-green-400 flex items-center gap-1">
+              <span className="px-2 py-0.5 text-xs font-medium rounded-md bg-primary-500/20 text-primary-400 flex items-center gap-1">
                 <CheckCircle className="w-3 h-3" />
                 Clean
               </span>
@@ -67,7 +67,7 @@ export function EndpointCard({ endpoint, hasDrift = false, onClick, className }:
         </div>
       </div>
 
-      <div className="flex items-center gap-4 mt-3 pt-3 border-t border-white/10">
+      <div className="flex items-center gap-4 mt-3 pt-3 border-t border-[#202020]">
         {endpoint.lastCheckedAt && (
           <div className="flex items-center gap-1.5 text-xs text-white/40">
             <Clock className="w-3 h-3" />

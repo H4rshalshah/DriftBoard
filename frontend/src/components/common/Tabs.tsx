@@ -49,7 +49,7 @@ export function TabList({ children, className, ...props }: TabListProps) {
   return (
     <div
       className={cn(
-        'flex gap-1 p-1 bg-white/5 rounded-lg border border-white/10',
+        'flex gap-1 p-1 bg-white/5 rounded-lg border border-[#202020]',
         className
       )}
       role="tablist"
@@ -88,7 +88,7 @@ export function Tab({ value, children, className, disabled, ...props }: TabProps
       {isActive && (
         <motion.div
           layoutId="tab-indicator"
-          className="absolute inset-0 bg-white/10 rounded-md"
+          className="absolute inset-0 bg-primary-500/15 rounded-md"
           transition={{ type: 'spring', bounce: 0.2, duration: 0.4 }}
         />
       )}

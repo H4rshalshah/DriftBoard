@@ -13,22 +13,22 @@ interface BadgeProps extends HTMLAttributes<HTMLSpanElement> {
 }
 
 const severityStyles: Record<BadgeSeverity, string> = {
-  low: 'badge-severity-low bg-blue-500/20 text-blue-300 border-blue-500/30',
+  low: 'badge-severity-low bg-primary-500/20 text-primary-300 border-primary-500/30',
   medium: 'badge-severity-medium bg-yellow-500/20 text-yellow-300 border-yellow-500/30',
   breaking: 'badge-severity-breaking bg-red-500/20 text-red-300 border-red-500/30',
 };
 
 const statusStyles: Record<BadgeStatus, string> = {
-  active: 'badge-status-active bg-green-500/20 text-green-300 border-green-500/30',
+  active: 'badge-status-active bg-primary-500/20 text-primary-300 border-primary-500/30',
   deprecated: 'badge-status-deprecated bg-orange-500/20 text-orange-300 border-orange-500/30',
   inactive: 'badge-status-inactive bg-gray-500/20 text-gray-300 border-gray-500/30',
 };
 
 const dotColors: Record<BadgeSeverity | BadgeStatus, string> = {
-  low: 'bg-blue-400',
+  low: 'bg-primary-400',
   medium: 'bg-yellow-400',
   breaking: 'bg-red-400',
-  active: 'bg-green-400',
+  active: 'bg-primary-400',
   deprecated: 'bg-orange-400',
   inactive: 'bg-gray-400',
 };

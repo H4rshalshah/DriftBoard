@@ -9,7 +9,7 @@ const demoRows = [
 ];
 
 const teamMembers = [
-  { initials: 'AN', label: 'API owner', color: 'from-cyan-300 to-indigo-400' },
+  { initials: 'AN', label: 'API owner', color: 'from-cyan-300 to-primary-400' },
   { initials: 'JS', label: 'Frontend', color: 'from-violet-300 to-fuchsia-400' },
   { initials: 'MK', label: 'QA lead', color: 'from-emerald-300 to-teal-400' },
 ];
@@ -51,7 +51,7 @@ function Workflow3DSignal() {
         <line className="tech-signal-line tech-signal-line-alert" x1="182" y1="198" x2="244" y2="156" />
       </svg>
 
-      <div className="absolute left-1/2 top-[68%] z-[1] h-36 w-36 rounded-[24px] border border-indigo-400/30 bg-indigo-400/10 shadow-[0_28px_72px_rgba(99,102,241,0.24)] [transform:translate(-50%,-50%)_rotateX(64deg)_rotateZ(-38deg)] dark:border-indigo-300/34 dark:bg-indigo-300/12 dark:shadow-[0_30px_82px_rgba(99,102,241,0.28)] sm:h-40 sm:w-40 sm:rounded-[26px] sm:shadow-[0_34px_80px_rgba(99,102,241,0.22)] sm:dark:shadow-[0_34px_88px_rgba(99,102,241,0.24)]" />
+      <div className="absolute left-1/2 top-[68%] z-[1] h-36 w-36 rounded-[24px] border border-primary-400/30 bg-primary-400/10 shadow-[0_28px_72px_rgba(34,197,94,0.24)] [transform:translate(-50%,-50%)_rotateX(64deg)_rotateZ(-38deg)] dark:border-primary-300/34 dark:bg-primary-300/12 dark:shadow-[0_30px_82px_rgba(34,197,94,0.28)] sm:h-40 sm:w-40 sm:rounded-[26px] sm:shadow-[0_34px_80px_rgba(34,197,94,0.22)] sm:dark:shadow-[0_34px_88px_rgba(34,197,94,0.24)]" />
 
       <div className="tech-contract-cube absolute left-1/2 top-[42%] z-[4] h-24 w-24 [--cube-depth:46px] sm:h-24 sm:w-24 sm:[--cube-depth:46px]">
         <span className="tech-contract-face tech-contract-face-front" />
@@ -80,7 +80,7 @@ export function DemoVideo() {
         className="mx-auto grid max-w-7xl gap-8 lg:grid-cols-[0.9fr_1.1fr] lg:items-center lg:gap-10"
       >
         <motion.div variants={scrollItemVariants}>
-          <p className="mb-3 text-sm font-semibold uppercase tracking-[0.18em] text-indigo-300">
+          <p className="mb-3 text-sm font-semibold uppercase tracking-[0.18em] text-primary-300">
             Live workflow
           </p>
           <h2 className="text-2xl font-bold text-white sm:text-3xl md:text-4xl">
@@ -95,7 +95,7 @@ export function DemoVideo() {
 
         <motion.div
           variants={scrollItemVariants}
-          className="relative overflow-hidden rounded-xl border border-white/10 bg-slate-950/75 shadow-xl shadow-indigo-500/10 backdrop-blur-xl md:rounded-2xl md:shadow-2xl md:shadow-indigo-500/15"
+          className="relative overflow-hidden rounded-xl border border-white/10 bg-slate-950/75 shadow-xl shadow-primary-500/10 backdrop-blur-xl md:rounded-2xl md:shadow-2xl md:shadow-primary-500/10"
         >
           <div className="flex items-center justify-between border-b border-white/10 px-4 py-3 md:px-5">
             <div className="flex items-center gap-2">
@@ -108,7 +108,7 @@ export function DemoVideo() {
 
           <div className="p-4 md:p-5">
             <motion.div
-              className="rounded-lg border border-indigo-400/20 bg-indigo-500/10 p-3 md:rounded-xl md:p-4"
+              className="rounded-lg border border-primary-400/20 bg-primary-500/10 p-3 md:rounded-xl md:p-4"
               animate={{ y: [0, 8, 0] }}
               transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
             >
@@ -162,13 +162,13 @@ export function DemoVideo() {
           <div className="border-t border-white/10 px-4 py-4 md:px-6 md:py-6">
             <div className="grid gap-3 md:grid-cols-2 md:gap-4 xl:grid-cols-4">
               <motion.div
-                className="flex min-h-[132px] flex-col items-center justify-center rounded-lg border border-indigo-300/20 bg-indigo-500/10 px-4 py-4 text-center shadow-lg shadow-indigo-500/10 md:min-h-[168px] md:rounded-xl md:px-5 md:py-6"
-                animate={{ y: [0, -4, 0], boxShadow: ['0 0 0 rgba(99,102,241,0)', '0 0 34px rgba(99,102,241,0.14)', '0 0 0 rgba(99,102,241,0)'] }}
+                className="flex min-h-[132px] flex-col items-center justify-center rounded-lg border border-primary-300/20 bg-primary-500/10 px-4 py-4 text-center shadow-lg shadow-primary-500/10 md:min-h-[168px] md:rounded-xl md:px-5 md:py-6"
+                animate={{ y: [0, -4, 0], boxShadow: ['0 0 0 rgba(34,197,94,0)', '0 0 34px rgba(34,197,94,0.14)', '0 0 0 rgba(34,197,94,0)'] }}
                 transition={{ duration: 3.6, repeat: Infinity, ease: 'easeInOut' }}
               >
                 <motion.div
-                  className="grid h-14 w-14 place-items-center rounded-full bg-indigo-500/25 text-indigo-100 ring-1 ring-indigo-300/25"
-                  animate={{ scale: [1, 1.08, 1], boxShadow: ['0 0 0 rgba(99,102,241,0)', '0 0 28px rgba(99,102,241,0.28)', '0 0 0 rgba(99,102,241,0)'] }}
+                  className="grid h-14 w-14 place-items-center rounded-full bg-primary-500/25 text-primary-100 ring-1 ring-primary-300/25"
+                  animate={{ scale: [1, 1.08, 1], boxShadow: ['0 0 0 rgba(34,197,94,0)', '0 0 28px rgba(34,197,94,0.28)', '0 0 0 rgba(34,197,94,0)'] }}
                   transition={{ duration: 2.8, repeat: Infinity }}
                 >
                   <UserPlus className="h-6 w-6" />

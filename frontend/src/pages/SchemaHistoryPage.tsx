@@ -322,7 +322,7 @@ export default function SchemaHistoryPage() {
                   <DropdownTrigger className="min-w-[230px] justify-between">
                     {currentEndpoint?.method && (
                       <span className={`px-2 py-0.5 text-xs font-medium rounded border mr-2 ${
-                        currentEndpoint.method === 'GET' ? 'bg-blue-500/20 text-blue-400 border-blue-500/30' : 'bg-green-500/20 text-green-400 border-green-500/30'
+                        currentEndpoint.method === 'GET' ? 'bg-primary-500/20 text-primary-400 border-primary-500/30' : 'bg-green-500/20 text-green-400 border-green-500/30'
                       }`}>
                         {currentEndpoint.method}
                       </span>
@@ -382,7 +382,7 @@ export default function SchemaHistoryPage() {
                     >
                       <div className={`version-dot relative z-10 flex h-8 w-8 items-center justify-center rounded-full border-2 ${
                         selectedVersions.includes(version.id)
-                          ? 'version-dot-selected border-indigo-500'
+                          ? 'version-dot-selected border-primary-500'
                           : 'version-dot-idle border-white/20'
                       }`}>
                         <span className="text-xs font-semibold">v{version.version}</span>
@@ -395,7 +395,7 @@ export default function SchemaHistoryPage() {
                               checked={selectedVersions.includes(version.id)}
                               onChange={() => handleVersionSelect(version.id)}
                               disabled={!selectedVersions.includes(version.id) && selectedVersions.length >= 2}
-                              className="w-4 h-4 rounded border-white/20 bg-white/5 text-indigo-500"
+                              className="w-4 h-4 rounded border-white/20 bg-white/5 text-primary-500"
                             />
                             <span className="text-white font-medium">Version {version.version}</span>
                             {version.version === currentEndpoint?.currentSchemaVersion && <Badge severity="low">Current</Badge>}

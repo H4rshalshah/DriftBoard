@@ -87,12 +87,12 @@ export default function ResetPasswordPage() {
   return (
     <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden">
       <motion.div
-        className="fixed inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-indigo-500/10 via-transparent to-transparent"
+        className="fixed inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-primary-500/10 via-transparent to-transparent"
         animate={{
           background: [
-            'radial-gradient(ellipse_at_top,_var(--tw-gradient-stops)) from-indigo-500/10 via-transparent to-transparent',
-            'radial-gradient(ellipse_at_top,_var(--tw-gradient-stops)) from-purple-500/10 via-transparent to-transparent',
-            'radial-gradient(ellipse_at_top,_var(--tw-gradient-stops)) from-indigo-500/10 via-transparent to-transparent',
+            'radial-gradient(ellipse_at_top,_var(--tw-gradient-stops)) from-primary-500/10 via-transparent to-transparent',
+            'radial-gradient(ellipse_at_top,_var(--tw-gradient-stops)) from-primary-600/8 via-transparent to-transparent',
+            'radial-gradient(ellipse_at_top,_var(--tw-gradient-stops)) from-primary-500/10 via-transparent to-transparent',
           ],
         }}
         transition={{ duration: 8, repeat: Infinity }}
@@ -158,7 +158,7 @@ export default function ResetPasswordPage() {
 
               <div className="space-y-2">
                 <div className="flex items-center gap-2 mb-1">
-                  <Mail className="h-4 w-4 text-indigo-400" />
+                  <Mail className="h-4 w-4 text-primary-400" />
                   <label className="block text-sm font-medium text-white/80">Account Email</label>
                 </div>
                 <Input
@@ -172,7 +172,7 @@ export default function ResetPasswordPage() {
 
               <div className="space-y-2">
                 <div className="flex items-center gap-2 mb-1">
-                  <KeyRound className="h-4 w-4 text-indigo-400" />
+                  <KeyRound className="h-4 w-4 text-primary-400" />
                   <label className="block text-sm font-medium text-white/80">Reset Code</label>
                 </div>
                 <Input
@@ -186,7 +186,7 @@ export default function ResetPasswordPage() {
 
               <div className="space-y-2">
                 <div className="flex items-center gap-2 mb-1">
-                  <Lock className="h-4 w-4 text-indigo-400" />
+                  <Lock className="h-4 w-4 text-primary-400" />
                   <label className="block text-sm font-medium text-white/80">New Password</label>
                 </div>
                 <Input
@@ -200,7 +200,7 @@ export default function ResetPasswordPage() {
 
               <div className="space-y-2">
                 <div className="flex items-center gap-2 mb-1">
-                  <Lock className="h-4 w-4 text-indigo-400" />
+                  <Lock className="h-4 w-4 text-primary-400" />
                   <label className="block text-sm font-medium text-white/80">Confirm Password</label>
                 </div>
                 <Input
@@ -221,7 +221,7 @@ export default function ResetPasswordPage() {
           <div className="mt-6 text-center">
             <Link
               to="/login"
-              className="text-sm text-indigo-400 hover:text-indigo-300 transition-colors"
+              className="text-sm text-primary-400 hover:text-primary-300 transition-colors"
             >
               Back to sign in
             </Link>
