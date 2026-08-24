@@ -175,7 +175,7 @@ export default function InvitePage() {
 
   return (
     <div className="relative flex min-h-screen items-center justify-center overflow-hidden p-4">
-      <div className="absolute inset-0 bg-gradient-dark" />
+      <div className="absolute inset-0 bg-black" />
 
       <motion.div
         initial={{ opacity: 0, y: 18 }}

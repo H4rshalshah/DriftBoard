@@ -95,7 +95,7 @@ export function DemoVideo() {
 
         <motion.div
           variants={scrollItemVariants}
-          className="relative overflow-hidden rounded-xl border border-white/10 bg-slate-950/75 shadow-xl shadow-primary-500/10 backdrop-blur-xl md:rounded-2xl md:shadow-2xl md:shadow-primary-500/10"
+          className="relative overflow-hidden rounded-xl border border-white/10 bg-black/50 shadow-xl shadow-primary-500/10 backdrop-blur-xl md:rounded-2xl md:shadow-2xl md:shadow-primary-500/10"
         >
           <div className="flex items-center justify-between border-b border-white/10 px-4 py-3 md:px-5">
             <div className="flex items-center gap-2">

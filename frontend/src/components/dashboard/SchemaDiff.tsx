@@ -32,26 +32,14 @@ function parseDiffLines(oldContent: string, newContent: string): DiffSection[] {
     const newLine = newLines[j];
 
     if (oldLine === newLine) {
-      sections.push({
-        startLine: i + 1,
-        endLine: i + 1,
-        type: 'unchanged',
-      });
+      sections.push({ startLine: i + 1, endLine: i + 1, type: 'unchanged' });
       i++;
       j++;
     } else if (oldLine !== undefined && (newLine === undefined || oldLine !== newLine)) {
-      sections.push({
-        startLine: i + 1,
-        endLine: i + 1,
-        type: 'removed',
-      });
+      sections.push({ startLine: i + 1, endLine: i + 1, type: 'removed' });
       i++;
     } else {
-      sections.push({
-        startLine: j + 1,
-        endLine: j + 1,
-        type: 'added',
-      });
+      sections.push({ startLine: j + 1, endLine: j + 1, type: 'added' });
       j++;
     }
   }
@@ -105,42 +93,22 @@ export function SchemaDiff({
     },
   };
 
-  const getEditorTheme = (type: 'old' | 'new') => {
-    if (type === 'old') {
-      return {
-        base: 'vs-dark' as const,
-        inherit: true,
-        rules: [
-          { token: '', foreground: 'ffffff', background: '0D0D0D' },
-          { token: 'comment', foreground: '6a9955' },
-          { token: 'string', foreground: 'ce9178' },
-          { token: 'number', foreground: 'b5cea8' },
-          { token: 'keyword', foreground: '569cd6' },
-        ],
-        colors: {
-          'editor.background': '#0D0D0D',
-          'editor.foreground': '#ffffff',
-          'editor.lineHighlightBackground': '#151515',
-        },
-      };
-    }
-    return {
-      base: 'vs-dark' as const,
-      inherit: true,
-      rules: [
-        { token: '', foreground: 'ffffff', background: '0D0D0D' },
-        { token: 'comment', foreground: '6a9955' },
-        { token: 'string', foreground: 'ce9178' },
-        { token: 'number', foreground: 'b5cea8' },
-        { token: 'keyword', foreground: '569cd6' },
-      ],
-      colors: {
-        'editor.background': '#090909',
-        'editor.foreground': '#ffffff',
-        'editor.lineHighlightBackground': '#111111',
-      },
-    };
-  };
+  const getEditorTheme = (type: 'old' | 'new') => ({
+    base: 'vs-dark' as const,
+    inherit: true,
+    rules: [
+      { token: '', foreground: 'e0e0e0', background: '000000' },
+      { token: 'comment', foreground: '6a9955' },
+      { token: 'string', foreground: 'ce9178' },
+      { token: 'number', foreground: 'b5cea8' },
+      { token: 'keyword', foreground: '569cd6' },
+    ],
+    colors: {
+      'editor.background': type === 'old' ? '#000000' : '#050505',
+      'editor.foreground': '#e0e0e0',
+      'editor.lineHighlightBackground': '#0a0a0a',
+    },
+  });
 
   const diffSections = parseDiffLines(oldSchema, newSchema);
   const groupedSections: { type: 'added' | 'removed' | 'unchanged'; lines: number[] }[] = [];
@@ -157,16 +125,16 @@ export function SchemaDiff({
   if (currentGroup) groupedSections.push(currentGroup);
 
   return (
-    <div className={cn('rounded-xl border border-[#202020] bg-[#0D0D0D] overflow-hidden', className)}>
-      <div className="flex items-center justify-between p-3 border-b border-[#202020]">
+    <div className={cn('rounded-xl border border-white/[0.06] bg-black overflow-hidden', className)}>
+      <div className="flex items-center justify-between p-3 border-b border-white/[0.06]">
         <div className="flex items-center gap-2">
           <button
             onClick={() => setActiveSide('old')}
             className={cn(
               'px-3 py-1.5 text-sm rounded-lg transition-colors',
               activeSide === 'old'
-                ? 'bg-primary-500/20 text-primary-400'
-                : 'text-white/50 hover:text-white/80'
+                ? 'bg-primary-500/12 text-primary-400'
+                : 'text-white/40 hover:text-white/70'
             )}
           >
             {oldLabel}
@@ -176,8 +144,8 @@ export function SchemaDiff({
             className={cn(
               'px-3 py-1.5 text-sm rounded-lg transition-colors',
               activeSide === 'new'
-                ? 'bg-primary-500/20 text-primary-400'
-                : 'text-white/50 hover:text-white/80'
+                ? 'bg-primary-500/12 text-primary-400'
+                : 'text-white/40 hover:text-white/70'
             )}
           >
             {newLabel}
@@ -210,9 +178,9 @@ export function SchemaDiff({
         </AnimatePresence>
       </div>
 
-      <div className="border-t border-[#202020]">
+      <div className="border-t border-white/[0.06]">
         <div className="p-3">
-          <p className="text-xs text-white/50 mb-2">Changes Summary</p>
+          <p className="text-xs text-white/40 mb-2">Changes Summary</p>
           <div className="flex flex-wrap gap-2">
             {groupedSections.map((group, idx) => {
               const isExpanded = expandedSections.has(idx);
@@ -222,9 +190,9 @@ export function SchemaDiff({
                     onClick={() => toggleSection(idx)}
                     className={cn(
                       'flex items-center gap-1 px-2 py-1 rounded text-xs',
-                      group.type === 'added' && 'bg-primary-500/10 text-primary-400',
-                      group.type === 'removed' && 'bg-red-500/10 text-red-400',
-                      group.type === 'unchanged' && 'bg-white/5 text-white/50'
+                      group.type === 'added' && 'bg-primary-500/8 text-primary-400',
+                      group.type === 'removed' && 'bg-red-500/8 text-red-400',
+                      group.type === 'unchanged' && 'bg-white/5 text-white/40'
                     )}
                   >
                     {isExpanded ? (

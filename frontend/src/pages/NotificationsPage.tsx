@@ -216,7 +216,7 @@ export default function NotificationsPage() {
             Clean history
           </Button>
           {cleanupOpen && (
-            <div className="absolute right-0 z-20 mt-2 w-56 overflow-hidden rounded-lg border border-white/10 bg-slate-950 shadow-xl">
+            <div className="absolute right-0 z-20 mt-2 w-56 overflow-hidden rounded-lg border border-white/10 bg-black shadow-xl">
               {[
                 { label: 'Older than 24 hours', hours: 24 as const },
                 { label: 'Older than 7 days', hours: 168 as const },

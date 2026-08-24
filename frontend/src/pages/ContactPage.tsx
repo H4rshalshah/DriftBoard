@@ -277,7 +277,7 @@ export default function ContactPage() {
                   className="min-h-[44px] w-full rounded-lg border border-white/10 bg-white/5 px-4 py-2 text-sm text-white outline-none transition-all duration-200 focus:border-white/30 focus:ring-2 focus:ring-white/10"
                 >
                   {subjectOptions.map((option) => (
-                    <option key={option.value} value={option.value} className="bg-slate-950 text-white">
+                    <option key={option.value} value={option.value} className="bg-black text-white">
                       {option.label}
                     </option>
                   ))}
@@ -378,7 +378,7 @@ export default function ContactPage() {
   if (isAppRoute) return page;
 
   return (
-    <div className="min-h-screen bg-gradient-dark px-4 py-6 sm:px-6 sm:py-10">
+    <div className="min-h-screen bg-black px-4 py-6 sm:px-6 sm:py-10">
       {page}
     </div>
   );

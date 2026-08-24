@@ -10,12 +10,12 @@ const containerVariants = {
   hidden: { opacity: 0 },
   visible: {
     opacity: 1,
-    transition: { staggerChildren: 0.1 },
+    transition: { staggerChildren: 0.08 },
   },
 };
 
 const itemVariants = {
-  hidden: { opacity: 0, y: 20 },
+  hidden: { opacity: 0, y: 16 },
   visible: { opacity: 1, y: 0 },
 };
 
@@ -113,17 +113,17 @@ export default function RegisterPage() {
   const displayError = localError || error;
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden">
+    <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden bg-black">
       <motion.div
-        className="fixed inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-primary-500/10 via-transparent to-transparent"
+        className="fixed inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-primary-500/5 via-transparent to-transparent"
         animate={{
           background: [
-            'radial-gradient(ellipse_at_top,_var(--tw-gradient-stops)) from-primary-500/10 via-transparent to-transparent',
-            'radial-gradient(ellipse_at_top,_var(--tw-gradient-stops)) from-primary-600/8 via-transparent to-transparent',
-            'radial-gradient(ellipse_at_top,_var(--tw-gradient-stops)) from-primary-500/10 via-transparent to-transparent',
+            'radial-gradient(ellipse_at_top,_var(--tw-gradient-stops)) from-primary-500/5 via-transparent to-transparent',
+            'radial-gradient(ellipse_at_top,_var(--tw-gradient-stops)) from-primary-600/3 via-transparent to-transparent',
+            'radial-gradient(ellipse_at_top,_var(--tw-gradient-stops)) from-primary-500/5 via-transparent to-transparent',
           ],
         }}
-        transition={{ duration: 8, repeat: Infinity }}
+        transition={{ duration: 10, repeat: Infinity }}
       />
 
       <motion.div
@@ -137,19 +137,19 @@ export default function RegisterPage() {
             <DriftBoardLogo />
           </Link>
           <h1 className="text-3xl font-bold text-white mb-2">Create an account</h1>
-          <p className="text-white/60">Start monitoring your APIs today</p>
+          <p className="text-white/40">Start monitoring your APIs today</p>
         </motion.div>
 
         <motion.div
           variants={itemVariants}
-          className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-8"
+          className="bg-white/[0.03] backdrop-blur-xl border border-white/[0.06] rounded-2xl p-8"
         >
-          <form onSubmit={handleSubmit} className="space-y-5">
+          <form onSubmit={handleSubmit} className="space-y-4">
             {displayError && (
               <motion.div
-                initial={{ opacity: 0, y: -10 }}
+                initial={{ opacity: 0, y: -8 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-red-400 text-sm"
+                className="p-3 bg-red-500/8 border border-red-500/15 rounded-lg text-red-400 text-sm"
               >
                 {displayError}
               </motion.div>
@@ -197,7 +197,7 @@ export default function RegisterPage() {
               {password.length > 0 && (
                 <div className="mt-3 space-y-2">
                   <div className="flex items-center gap-2">
-                    <div className="flex-1 h-1.5 bg-white/10 rounded-full overflow-hidden">
+                    <div className="flex-1 h-1 bg-white/5 rounded-full overflow-hidden">
                       <motion.div
                         className={`h-full ${passwordStrength.color}`}
                         initial={{ width: 0 }}
@@ -205,17 +205,17 @@ export default function RegisterPage() {
                         transition={{ duration: 0.3 }}
                       />
                     </div>
-                    <span className="text-xs text-white/60">{passwordStrength.label}</span>
+                    <span className="text-xs text-white/40">{passwordStrength.label}</span>
                   </div>
                   <div className="grid grid-cols-2 gap-2">
                     {passwordRequirements.map((req) => (
                       <div
                         key={req.label}
                         className={`text-xs flex items-center gap-1 ${
-                          req.test(password) ? 'text-green-400' : 'text-white/40'
+                          req.test(password) ? 'text-primary-400' : 'text-white/25'
                         }`}
                       >
-                        <span className={req.test(password) ? 'text-green-400' : 'text-white/40'}>
+                        <span className={req.test(password) ? 'text-primary-400' : 'text-white/25'}>
                           {req.test(password) ? 'OK' : '-'}
                         </span>
                         {req.label}
@@ -241,9 +241,9 @@ export default function RegisterPage() {
                 type="checkbox"
                 checked={acceptTerms}
                 onChange={(e) => setAcceptTerms(e.target.checked)}
-                className="mt-1 w-4 h-4 rounded border-white/20 bg-white/5 text-primary-500 focus:ring-primary-500/20"
+                className="mt-1 w-4 h-4 rounded border-white/15 bg-white/5 text-primary-500 focus:ring-primary-500/15"
               />
-              <span className="text-sm text-white/60">
+              <span className="text-sm text-white/45">
                 I agree to the{' '}
                 <button type="button" className="text-primary-400 hover:text-primary-300">
                   Terms of Service
@@ -260,10 +260,10 @@ export default function RegisterPage() {
             </Button>
           </form>
 
-          <div className="my-6 flex items-center gap-4 text-sm">
-            <div className="h-px flex-1 bg-white/10" />
-            <span className="text-white/40">Or continue with</span>
-            <div className="h-px flex-1 bg-white/10" />
+          <div className="my-5 flex items-center gap-4 text-sm">
+            <div className="h-px flex-1 bg-white/8" />
+            <span className="text-white/25">Or continue with</span>
+            <div className="h-px flex-1 bg-white/8" />
           </div>
 
           <div className="grid grid-cols-2 gap-3">
@@ -288,7 +288,7 @@ export default function RegisterPage() {
           </div>
         </motion.div>
 
-        <motion.p variants={itemVariants} className="text-center mt-6 text-white/60">
+        <motion.p variants={itemVariants} className="text-center mt-6 text-white/40">
           Already have an account?{' '}
           <Link to="/login" className="text-primary-400 hover:text-primary-300 transition-colors">
             Sign in

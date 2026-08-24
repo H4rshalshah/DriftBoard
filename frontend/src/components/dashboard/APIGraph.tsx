@@ -36,17 +36,17 @@ function EndpointNode({ data }: { data: { endpoint: Endpoint } }) {
   return (
     <div
       className={cn(
-        'px-4 py-3 rounded-xl border-2 min-w-[180px] transition-all',
+        'px-4 py-3 rounded-xl border min-w-[180px] transition-all',
         hasDrift
-          ? 'bg-orange-500/10 border-orange-500/50 shadow-lg shadow-orange-500/20'
-          : 'bg-[#0D0D0D] border-[#2A2A2A]'
+          ? 'bg-orange-500/8 border-orange-500/30'
+          : 'bg-[#0a0a0a] border-white/[0.08]'
       )}
     >
       <div className="flex items-center gap-2 mb-2">
         <div
-          className="px-2 py-0.5 text-xs font-bold rounded"
+          className="px-2 py-0.5 text-[11px] font-bold rounded"
           style={{
-            backgroundColor: `${methodColors[data.endpoint.method]}20`,
+            backgroundColor: `${methodColors[data.endpoint.method]}15`,
             color: methodColors[data.endpoint.method],
           }}
         >
@@ -58,15 +58,15 @@ function EndpointNode({ data }: { data: { endpoint: Endpoint } }) {
           <CheckCircle className="w-4 h-4 text-primary-400" />
         )}
       </div>
-      <p className="text-sm font-medium text-white truncate mb-1">
+      <p className="text-sm font-medium text-white/80 truncate mb-1">
         {data.endpoint.name}
       </p>
-      <p className="text-xs text-white/50 font-mono truncate">
+      <p className="text-xs text-white/40 font-mono truncate">
         {data.endpoint.url}
       </p>
-      <div className="flex items-center gap-1 mt-2 pt-2 border-t border-[#202020]">
-        <Clock className="w-3 h-3 text-white/30" />
-        <span className="text-[10px] text-white/40">
+      <div className="flex items-center gap-1 mt-2 pt-2 border-t border-white/[0.06]">
+        <Clock className="w-3 h-3 text-white/25" />
+        <span className="text-[10px] text-white/30">
           v{data.endpoint.currentSchemaVersion}
         </span>
       </div>
@@ -117,10 +117,10 @@ export function APIGraph({ endpoints, onNodeClick, className }: APIGraphProps) {
           target: targetId,
           type: 'smoothstep',
           animated: true,
-          style: { stroke: 'rgba(34, 197, 94, 0.35)', strokeWidth: 2 },
+          style: { stroke: 'rgba(34, 197, 94, 0.25)', strokeWidth: 1.5 },
           markerEnd: {
             type: MarkerType.ArrowClosed,
-            color: 'rgba(34, 197, 94, 0.35)',
+            color: 'rgba(34, 197, 94, 0.25)',
           },
         });
       });
@@ -143,7 +143,7 @@ export function APIGraph({ endpoints, onNodeClick, className }: APIGraphProps) {
   );
 
   return (
-    <div className={cn('rounded-xl border border-[#202020] bg-[#050505] overflow-hidden', className)}>
+    <div className={cn('rounded-xl border border-white/[0.06] bg-black overflow-hidden', className)}>
       <ReactFlow
         nodes={nodes}
         edges={edges}
@@ -160,20 +160,20 @@ export function APIGraph({ endpoints, onNodeClick, className }: APIGraphProps) {
           animated: true,
         }}
       >
-        <Background color="rgba(255,255,255,0.04)" gap={20} size={1} />
+        <Background color="rgba(255,255,255,0.03)" gap={20} size={1} />
         <Controls
           showZoom
           showFitView
           showInteractive={false}
-          className="!bg-white/10 !border-white/20 !rounded-lg"
+          className="!bg-[#0a0a0a] !border-white/[0.08] !rounded-lg"
         />
         <MiniMap
           nodeColor={(node) => {
             const endpoint = node.data?.endpoint as Endpoint | undefined;
             return endpoint?.lastDriftAt ? '#f97316' : '#22c55e';
           }}
-          maskColor="rgba(0,0,0,0.8)"
-          className="!bg-white/5 !border-white/20 !rounded-lg"
+          maskColor="rgba(0,0,0,0.85)"
+          className="!bg-white/[0.03] !border-white/[0.08] !rounded-lg"
         />
       </ReactFlow>
     </div>

@@ -30,7 +30,7 @@ const backdropVariants = {
 };
 
 const modalVariants = {
-  hidden: { opacity: 0, scale: 0.95, y: 20 },
+  hidden: { opacity: 0, scale: 0.97, y: 12 },
   visible: { opacity: 1, scale: 1, y: 0 },
 };
 
@@ -77,7 +77,7 @@ export function Modal({
             animate="visible"
             exit="hidden"
             variants={backdropVariants}
-            transition={{ duration: 0.2 }}
+            transition={{ duration: 0.15 }}
             className="modal-backdrop absolute inset-0 bg-black/70 backdrop-blur-sm"
             onClick={closeOnBackdrop ? onClose : undefined}
           />
@@ -86,9 +86,9 @@ export function Modal({
             animate="visible"
             exit="hidden"
             variants={modalVariants}
-            transition={{ duration: 0.2, ease: 'easeOut' }}
+            transition={{ duration: 0.15, ease: 'easeOut' }}
             className={cn(
-              'modal-surface relative flex max-h-[calc(100vh-2.5rem)] w-full flex-col overflow-hidden rounded-xl border border-[#252525] shadow-2xl backdrop-blur-xl sm:max-h-[calc(100vh-4rem)]',
+              'modal-surface relative flex max-h-[calc(100vh-2.5rem)] w-full flex-col overflow-hidden rounded-xl border border-white/[0.06] shadow-2xl backdrop-blur-xl sm:max-h-[calc(100vh-4rem)]',
               sizeStyles[size],
               className
             )}
@@ -97,9 +97,9 @@ export function Modal({
             {showCloseButton && (
               <button
                 onClick={onClose}
-                className="absolute top-4 right-4 p-1 rounded-lg text-white/40 hover:text-white hover:bg-white/10 transition-colors"
+                className="absolute top-4 right-4 p-1.5 rounded-lg text-white/30 hover:text-white/70 hover:bg-white/5 transition-colors"
               >
-                <X className="w-5 h-5" />
+                <X className="w-4 h-4" />
               </button>
             )}
             {children}
@@ -142,7 +142,7 @@ interface ModalFooterProps extends HTMLAttributes<HTMLDivElement> {
 export function ModalFooter({ className, children, ...props }: ModalFooterProps) {
   return (
     <div
-      className={cn('shrink-0 border-t border-[#202020] px-6 py-5 sm:px-8 flex justify-end gap-4', className)}
+      className={cn('shrink-0 border-t border-white/[0.06] px-6 py-5 sm:px-8 flex justify-end gap-4', className)}
       {...props}
     >
       {children}

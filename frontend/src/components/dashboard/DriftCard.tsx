@@ -43,14 +43,14 @@ export function DriftCard({ event, onAcknowledge, onClick, className }: DriftCar
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 10 }}
+      initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
-      whileHover={{ scale: 1.01 }}
+      whileHover={{ scale: 1.005 }}
       onClick={() => onClick?.(event)}
       className={cn(
-        'bg-[#0D0D0D] backdrop-blur-md border border-[#202020] rounded-xl',
-        'border-l-4 cursor-pointer transition-all duration-300',
-        'hover:border-primary-500/30 hover:shadow-lg hover:shadow-primary-500/5',
+        'bg-[#0a0a0a] border border-white/[0.06] rounded-xl',
+        'border-l-4 cursor-pointer transition-all duration-200',
+        'hover:border-white/[0.1]',
         severityColors[event.severity],
         className
       )}
@@ -61,20 +61,20 @@ export function DriftCard({ event, onAcknowledge, onClick, className }: DriftCar
             <div className="flex items-center gap-2 mb-2">
               <span
                 className={cn(
-                  'px-2 py-0.5 text-xs font-medium rounded-md',
+                  'px-2 py-0.5 text-[11px] font-medium rounded-md',
                   severityBgColors[event.severity]
                 )}
               >
                 {event.severity.toUpperCase()}
               </span>
-              <span className="px-2 py-0.5 text-xs font-medium rounded-md bg-white/10 text-white/80">
+              <span className="px-2 py-0.5 text-[11px] font-medium rounded-md bg-white/5 text-white/60">
                 {event.endpointName}
               </span>
             </div>
-            <p className="text-sm text-white/70 mb-1 truncate">
+            <p className="text-sm text-white/60 mb-1 truncate">
               {event.message || `Detected drift on ${event.endpointName}`}
             </p>
-            <p className="text-xs text-white/40">
+            <p className="text-xs text-white/30">
               {formatDistanceToNow(new Date(event.detectedAt), { addSuffix: true })}
             </p>
           </div>
@@ -89,11 +89,11 @@ export function DriftCard({ event, onAcknowledge, onClick, className }: DriftCar
                 Ack
               </Button>
             )}
-            <ChevronRight className="w-4 h-4 text-white/40" />
+            <ChevronRight className="w-4 h-4 text-white/30" />
           </div>
         </div>
 
-        <div className="flex items-center gap-4 mt-4 pt-3 border-t border-[#202020]">
+        <div className="flex items-center gap-4 mt-4 pt-3 border-t border-white/[0.06]">
           <div className="flex items-center gap-1.5 text-xs text-primary-400">
             <Plus className="w-3 h-3" />
             <span>{addedCount}</span>
@@ -107,7 +107,7 @@ export function DriftCard({ event, onAcknowledge, onClick, className }: DriftCar
             <span>{modifiedCount}</span>
           </div>
           {event.acknowledgedAt && (
-            <div className="flex items-center gap-1.5 text-xs text-white/50 ml-auto">
+            <div className="flex items-center gap-1.5 text-xs text-white/35 ml-auto">
               <Check className="w-3 h-3" />
               <span>Acknowledged</span>
             </div>

@@ -32,7 +32,7 @@ export function Skeleton({
           <div
             key={i}
             className={cn(
-              'h-4 bg-white/10 rounded relative overflow-hidden',
+              'h-4 bg-white/[0.04] rounded relative overflow-hidden',
               i === lines - 1 && 'w-3/4',
               className
             )}
@@ -49,7 +49,7 @@ export function Skeleton({
   return (
     <div
       className={cn(
-        'bg-white/10 relative overflow-hidden',
+        'bg-white/[0.04] relative overflow-hidden',
         variantStyles[variant],
         className
       )}
@@ -65,12 +65,12 @@ function SkeletonCard({ className, ...props }: HTMLAttributes<HTMLDivElement>) {
   return (
     <div
       className={cn(
-        'bg-white/5 border border-white/10 rounded-xl p-4',
+        'bg-white/[0.03] border border-white/[0.06] rounded-xl p-4',
         className
       )}
       {...props}
     >
-      <Skeleton variant="text" height={24} width="60%" className="mb-4" />
+      <Skeleton variant="text" height={20} width="60%" className="mb-4" />
       <Skeleton variant="text" lines={3} />
     </div>
   );

@@ -15,7 +15,7 @@ interface InputProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 'size'>
 
 const sizeStyles = {
   sm: 'px-3 py-1.5 text-sm',
-  md: 'px-4 py-2 text-sm',
+  md: 'px-4 py-2.5 text-sm',
   lg: 'px-4 py-3 text-base',
 };
 
@@ -48,17 +48,17 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
         {label && (
           <label
             htmlFor={inputId}
-            className="block text-sm font-medium text-white/80 mb-1.5"
+            className="block text-sm font-medium text-white/70 mb-1.5"
           >
             {label}
           </label>
         )}
         <div className="relative">
           {isSearch && !leftIcon && (
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40 pointer-events-none" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30 pointer-events-none" />
           )}
           {leftIcon && (
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-white/40">
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-white/30">
               {leftIcon}
             </span>
           )}
@@ -67,14 +67,14 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
             id={inputId}
             type={inputType}
             className={cn(
-              'w-full bg-white/5 border border-[#242424] rounded-lg text-white placeholder:text-white/30',
-              'focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/15',
+              'w-full bg-white/[0.03] border border-white/[0.08] rounded-lg text-white placeholder:text-white/25',
+              'focus:outline-none focus:border-primary-500/40 focus:ring-1 focus:ring-primary-500/10',
               'transition-all duration-200',
               sizeStyles[size],
               leftIcon && 'pl-10',
               (rightIcon || type === 'password') && 'pr-10',
               isSearch && 'pl-10',
-              error && 'border-red-500/50 focus:border-red-500/50 focus:ring-red-500/20',
+              error && 'border-red-500/40 focus:border-red-500/40 focus:ring-red-500/15',
               className
             )}
             {...props}
@@ -83,13 +83,13 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-white/40 hover:text-white/70 transition-colors"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/60 transition-colors"
             >
               {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
             </button>
           )}
           {rightIcon && type !== 'password' && (
-            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-white/40">
+            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-white/30">
               {rightIcon}
             </span>
           )}

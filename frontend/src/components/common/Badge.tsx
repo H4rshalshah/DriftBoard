@@ -13,15 +13,15 @@ interface BadgeProps extends HTMLAttributes<HTMLSpanElement> {
 }
 
 const severityStyles: Record<BadgeSeverity, string> = {
-  low: 'badge-severity-low bg-primary-500/20 text-primary-300 border-primary-500/30',
-  medium: 'badge-severity-medium bg-yellow-500/20 text-yellow-300 border-yellow-500/30',
-  breaking: 'badge-severity-breaking bg-red-500/20 text-red-300 border-red-500/30',
+  low: 'badge-severity-low bg-primary-500/12 text-primary-400 border-primary-500/20',
+  medium: 'badge-severity-medium bg-yellow-500/12 text-yellow-400 border-yellow-500/20',
+  breaking: 'badge-severity-breaking bg-red-500/12 text-red-400 border-red-500/20',
 };
 
 const statusStyles: Record<BadgeStatus, string> = {
-  active: 'badge-status-active bg-primary-500/20 text-primary-300 border-primary-500/30',
-  deprecated: 'badge-status-deprecated bg-orange-500/20 text-orange-300 border-orange-500/30',
-  inactive: 'badge-status-inactive bg-gray-500/20 text-gray-300 border-gray-500/30',
+  active: 'badge-status-active bg-primary-500/12 text-primary-400 border-primary-500/20',
+  deprecated: 'badge-status-deprecated bg-orange-500/12 text-orange-400 border-orange-500/20',
+  inactive: 'badge-status-inactive bg-white/8 text-white/50 border-white/10',
 };
 
 const dotColors: Record<BadgeSeverity | BadgeStatus, string> = {
@@ -30,7 +30,7 @@ const dotColors: Record<BadgeSeverity | BadgeStatus, string> = {
   breaking: 'bg-red-400',
   active: 'bg-primary-400',
   deprecated: 'bg-orange-400',
-  inactive: 'bg-gray-400',
+  inactive: 'bg-white/30',
 };
 
 export function Badge({
@@ -50,7 +50,7 @@ export function Badge({
   return (
     <span
       className={cn(
-        'inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-full border',
+        'inline-flex items-center gap-1.5 px-2 py-0.5 text-[11px] font-medium rounded-full border',
         getVariantClass(),
         className
       )}

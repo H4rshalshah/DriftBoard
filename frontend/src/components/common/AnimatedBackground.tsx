@@ -12,24 +12,24 @@ export function AnimatedBackground({ intensity = 'app', className }: AnimatedBac
       <div className="absolute inset-0 animated-grid" />
       <motion.div
         className={cn(
-          'absolute left-1/2 top-[-18rem] h-[42rem] w-[42rem] -translate-x-1/2 rounded-full blur-3xl',
+          'absolute left-1/2 top-[-16rem] h-[38rem] w-[38rem] -translate-x-1/2 rounded-full blur-3xl',
           intensity === 'hero' ? 'drift-orb-primary-hero' : 'drift-orb-primary'
         )}
-        animate={{ x: [-80, 80, -80], y: [0, 70, 0], scale: [1, 1.15, 1] }}
-        transition={{ duration: 18, repeat: Infinity, ease: 'easeInOut' }}
+        animate={{ x: [-60, 60, -60], y: [0, 50, 0], scale: [1, 1.1, 1] }}
+        transition={{ duration: 20, repeat: Infinity, ease: 'easeInOut' }}
       />
       <motion.div
         className={cn(
-          'absolute bottom-[-18rem] left-[-10rem] h-[36rem] w-[36rem] rounded-full blur-3xl',
+          'absolute bottom-[-16rem] left-[-8rem] h-[32rem] w-[32rem] rounded-full blur-3xl',
           intensity === 'hero' ? 'drift-orb-secondary-hero' : 'drift-orb-secondary'
         )}
-        animate={{ x: [0, 90, 0], y: [30, -50, 30], scale: [1, 1.12, 1] }}
-        transition={{ duration: 22, repeat: Infinity, ease: 'easeInOut' }}
+        animate={{ x: [0, 70, 0], y: [20, -40, 20], scale: [1, 1.08, 1] }}
+        transition={{ duration: 24, repeat: Infinity, ease: 'easeInOut' }}
       />
       <motion.div
-        className="drift-orb-accent absolute bottom-[8%] right-[-8rem] h-[26rem] w-[26rem] rounded-full blur-3xl"
-        animate={{ x: [40, -80, 40], y: [0, -60, 0], opacity: [0.45, 0.8, 0.45] }}
-        transition={{ duration: 20, repeat: Infinity, ease: 'easeInOut' }}
+        className="drift-orb-accent absolute bottom-[8%] right-[-6rem] h-[24rem] w-[24rem] rounded-full blur-3xl"
+        animate={{ x: [30, -60, 30], y: [0, -40, 0], opacity: [0.3, 0.6, 0.3] }}
+        transition={{ duration: 22, repeat: Infinity, ease: 'easeInOut' }}
       />
     </div>
   );

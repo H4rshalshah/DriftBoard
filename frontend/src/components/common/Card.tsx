@@ -11,10 +11,9 @@ interface CardProps extends Omit<HTMLMotionProps<'div'>, 'className'> {
 }
 
 const variantStyles: Record<CardVariant, string> = {
-  default: 'bg-[#0D0D0D] backdrop-blur-md border border-[#202020]',
-  elevated:
-    'bg-[#111111] backdrop-blur-lg border border-[#202020] shadow-xl shadow-black/20',
-  outlined: 'bg-transparent border border-[#2A2A2A]',
+  default: 'bg-[#0a0a0a] border border-white/[0.06]',
+  elevated: 'bg-[#0f0f0f] border border-white/[0.08] shadow-xl shadow-black/30',
+  outlined: 'bg-transparent border border-white/10',
 };
 
 export const Card = forwardRef<HTMLDivElement, CardProps>(
@@ -22,13 +21,13 @@ export const Card = forwardRef<HTMLDivElement, CardProps>(
     return (
       <motion.div
         ref={ref}
-        initial={{ opacity: 0, y: 10 }}
+        initial={{ opacity: 0, y: 6 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3 }}
+        transition={{ duration: 0.25 }}
         className={cn(
-          'rounded-xl p-4 transition-all duration-300',
+          'rounded-xl p-4 transition-all duration-200',
           variantStyles[variant],
-          'hover:-translate-y-0.5 hover:border-primary-500/30 hover:shadow-lg hover:shadow-primary-500/5',
+          'hover:border-white/[0.1]',
           'hover:[&_img]:scale-105',
           className
         )}
@@ -50,7 +49,7 @@ export const CardHeader = forwardRef<HTMLDivElement, CardHeaderProps>(
   ({ className, children, ...props }, ref) => (
     <div
       ref={ref}
-      className={cn('pb-3 border-b border-[#202020] mb-4', className)}
+      className={cn('pb-3 border-b border-white/[0.06] mb-4', className)}
       {...props}
     >
       {children}
@@ -68,7 +67,7 @@ export const CardTitle = forwardRef<HTMLHeadingElement, CardTitleProps>(
   ({ className, children, ...props }, ref) => (
     <h3
       ref={ref}
-      className={cn('text-lg font-semibold text-[#F5F5F5]', className)}
+      className={cn('text-base font-semibold text-white', className)}
       {...props}
     >
       {children}

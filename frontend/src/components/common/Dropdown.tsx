@@ -100,12 +100,12 @@ export function Dropdown({ trigger, items, className, align = 'end' }: DropdownP
           {isOpen && (
           <motion.ul
             ref={dropdownRef}
-            initial={{ opacity: 0, y: -8, scale: 0.96 }}
+            initial={{ opacity: 0, y: -6, scale: 0.97 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -8, scale: 0.96 }}
-            transition={{ duration: 0.15 }}
+            exit={{ opacity: 0, y: -6, scale: 0.97 }}
+            transition={{ duration: 0.12 }}
             className={cn(
-              'fixed z-[9999] py-1 bg-[#0D0D0D]/95 backdrop-blur-xl border border-[#202020] rounded-lg shadow-2xl shadow-black/30'
+              'fixed z-[9999] py-1 bg-[#0a0a0a]/95 backdrop-blur-xl border border-white/[0.06] rounded-lg shadow-2xl shadow-black/40'
             )}
             style={{
               top: position.top,
@@ -116,7 +116,7 @@ export function Dropdown({ trigger, items, className, align = 'end' }: DropdownP
           >
             {items.map((item, index) =>
               item.divider ? (
-                <li key={`divider-${index}`} className="my-1 border-t border-[#202020]" />
+                <li key={`divider-${index}`} className="my-1 border-t border-white/[0.06]" />
               ) : (
                 <li key={item.value || index}>
                   <button
@@ -126,9 +126,9 @@ export function Dropdown({ trigger, items, className, align = 'end' }: DropdownP
                     }}
                     disabled={item.disabled}
                     className={cn(
-                      'w-full flex items-center gap-2 px-3 py-2 text-sm text-white/70 hover:text-white hover:bg-white/5 transition-colors',
+                      'w-full flex items-center gap-2 px-3 py-2 text-sm text-white/60 hover:text-white hover:bg-white/5 transition-colors',
                       'focus:outline-none focus:bg-white/5',
-                      'disabled:opacity-50 disabled:cursor-not-allowed'
+                      'disabled:opacity-40 disabled:cursor-not-allowed'
                     )}
                   >
                     {item.icon && <span className="w-4 h-4">{item.icon}</span>}
@@ -160,8 +160,8 @@ export function DropdownTrigger({
   return (
     <button
       className={cn(
-        'inline-flex h-10 items-center gap-2 px-3 py-2 text-sm text-white/70 bg-white/5 border border-[#242424] rounded-lg',
-        'hover:-translate-y-0.5 hover:bg-white/10 hover:border-[#2A2A2A] transition-all',
+        'inline-flex h-10 items-center gap-2 px-3 py-2 text-sm text-white/60 bg-white/[0.03] border border-white/[0.08] rounded-lg',
+        'hover:bg-white/5 hover:border-white/10 transition-all',
         className
       )}
       {...props}

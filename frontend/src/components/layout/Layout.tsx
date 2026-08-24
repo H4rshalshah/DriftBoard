@@ -13,14 +13,14 @@ function cn(...inputs: (string | undefined | null | false)[]) {
 }
 
 const pageVariants = {
-  initial: { opacity: 0, y: 16 },
+  initial: { opacity: 0, y: 12 },
   animate: { opacity: 1, y: 0 },
-  exit: { opacity: 0, y: -8 },
+  exit: { opacity: 0, y: -6 },
 };
 
 const pageTransition = {
-  duration: 0.3,
-  ease: [0.22, 1, 0.36, 1], // Custom cubic-bezier for smooth feel
+  duration: 0.25,
+  ease: [0.22, 1, 0.36, 1],
 };
 
 export default function Layout() {
@@ -45,13 +45,12 @@ export default function Layout() {
     }
   }, [isMobile, setSidebarOpen]);
 
-  // Scroll to top on route change within layout
   useEffect(() => {
     mainRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
   }, [location.pathname]);
 
   return (
-    <div className="app-shell relative min-h-screen bg-gradient-dark">
+    <div className="app-shell relative min-h-screen">
       <AnimatedBackground />
       <Sidebar />
 
@@ -61,7 +60,7 @@ export default function Layout() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.2 }}
+            transition={{ duration: 0.15 }}
             className="fixed inset-0 z-30 bg-black/60 backdrop-blur-sm lg:hidden"
             onClick={() => setSidebarOpen(false)}
           />
@@ -78,9 +77,9 @@ export default function Layout() {
 
         <motion.main
           ref={mainRef}
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -20 }}
+          exit={{ opacity: 0, y: -16 }}
           transition={pageTransition}
           className="min-h-[calc(100vh-4rem)] pt-16 overflow-y-auto"
           style={{ scrollBehavior: 'smooth' }}

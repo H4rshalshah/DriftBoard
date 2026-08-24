@@ -13,18 +13,18 @@ export function LiveIndicator({ isConnected = false, label, className }: LiveInd
     <div
       className={cn(
         'inline-flex items-center gap-2 px-3 py-1.5 rounded-full',
-        'bg-white/5 border border-white/10 backdrop-blur-md',
+        'bg-white/[0.03] border border-white/[0.06]',
         className
       )}
     >
       {isConnected ? (
         <>
           <motion.div
-            animate={{ scale: [1, 1.2, 1] }}
+            animate={{ scale: [1, 1.15, 1] }}
             transition={{ repeat: Infinity, duration: 2 }}
             className="relative"
           >
-            <span className="absolute inset-0 bg-green-400 rounded-full animate-ping opacity-75" />
+            <span className="absolute inset-0 bg-green-400 rounded-full animate-ping opacity-60" />
             <span className="relative w-2 h-2 bg-green-400 rounded-full" />
           </motion.div>
           <span className="text-xs font-medium text-green-400 flex items-center gap-1">

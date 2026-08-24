@@ -33,7 +33,7 @@ export function StatsCard({
 }: StatsCardProps) {
   const renderedIcon = isValidElement(icon)
     ? icon
-    : createElement(icon as LucideIcon, { className: 'w-5 h-5 text-white/80' });
+    : createElement(icon as LucideIcon, { className: 'w-5 h-5 text-white/60' });
   const trendDirection = trend?.direction ?? (trend?.positive === false ? 'down' : 'up');
   const trendValue = trend?.percentage ?? trend?.value;
   const trendIsPositive = trend?.positive ?? trendDirection === 'up';
@@ -41,16 +41,16 @@ export function StatsCard({
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 10 }}
+      initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       className={cn(
-        'bg-[#0D0D0D] backdrop-blur-md border border-[#202020] rounded-xl p-4',
-        'transition-all duration-300 hover:border-primary-500/30 hover:shadow-lg hover:shadow-primary-500/5',
+        'bg-[#0a0a0a] border border-white/[0.06] rounded-xl p-4',
+        'transition-all duration-200 hover:border-white/[0.1]',
         className
       )}
     >
       <div className="flex items-start justify-between mb-3">
-        <div className="p-2 rounded-lg bg-white/5">{renderedIcon}</div>
+        <div className="p-2 rounded-lg bg-white/[0.04]">{renderedIcon}</div>
         {trend && trendValue !== undefined && (
           <div
             className={cn(
@@ -74,7 +74,7 @@ export function StatsCard({
         </span>
       </div>
 
-      <p className="text-sm text-white/50 mb-3">{displayLabel}</p>
+      <p className="text-sm text-white/40 mb-3">{displayLabel}</p>
 
       {sparklineData && sparklineData.length > 0 && (
         <div className="h-10 -mx-2">
@@ -82,14 +82,14 @@ export function StatsCard({
             <AreaChart data={sparklineData}>
               <defs>
                 <linearGradient id={`sparkline-${displayLabel}`} x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="rgba(34, 197, 94, 0.3)" />
+                  <stop offset="0%" stopColor="rgba(34, 197, 94, 0.2)" />
                   <stop offset="100%" stopColor="rgba(34, 197, 94, 0)" />
                 </linearGradient>
               </defs>
               <Area
                 type="monotone"
                 dataKey="value"
-                stroke="rgba(34, 197, 94, 0.5)"
+                stroke="rgba(34, 197, 94, 0.4)"
                 strokeWidth={1.5}
                 fill={`url(#sparkline-${displayLabel})`}
               />

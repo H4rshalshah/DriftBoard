@@ -34,7 +34,7 @@ const itemVariants = {
 };
 
 const schemaPreviewClass =
-  'schema-code-block whitespace-pre-wrap break-words rounded-lg border border-white/10 bg-slate-950/95 p-4 font-mono leading-6 text-slate-100 shadow-inner';
+  'schema-code-block whitespace-pre-wrap break-words rounded-lg border border-white/10 bg-black p-4 font-mono leading-6 text-slate-100 shadow-inner';
 
 interface SchemaVersion {
   id: string;

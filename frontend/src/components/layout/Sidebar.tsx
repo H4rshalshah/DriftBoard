@@ -104,13 +104,13 @@ export default function Sidebar() {
   };
 
   const navItemVariants = {
-    hidden: { opacity: 0, x: -20 },
+    hidden: { opacity: 0, x: -16 },
     visible: (i: number) => ({
       opacity: 1,
       x: 0,
       transition: {
-        delay: i * 0.05,
-        duration: 0.3,
+        delay: i * 0.04,
+        duration: 0.25,
       },
     }),
   };
@@ -383,7 +383,7 @@ export default function Sidebar() {
     <motion.aside
       className={cn(
         'fixed left-0 top-0 h-screen z-40',
-        'app-sidebar-surface backdrop-blur-lg',
+        'app-sidebar-surface',
         'flex flex-col transition-transform duration-300 lg:transition-colors',
         sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
       )}
@@ -394,7 +394,7 @@ export default function Sidebar() {
     >
       <div
         className={cn(
-          'relative flex h-16 items-center border-b border-[#202020] p-3',
+          'relative flex h-16 items-center border-b border-white/[0.06] p-3',
           effectiveCollapsed ? 'justify-start gap-5 pl-4 pr-3' : 'justify-between pr-16'
         )}
       >
@@ -416,8 +416,8 @@ export default function Sidebar() {
         <button
           onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
           className={cn(
-            'z-50 place-items-center rounded-md text-gray-300',
-            'hidden transition-colors duration-200 hover:text-white lg:inline-grid',
+            'z-50 place-items-center rounded-md text-white/40',
+            'hidden transition-colors duration-200 hover:text-white/80 lg:inline-grid',
             effectiveCollapsed
               ? 'relative right-auto top-auto h-10 w-10 translate-y-0 p-0'
               : 'absolute right-5 top-1/2 h-10 w-10 -translate-y-1/2 p-0'
@@ -429,7 +429,7 @@ export default function Sidebar() {
       </div>
 
       <div className={cn('flex-1 overflow-y-auto scrollbar-thin py-4', effectiveCollapsed ? 'px-2' : 'px-3')}>
-        <nav className="space-y-1">
+        <nav className="space-y-0.5">
           {navItems.map((item, index) => {
             const Icon = item.icon;
             const isActive = location.pathname.startsWith(item.path);
@@ -446,21 +446,21 @@ export default function Sidebar() {
                   to={item.path}
                   onClick={() => setSidebarOpen(false)}
                   className={cn(
-                    'flex items-center gap-3 px-3 py-2.5 rounded-lg',
-                    'transition-all duration-200 group relative',
+                    'flex items-center gap-3 px-3 py-2 rounded-lg',
+                    'transition-all duration-150 group relative',
                     isActive
-                      ? 'bg-primary-500/10 text-primary-400'
-                      : 'text-gray-400 hover:text-white hover:bg-white/5'
+                      ? 'bg-primary-500/8 text-primary-400'
+                      : 'text-white/40 hover:text-white/70 hover:bg-white/[0.03]'
                   )}
                 >
                   {isActive && (
                     <motion.div
                       layoutId="activeNav"
-                      className="absolute bottom-2 left-0 top-2 w-1 bg-primary-500 rounded-r-full"
+                      className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 bg-primary-500 rounded-r-full"
                       transition={{ type: 'spring', stiffness: 300, damping: 30 }}
                     />
                   )}
-                  <Icon className={cn('w-5 h-5 flex-shrink-0', isActive && 'text-primary-400')} />
+                  <Icon className={cn('w-[18px] h-[18px] flex-shrink-0', isActive && 'text-primary-400')} />
                   {!effectiveCollapsed && (
                     <span className="text-sm font-medium">{item.label}</span>
                   )}
@@ -471,23 +471,22 @@ export default function Sidebar() {
         </nav>
       </div>
 
-      <div className={cn('border-t border-[#202020] p-3', effectiveCollapsed && 'px-2')}>
+      <div className={cn('border-t border-white/[0.06] p-3', effectiveCollapsed && 'px-2')}>
         {effectiveCollapsed && (
           <div className="relative mb-2">
             <button
               onClick={openProjectSetup}
               disabled={isCreating}
               className={cn(
-                'grid h-11 w-full place-items-center rounded-lg bg-white/5 text-primary-300',
-                'transition-colors duration-200 hover:bg-white/10 hover:text-white',
-                'disabled:cursor-not-allowed disabled:opacity-60'
+                'grid h-11 w-full place-items-center rounded-lg bg-white/[0.03] text-primary-400',
+                'transition-colors duration-150 hover:bg-white/5 hover:text-white/80',
+                'disabled:cursor-not-allowed disabled:opacity-40'
               )}
               aria-label="Create project"
               title="Create project"
             >
               <Plus className="h-5 w-5" />
             </button>
-
           </div>
         )}
 
@@ -505,12 +504,12 @@ export default function Sidebar() {
               }}
               className={cn(
                 'w-full flex items-center justify-between gap-2 px-3 py-2',
-                'bg-white/5 hover:bg-white/10 rounded-lg',
-                'text-sm text-gray-300 transition-colors duration-200'
+                'bg-white/[0.03] hover:bg-white/5 rounded-lg',
+                'text-sm text-white/50 transition-colors duration-150'
               )}
             >
               <div className="flex items-center gap-2 min-w-0">
-                <div className="w-6 h-6 rounded bg-primary-500/20 flex items-center justify-center flex-shrink-0">
+                <div className="w-6 h-6 rounded bg-primary-500/15 flex items-center justify-center flex-shrink-0">
                   <span className="text-xs font-semibold text-primary-400">
                     {currentProject?.name?.[0] || 'P'}
                   </span>
@@ -525,13 +524,13 @@ export default function Sidebar() {
             <AnimatePresence>
               {projectDropdownOpen && (
                 <motion.div
-                  initial={{ opacity: 0, y: -10 }}
+                  initial={{ opacity: 0, y: -8 }}
                   animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -10 }}
+                  exit={{ opacity: 0, y: -8 }}
                   className="sidebar-menu-surface relative z-[55] mt-2 overflow-hidden rounded-lg py-1 shadow-2xl"
                 >
                   {projects.length === 0 && (
-                    <div className="px-3 py-2 text-sm text-gray-400">
+                    <div className="px-3 py-2 text-sm text-white/30">
                       {isLoading ? 'Loading projects...' : 'No projects found'}
                     </div>
                   )}
@@ -541,7 +540,7 @@ export default function Sidebar() {
                       className={cn(
                         'flex w-full items-center gap-2 px-3 py-2 text-sm',
                         'hover:bg-white/5 transition-colors duration-150',
-                        currentProject?.id === project.id ? 'text-primary-400' : 'text-gray-300'
+                        currentProject?.id === project.id ? 'text-primary-400' : 'text-white/60'
                       )}
                     >
                       <button
@@ -562,7 +561,7 @@ export default function Sidebar() {
                             void handleDeleteProject(project.id);
                           }}
                           disabled={isDeleting || !(project.ownerId === user?.id || hasProjectPermission(project.currentUserRole, 'project:delete'))}
-                          className="rounded p-1 text-white/40 transition-colors hover:bg-red-500/10 hover:text-red-300 disabled:cursor-not-allowed disabled:opacity-30"
+                          className="rounded p-1 text-white/25 transition-colors hover:bg-red-500/10 hover:text-red-400 disabled:cursor-not-allowed disabled:opacity-20"
                           aria-label={`Delete ${project.name}`}
                           title="Delete project"
                         >
@@ -573,11 +572,11 @@ export default function Sidebar() {
                   ))}
                   {canOpenProjectSetup && (
                     <>
-                      <div className="my-1 h-px bg-[#202020]" />
+                      <div className="my-1 h-px bg-white/[0.06]" />
                       <button
                         onClick={openProjectSetup}
                         disabled={isCreating}
-                        className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-primary-300 transition-colors duration-150 hover:bg-white/5 disabled:cursor-not-allowed disabled:opacity-60"
+                        className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-primary-400 transition-colors duration-150 hover:bg-white/5 disabled:cursor-not-allowed disabled:opacity-40"
                       >
                         <Plus className="h-4 w-4" />
                         {isCreating ? 'Creating...' : 'Create your project'}
@@ -598,22 +597,22 @@ export default function Sidebar() {
             }}
             className={cn(
               'flex items-center gap-3 w-full p-2 rounded-lg',
-              'hover:bg-white/5 transition-colors duration-200',
+              'hover:bg-white/[0.03] transition-colors duration-150',
               effectiveCollapsed && 'justify-center'
             )}
           >
             {user?.avatar ? (
               <img src={user.avatar} alt={user.name} className="w-8 h-8 rounded-full" />
             ) : (
-              <div className="w-8 h-8 rounded-full bg-gradient-primary flex items-center justify-center">
+              <div className="w-8 h-8 rounded-full bg-primary-600 flex items-center justify-center">
                 <User className="w-4 h-4 text-white" />
               </div>
             )}
             {!effectiveCollapsed && (
               <>
                 <div className="flex-1 min-w-0 text-left">
-                  <p className="text-sm font-medium text-white truncate">{user?.name || 'User'}</p>
-                  <p className="text-xs text-gray-500 truncate">{user?.email}</p>
+                  <p className="text-sm font-medium text-white/80 truncate">{user?.name || 'User'}</p>
+                  <p className="text-xs text-white/30 truncate">{user?.email}</p>
                 </div>
               </>
             )}
@@ -622,9 +621,9 @@ export default function Sidebar() {
           <AnimatePresence>
             {userMenuOpen && (
               <motion.div
-                initial={{ opacity: 0, y: -10 }}
+                initial={{ opacity: 0, y: -8 }}
                 animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
+                exit={{ opacity: 0, y: -8 }}
                 className={cn(
                   'sidebar-menu-surface absolute bottom-full z-[60] mb-2 w-full py-1',
                   'overflow-hidden rounded-lg shadow-2xl',
@@ -638,7 +637,7 @@ export default function Sidebar() {
                   }}
                   className={cn(
                     'flex items-center gap-2 w-full px-3 py-2 text-sm',
-                    'text-gray-300 hover:bg-white/5 hover:text-red-400',
+                    'text-white/50 hover:bg-white/5 hover:text-red-400',
                     'transition-colors duration-150'
                   )}
                 >
@@ -659,7 +658,7 @@ export default function Sidebar() {
       >
         <ModalHeader className="pb-2">
           <h2 className="text-xl font-semibold text-white">Add your project</h2>
-          <p className="mt-1 text-sm leading-5 text-white/55">
+          <p className="mt-1 text-sm leading-5 text-white/40">
             Connect the project you want DriftBoard to watch for endpoint changes, schema drift, and breaking API updates.
           </p>
         </ModalHeader>
@@ -675,7 +674,7 @@ export default function Sidebar() {
           />
 
           <div>
-            <label className="mb-2 block text-sm font-medium text-white/80">Project source</label>
+            <label className="mb-2 block text-sm font-medium text-white/60">Project source</label>
             <div className="grid gap-3 sm:grid-cols-2">
               <button
                 type="button"
@@ -683,13 +682,13 @@ export default function Sidebar() {
                 className={cn(
                   'rounded-lg border p-3 text-left transition-colors',
                   sourceType === 'folder'
-                    ? 'border-primary-400/60 bg-primary-500/10 text-white'
-                    : 'border-[#242424] bg-white/5 text-white/70 hover:bg-white/5'
+                    ? 'border-primary-500/40 bg-primary-500/8 text-white'
+                    : 'border-white/[0.06] bg-white/[0.02] text-white/60 hover:bg-white/5'
                 )}
               >
-                <FolderOpen className="mb-1.5 h-5 w-5 text-primary-300" />
+                <FolderOpen className="mb-1.5 h-5 w-5 text-primary-400" />
                 <span className="block font-medium">Upload local project</span>
-                <span className="mt-1 block text-xs leading-4 text-white/50">Select your app folder from this machine.</span>
+                <span className="mt-1 block text-xs leading-4 text-white/35">Select your app folder from this machine.</span>
               </button>
               <button
                 type="button"
@@ -697,25 +696,25 @@ export default function Sidebar() {
                 className={cn(
                   'rounded-lg border p-3 text-left transition-colors',
                   sourceType === 'repository'
-                    ? 'border-primary-400/60 bg-primary-500/10 text-white'
-                    : 'border-[#242424] bg-white/5 text-white/70 hover:bg-white/5'
+                    ? 'border-primary-500/40 bg-primary-500/8 text-white'
+                    : 'border-white/[0.06] bg-white/[0.02] text-white/60 hover:bg-white/5'
                 )}
               >
-                <GitBranch className="mb-1.5 h-5 w-5 text-primary-300" />
+                <GitBranch className="mb-1.5 h-5 w-5 text-primary-400" />
                 <span className="block font-medium">Use repository URL</span>
-                <span className="mt-1 block text-xs leading-4 text-white/50">Attach a GitHub/GitLab project URL.</span>
+                <span className="mt-1 block text-xs leading-4 text-white/35">Attach a GitHub/GitLab project URL.</span>
               </button>
             </div>
           </div>
 
           {sourceType === 'folder' ? (
-            <div className="rounded-lg border border-[#242424] bg-white/5 p-4">
-              <label className="flex cursor-pointer flex-col items-center justify-center rounded-lg border border-dashed border-white/15 px-4 py-5 text-center transition-colors hover:border-primary-400/50 hover:bg-white/5">
-                <FolderOpen className="mb-2 h-6 w-6 text-primary-300" />
+            <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-4">
+              <label className="flex cursor-pointer flex-col items-center justify-center rounded-lg border border-dashed border-white/10 px-4 py-5 text-center transition-colors hover:border-primary-500/30 hover:bg-white/[0.02]">
+                <FolderOpen className="mb-2 h-6 w-6 text-primary-400" />
                 <span className="text-sm font-medium text-white">
                   {selectedSourceName || 'Choose project folder'}
                 </span>
-                <span className="mt-1 text-xs text-white/45">
+                <span className="mt-1 text-xs text-white/30">
                   {selectedFileCount > 0 ? `${selectedFileCount} files selected` : 'Your folder is used to set up this DriftBoard project.'}
                 </span>
                 <input
@@ -726,7 +725,7 @@ export default function Sidebar() {
                   {...({ webkitdirectory: '', directory: '' } as Record<string, string>)}
                 />
               </label>
-              <label className="mt-3 flex cursor-pointer items-center justify-center rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-sm font-medium text-white/75 transition-colors hover:border-primary-400/40 hover:bg-white/10">
+              <label className="mt-3 flex cursor-pointer items-center justify-center rounded-lg border border-white/[0.06] bg-white/[0.02] px-4 py-3 text-sm font-medium text-white/60 transition-colors hover:border-primary-500/25 hover:bg-white/5">
                 Choose JSON/OpenAPI files
                 <input
                   type="file"
@@ -760,19 +759,19 @@ export default function Sidebar() {
           />
 
           {setupError && (
-            <div className="rounded-lg border border-red-500/25 bg-red-500/10 px-3 py-2 text-xs text-red-300">
+            <div className="rounded-lg border border-red-500/20 bg-red-500/8 px-3 py-2 text-xs text-red-400">
               {setupError}
             </div>
           )}
 
           {setupStatus && (
-            <div className="rounded-lg border border-primary-500/25 bg-primary-500/10 px-3 py-2 text-xs text-primary-300">
+            <div className="rounded-lg border border-primary-500/20 bg-primary-500/8 px-3 py-2 text-xs text-primary-400">
               {setupStatus}
             </div>
           )}
 
-          <div className="flex items-start gap-2 rounded-lg border border-primary-400/20 bg-primary-500/8 p-3 text-xs leading-5 text-primary-100/75">
-            <CheckCircle2 className="mt-0.5 h-4 w-4 flex-shrink-0 text-primary-300" />
+          <div className="flex items-start gap-2 rounded-lg border border-primary-500/15 bg-primary-500/5 p-3 text-xs leading-5 text-white/50">
+            <CheckCircle2 className="mt-0.5 h-4 w-4 flex-shrink-0 text-primary-400" />
             <span>
               Once both fields are complete, DriftBoard creates the workspace, reads the selected project source, and starts monitoring endpoint schemas and drift errors for that project.
             </span>
